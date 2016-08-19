@@ -62,7 +62,7 @@ class HDFSCheck(AgentCheck):
                 # Let's display a warning and use regular mode
                 self.warning("HA Mode is not available with snakebite < 2.2.0"
                     "Upgrade to the latest version of snakebiteby running: "
-                    "sudo /opt/datadog-agent/embedded/bin/pip install --upgrade snakebite")
+                    "sudo /opt/stackstate-agent/embedded/bin/pip install --upgrade snakebite")
 
                 host, port = instance['namenodes'][0]['url'], instance['namenodes'][0].get('port', DEFAULT_PORT)
                 return snakebite.client.Client(host, port)

@@ -484,7 +484,7 @@ class Flare(object):
     # Find the agent exec (package or source)
     def _get_path_agent_exec(self):
         if Platform.is_mac():
-            agent_exec = '/opt/datadog-agent/bin/datadog-agent'
+            agent_exec = '/opt/stackstate-agent/bin/datadog-agent'
         else:
             agent_exec = '/etc/init.d/datadog-agent'
 
@@ -497,7 +497,7 @@ class Flare(object):
 
     # Find the supervisor exec (package or source)
     def _get_path_supervisor_exec(self):
-        supervisor_exec = '/opt/datadog-agent/bin/supervisorctl'
+        supervisor_exec = '/opt/stackstate-agent/bin/supervisorctl'
         if not os.path.isfile(supervisor_exec):
             supervisor_exec = os.path.join(
                 os.path.dirname(os.path.realpath(__file__)),
@@ -508,7 +508,7 @@ class Flare(object):
     # Find the supervisor conf (package or source)
     def _get_path_supervisor_conf(self):
         if Platform.is_mac():
-            supervisor_conf = '/opt/datadog-agent/etc/supervisor.conf'
+            supervisor_conf = '/opt/stackstate-agent/etc/supervisor.conf'
         else:
             supervisor_conf = '/etc/dd-agent/supervisor.conf'
 

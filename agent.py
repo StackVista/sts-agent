@@ -1,4 +1,4 @@
-#!/opt/datadog-agent/embedded/bin/python
+#!/opt/stackstate-agent/embedded/bin/python
 """
     Datadog
     www.datadoghq.com

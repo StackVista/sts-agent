@@ -3,7 +3,7 @@
 #        (debian based - alternatively) $ sudo apt-get install libcap2-bin
 #        (redhat based) $ sudo yum install libcap
 #        (redhat based - alternatively) $ sudo yum install compat-libcap1
-#        $ sudo setcap cap_net_raw+ep /opt/datadog-agent/bin/go-metro
+#        $ sudo setcap cap_net_raw+ep /opt/stackstate-agent/bin/go-metro
 #
 #        Because of different package names for different distros, if the instructions above
 #        don't work for you, please issue an `apt-cache search libcap` or `yum search libcap` and you

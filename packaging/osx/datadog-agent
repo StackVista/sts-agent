@@ -1,17 +1,17 @@
 #!/usr/bin/env sh
 NAME="datadog-agent"
 DESC="Datadog Agent"
-AGENTPATH="/opt/datadog-agent/agent/agent.py"
-FORWARDERPATH="/opt/datadog-agent/agent/ddagent.py"
-DOGSTATSDPATH="/opt/datadog-agent/agent/dogstatsd.py"
-AGENTCONF="/opt/datadog-agent/etc/datadog.conf"
-SUPERVISOR_PIDFILE="/opt/datadog-agent/run/datadog-supervisord.pid"
-SUPERVISOR_CONF_FILE="/opt/datadog-agent/etc/supervisor.conf"
-SUPERVISOR_SOCK="/opt/datadog-agent/run/datadog-supervisor.sock"
-SUPERVISORCTL_PATH="/opt/datadog-agent/bin/supervisorctl"
-SUPERVISORD_PATH="/opt/datadog-agent/bin/supervisord"
-COLLECTOR_PIDFILE="/opt/datadog-agent/run/dd-agent.pid"
-SYSTEM_PATH=/opt/datadog-agent/embedded/bin:/opt/datadog-agent/bin:$PATH
+AGENTPATH="/opt/stackstate-agent/agent/agent.py"
+FORWARDERPATH="/opt/stackstate-agent/agent/ddagent.py"
+DOGSTATSDPATH="/opt/stackstate-agent/agent/dogstatsd.py"
+AGENTCONF="/opt/stackstate-agent/etc/datadog.conf"
+SUPERVISOR_PIDFILE="/opt/stackstate-agent/run/datadog-supervisord.pid"
+SUPERVISOR_CONF_FILE="/opt/stackstate-agent/etc/supervisor.conf"
+SUPERVISOR_SOCK="/opt/stackstate-agent/run/datadog-supervisor.sock"
+SUPERVISORCTL_PATH="/opt/stackstate-agent/bin/supervisorctl"
+SUPERVISORD_PATH="/opt/stackstate-agent/bin/supervisord"
+COLLECTOR_PIDFILE="/opt/stackstate-agent/run/dd-agent.pid"
+SYSTEM_PATH=/opt/stackstate-agent/embedded/bin:/opt/stackstate-agent/bin:$PATH
 
 # be sure to remove PY2APP parameters
 unset PYTHONHOME

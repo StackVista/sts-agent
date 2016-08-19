@@ -133,7 +133,7 @@ def get_ca_certs_path():
     Get a path to the trusted certificates of the system
     """
     CA_CERTS = [
-        '/opt/datadog-agent/embedded/ssl/certs/cacert.pem',
+        '/opt/stackstate-agent/embedded/ssl/certs/cacert.pem',
         os.path.join(os.path.dirname(tornado.__file__), 'ca-certificates.crt'),
         '/etc/ssl/certs/ca-certificates.crt',
     ]

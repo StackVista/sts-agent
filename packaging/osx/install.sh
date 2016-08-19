@@ -62,16 +62,16 @@ printf "\033[34m\n    - Unmounting the DMG installer ...\n\033[0m"
 $sudo_cmd hdiutil detach "/Volumes/datadog_agent" >/dev/null
 
 # Set the configuration
-if egrep 'api_key:( APIKEY)?$' "/opt/datadog-agent/etc/datadog.conf" > /dev/null 2>&1; then
+if egrep 'api_key:( APIKEY)?$' "/opt/stackstate-agent/etc/datadog.conf" > /dev/null 2>&1; then
     printf "\033[34m\n* Adding your API key to the Agent configuration: datadog.conf\n\033[0m\n"
     # Check for vanilla OS X sed or GNU sed
     i_cmd="-i ''"
     if [ $(sed --version 2>/dev/null | grep -c "GNU") -ne 0 ]; then i_cmd="-i"; fi
-    $sudo_cmd sh -c "sed $i_cmd 's/api_key:.*/api_key: $apikey/' \"/opt/datadog-agent/etc/datadog.conf\""
-    $sudo_cmd chown $real_user:admin "/opt/datadog-agent/etc/datadog.conf"
-    $sudo_cmd chmod 640 /opt/datadog-agent/etc/datadog.conf
+    $sudo_cmd sh -c "sed $i_cmd 's/api_key:.*/api_key: $apikey/' \"/opt/stackstate-agent/etc/datadog.conf\""
+    $sudo_cmd chown $real_user:admin "/opt/stackstate-agent/etc/datadog.conf"
+    $sudo_cmd chmod 640 /opt/stackstate-agent/etc/datadog.conf
     printf "\033[34m* Restarting the Agent...\n\033[0m\n"
-    $cmd_real_user "/opt/datadog-agent/bin/datadog-agent" restart >/dev/null
+    $cmd_real_user "/opt/stackstate-agent/bin/datadog-agent" restart >/dev/null
 else
     printf "\033[34m\n* Keeping old datadog.conf configuration file\n\033[0m\n"
 fi
@@ -117,7 +117,7 @@ datadog-agent command.
 It will start automatically at login, if you want to enable it at startup,
 run these commands: (the agent will still run as your user)
 
-    sudo cp '/opt/datadog-agent/etc/com.datadoghq.agent.plist' /Library/LaunchDaemons
+    sudo cp '/opt/stackstate-agent/etc/com.datadoghq.agent.plist' /Library/LaunchDaemons
     sudo launchctl load -w /Library/LaunchDaemons/com.datadoghq.agent.plist
 
 \033[0m"
