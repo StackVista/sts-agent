@@ -30,7 +30,7 @@ AGENTUSER="sts-agent"
 PIDPATH="/var/run/sts-agent/"
 PROG="stackstate-agent"
 LOCKFILE=/var/lock/subsys/$PROG
-FORWARDERPATH="/opt/stackstate-agent/agent/ddagent.py"
+FORWARDERPATH="/opt/stackstate-agent/agent/stsagent.py"
 SUPERVISORD_PATH="PATH=/opt/stackstate-agent/embedded/bin:/opt/stackstate-agent/bin:$PATH /opt/stackstate-agent/bin/supervisord"
 SUPERVISORCTL_PATH="/opt/stackstate-agent/bin/supervisorctl"
 SUPERVISOR_CONF="/etc/sts-agent/supervisor.conf"

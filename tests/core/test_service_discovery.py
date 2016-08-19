@@ -165,7 +165,7 @@ class TestServiceDiscovery(unittest.TestCase):
             'service_discovery': True,
             'service_discovery_backend': 'docker',
             'sd_template_dir': '/datadog/check_configs',
-            'additional_checksd': '/etc/dd-agent/checks.d/',
+            'additional_checksd': '/etc/sts-agent/checks.d/',
         }
         self.agentConfigs = [self.etcd_agentConfig, self.consul_agentConfig, self.auto_conf_agentConfig]
 

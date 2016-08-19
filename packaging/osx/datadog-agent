@@ -1,16 +1,16 @@
 #!/usr/bin/env sh
-NAME="datadog-agent"
-DESC="Datadog Agent"
+NAME="stackstate-agent"
+DESC="StackState Agent"
 AGENTPATH="/opt/stackstate-agent/agent/agent.py"
-FORWARDERPATH="/opt/stackstate-agent/agent/ddagent.py"
+FORWARDERPATH="/opt/stackstate-agent/agent/stsagent.py"
 DOGSTATSDPATH="/opt/stackstate-agent/agent/dogstatsd.py"
 AGENTCONF="/opt/stackstate-agent/etc/datadog.conf"
-SUPERVISOR_PIDFILE="/opt/stackstate-agent/run/datadog-supervisord.pid"
+SUPERVISOR_PIDFILE="/opt/stackstate-agent/run/stackstate-supervisord.pid"
 SUPERVISOR_CONF_FILE="/opt/stackstate-agent/etc/supervisor.conf"
-SUPERVISOR_SOCK="/opt/stackstate-agent/run/datadog-supervisor.sock"
+SUPERVISOR_SOCK="/opt/stackstate-agent/run/stackstate-supervisor.sock"
 SUPERVISORCTL_PATH="/opt/stackstate-agent/bin/supervisorctl"
 SUPERVISORD_PATH="/opt/stackstate-agent/bin/supervisord"
-COLLECTOR_PIDFILE="/opt/stackstate-agent/run/dd-agent.pid"
+COLLECTOR_PIDFILE="/opt/stackstate-agent/run/sts-agent.pid"
 SYSTEM_PATH=/opt/stackstate-agent/embedded/bin:/opt/stackstate-agent/bin:$PATH
 
 # be sure to remove PY2APP parameters
@@ -63,7 +63,7 @@ case $1 in
 
         $AGENTPATH configcheck > /dev/null
         if [ $? -ne 0 ]; then
-            echo "Invalid check configuration. Please run sudo datadog-agent configtest for more details."
+            echo "Invalid check configuration. Please run sudo stackstate-agent configtest for more details."
             exit 1
         fi
 

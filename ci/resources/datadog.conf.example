@@ -10,7 +10,7 @@ dd_url: https://app.datadoghq.com
 # proxy_password: password
 # To be used with some proxys that return a 302 which make curl switch from POST to GET
 # See http://stackoverflow.com/questions/8156073/curl-violate-rfc-2616-10-3-2-and-switch-from-post-to-get
-# proxy_forbid_method_switch: no 
+# proxy_forbid_method_switch: no
 
 # If you run the agent behind haproxy, you might want to set this to yes
 # skip_ssl_validation: no
@@ -52,7 +52,7 @@ use_mount: no
 # graphite_listen_port: 17124
 
 # Additional directory to look for Datadog checks
-# additional_checksd: /etc/dd-agent/checks.d/
+# additional_checksd: /etc/sts-agent/checks.d/
 
 # Allow non-local traffic to this Agent
 # This is required when using this Agent as a proxy for other Agents
