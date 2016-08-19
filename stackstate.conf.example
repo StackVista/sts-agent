@@ -243,9 +243,9 @@ gce_updated_hostname: yes
 
 # log_level: INFO
 
-# collector_log_file: /var/log/datadog/collector.log
-# forwarder_log_file: /var/log/datadog/forwarder.log
-# dogstatsd_log_file: /var/log/datadog/dogstatsd.log
+# collector_log_file: /var/log/stackstate/collector.log
+# forwarder_log_file: /var/log/stackstate/forwarder.log
+# dogstatsd_log_file: /var/log/stackstate/dogstatsd.log
 
 # if syslog is enabled but a host and port are not set, a local domain socket
 # connection will be attempted
