@@ -36,9 +36,9 @@ from utils.subprocess_output import (
 
 # CONSTANTS
 AGENT_VERSION = "5.9.0"
-DATADOG_CONF = "datadog.conf"
-UNIX_CONFIG_PATH = '/etc/dd-agent'
-MAC_CONFIG_PATH = '/opt/datadog-agent/etc'
+DATADOG_CONF = "stackstate.conf"
+UNIX_CONFIG_PATH = '/etc/sts-agent'
+MAC_CONFIG_PATH = '/opt/stackstate-agent/etc'
 DEFAULT_CHECK_FREQUENCY = 15   # seconds
 LOGGING_MAX_BYTES = 10 * 1024 * 1024
 SDK_INTEGRATIONS_DIR = 'integrations'
@@ -81,7 +81,7 @@ def get_parsed_args():
     parser = OptionParser()
     parser.add_option('-A', '--autorestart', action='store_true', default=False,
                       dest='autorestart')
-    parser.add_option('-d', '--dd_url', action='store', default=None,
+    parser.add_option('-d', '--sts_url', action='store', default=None,
                       dest='dd_url')
     parser.add_option('-u', '--use-local-forwarder', action='store_true',
                       default=False, dest='use_forwarder')
@@ -348,7 +348,7 @@ def get_config(parse_args=True, cfg_path=None, options=None):
     }
 
     if Platform.is_mac():
-        agentConfig['additional_checksd'] = '/opt/datadog-agent/etc/checks.d'
+        agentConfig['additional_checksd'] = '/opt/stackstate-agent/etc/checks.d'
 
     # Config handling
     try:
@@ -379,21 +379,21 @@ def get_config(parse_args=True, cfg_path=None, options=None):
             log.warning(u"No API key was found. Aborting.")
             sys.exit(2)
 
-        if not config.has_option('Main', 'dd_url'):
-            log.warning(u"No dd_url was found. Aborting.")
+        if not config.has_option('Main', 'sts_url'):
+            log.warning(u"No sts_url was found. Aborting.")
             sys.exit(2)
 
         # Endpoints
-        dd_url = clean_dd_url(config.get('Main', 'dd_url'))
+        dd_url = clean_dd_url(config.get('Main', 'sts_url'))
         api_key = config.get('Main', 'api_key').strip()
 
         # For collector and dogstatsd
         agentConfig['api_key'] = api_key
-        agentConfig['dd_url'] = dd_url
+        agentConfig['sts_url'] = dd_url
 
         # multiple endpoints
-        if config.has_option('Main', 'other_dd_urls'):
-            other_dd_urls = map(clean_dd_url, config.get('Main', 'other_dd_urls').split(','))
+        if config.has_option('Main', 'other_sts_urls'):
+            other_dd_urls = map(clean_dd_url, config.get('Main', 'other_sts_urls').split(','))
         else:
             other_dd_urls = []
         if config.has_option('Main', 'other_api_keys'):
@@ -832,7 +832,7 @@ def _deprecated_configs(agentConfig):
     deprecated_checks = {}
     deprecated_configs_enabled = [v for k, v in OLD_STYLE_PARAMETERS if len([l for l in agentConfig if l.startswith(k)]) > 0]
     for deprecated_config in deprecated_configs_enabled:
-        msg = "Configuring %s in datadog.conf is not supported anymore. Please use conf.d" % deprecated_config
+        msg = "Configuring %s in stackstate.conf is not supported anymore. Please use conf.d" % deprecated_config
         deprecated_checks[deprecated_config] = {'error': msg, 'traceback': None}
         log.error(msg)
     return deprecated_checks
@@ -912,7 +912,7 @@ def get_checks_places(osname, agentConfig):
 
 def _load_file_config(config_path, check_name, agentConfig):
     if config_path == 'deprecated/nagios':
-        log.warning("Configuring Nagios in datadog.conf is deprecated "
+        log.warning("Configuring Nagios in stackstate.conf is deprecated "
                     "and will be removed in a future version. "
                     "Please use conf.d")
         check_config = {'instances': [dict((key, value) for (key, value) in agentConfig.iteritems() if key in NAGIOS_OLD_CONF_KEYS)]}
@@ -1116,15 +1116,8 @@ def get_logging_config(cfg_path=None):
     config.readfp(skip_leading_wsp(open(config_path)))
 
     if config.has_section('handlers') or config.has_section('loggers') or config.has_section('formatters'):
-        if system_os == 'windows':
-            config_example_file = "https://github.com/DataDog/dd-agent/blob/master/packaging/datadog-agent/win32/install_files/datadog_win32.conf"
-        else:
-            config_example_file = "https://github.com/DataDog/dd-agent/blob/master/datadog.conf.example"
-
         sys.stderr.write("""Python logging config is no longer supported and will be ignored.
-            To configure logging, update the logging portion of 'datadog.conf' to match:
-             '%s'.
-             """ % config_example_file)
+            To configure logging, update the logging portion of 'stackstate.conf'.""")
 
     for option in logging_config:
         if config.has_option('Main', option):

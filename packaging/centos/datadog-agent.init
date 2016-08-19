@@ -10,33 +10,33 @@
 ###############################################################################
 #
 # chkconfig: 345 85 15
-# description: Datadog Monitoring Agent
+# description: StackState Monitoring Agent
 
 ### BEGIN INIT INFO
-# Provides: datadog-agent
-# Short-Description: Start and start datadog-agent
-# Description: datadog-agent is the monitoring agent component for Datadog
+# Provides: stackstate-agent
+# Short-Description: Start and start stackstate-agent
+# Description: stackstate-agent is the monitoring agent component for StackState
 # Required-Start:
 # Required-Stop:
 # Default-Start: 2 3 4 5
 # Default-Stop: 0 1 6
 ### END INIT INFO
 
-AGENTPATH="/opt/datadog-agent/agent/agent.py"
-AGENTCONF="/etc/dd-agent/datadog.conf"
-DOGSTATSDPATH="/opt/datadog-agent/agent/dogstatsd.py"
-KILL_PATH="/opt/datadog-agent/embedded/bin/kill"
-AGENTUSER="dd-agent"
-PIDPATH="/var/run/dd-agent/"
-PROG="datadog-agent"
+AGENTPATH="/opt/stackstate-agent/agent/agent.py"
+AGENTCONF="/etc/sts-agent/stackstate.conf"
+DOGSTATSDPATH="/opt/stackstate-agent/agent/dogstatsd.py"
+KILL_PATH="/opt/stackstate-agent/embedded/bin/kill"
+AGENTUSER="sts-agent"
+PIDPATH="/var/run/sts-agent/"
+PROG="stackstate-agent"
 LOCKFILE=/var/lock/subsys/$PROG
-FORWARDERPATH="/opt/datadog-agent/agent/ddagent.py"
-SUPERVISORD_PATH="PATH=/opt/datadog-agent/embedded/bin:/opt/datadog-agent/bin:$PATH /opt/datadog-agent/bin/supervisord"
-SUPERVISORCTL_PATH="/opt/datadog-agent/bin/supervisorctl"
-SUPERVISOR_CONF="/etc/dd-agent/supervisor.conf"
-SUPERVISOR_SOCK="/opt/datadog-agent/run/datadog-supervisor.sock"
-SUPERVISOR_PIDFILE="/opt/datadog-agent/run/datadog-supervisord.pid"
-COLLECTOR_PIDFILE="/opt/datadog-agent/run/dd-agent.pid"
+FORWARDERPATH="/opt/stackstate-agent/agent/ddagent.py"
+SUPERVISORD_PATH="PATH=/opt/stackstate-agent/embedded/bin:/opt/stackstate-agent/bin:$PATH /opt/stackstate-agent/bin/supervisord"
+SUPERVISORCTL_PATH="/opt/stackstate-agent/bin/supervisorctl"
+SUPERVISOR_CONF="/etc/sts-agent/supervisor.conf"
+SUPERVISOR_SOCK="/opt/stackstate-agent/run/stackstate-supervisor.sock"
+SUPERVISOR_PIDFILE="/opt/stackstate-agent/run/stackstate-supervisord.pid"
+COLLECTOR_PIDFILE="/opt/stackstate-agent/run/sts-agent.pid"
 DD_OPT_PROC_REGEX="dogstatsd|jmxfetch|go-metro"
 
 # Source function library.
@@ -92,10 +92,10 @@ check_status() {
 
         if [ "$FAIL" -gt 0 ]; then
             echo "$s"
-            echo -n "Datadog Agent (supervisor) is NOT running all child processes"; failure; echo
+            echo -n "StackState Agent (supervisor) is NOT running all child processes"; failure; echo
             return 1
         else
-            echo -n "Datadog Agent (supervisor) is running all child processes"; success; echo
+            echo -n "StackState Agent (supervisor) is running all child processes"; success; echo
             return 0
         fi
     else
@@ -104,18 +104,18 @@ check_status() {
         status -p $SUPERVISOR_PIDFILE $PROG
         RETVAL=$?
         if [ $RETVAL -eq 0 ]; then
-            echo -n "Datadog Agent (supervisor) is running."; success; echo
+            echo -n "StackState Agent (supervisor) is running."; success; echo
         else
-            echo -n "Datadog Agent (supervisor) is NOT running."; failure; echo
+            echo -n "StackState Agent (supervisor) is NOT running."; failure; echo
         fi
         return $RETVAL
     fi
 
     if [ -f "$LOCKFILE" ]; then
-        echo -n 'Datadog Agent is running'; success; echo
+        echo -n 'StackState Agent is running'; success; echo
         return 0
     else
-        echo -n 'Datadog Agent is NOT running'; failure; echo
+        echo -n 'StackState Agent is NOT running'; failure; echo
         return 1
     fi
 }
@@ -132,13 +132,13 @@ start() {
 
     su $AGENTUSER -c "$AGENTPATH configcheck" > /dev/null 2>&1
     if [ $? -ne 0 ]; then
-        echo -n $'\n'"Invalid check configuration. Please run sudo /etc/init.d/datadog-agent configtest for more details."
+        echo -n $'\n'"Invalid check configuration. Please run sudo /etc/init.d/stackstate-agent configtest for more details."
         echo -n $'\n'"Resuming starting process."$'\n'
     fi
 
     # no need to test for status before daemon,
     # the daemon function does the right thing
-    echo -n "Starting Datadog Agent (using supervisord):"
+    echo -n "Starting StackState Agent (using supervisord):"
     daemon --pidfile=$SUPERVISOR_PIDFILE $SUPERVISORD_PATH -c $SUPERVISOR_CONF > /dev/null
     # check if the agent is running once per second for 10 seconds
     retries=10
@@ -162,7 +162,7 @@ stop() {
     # no need to test for status before killproc,
     # it does the right thing. and testing supervisorctl status
     # before killproc can lead to states where you cannot stop!
-    echo -n 'Stopping Datadog Agent (using killproc on supervisord): '
+    echo -n 'Stopping StackState Agent (using killproc on supervisord): '
     killproc -p $SUPERVISOR_PIDFILE -d 30
     rm -f $LOCKFILE
     echo
@@ -222,7 +222,7 @@ case "$1" in
             NC='\033[0m' # No Color
             echo "${RED}Warning: Known bug in Linux Kernel 3.18+ causes 'status' to fail.${NC}"
             echo "Calling 'info', instead..."
-            service datadog-agent info
+            service stackstate-agent info
             if [ $? -ne 0 ]; then
                 exit 1
             fi

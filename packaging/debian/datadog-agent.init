@@ -1,9 +1,9 @@
 #!/bin/sh
 
 ### BEGIN INIT INFO
-# Provides: dd-agent
-# Short-Description: Start and stop dd-agent
-# Description: dd-agent is the monitoring Agent component for Datadog
+# Provides: sts-agent
+# Short-Description: Start and stop sts-agent
+# Description: sts-agent is the monitoring Agent component for StackState
 # Required-Start: $remote_fs
 # Required-Stop: $remote_fs
 # Default-Start: 2 3 4 5
@@ -13,21 +13,21 @@
 . /lib/lsb/init-functions
 PATH=$PATH:/sbin # add the location of start-stop-daemon on Debian
 
-AGENTPATH="/opt/datadog-agent/agent/agent.py"
-AGENTCONF="/etc/dd-agent/datadog.conf"
-DOGSTATSDPATH="/opt/datadog-agent/agent/dogstatsd.py"
-KILL_PATH="/opt/datadog-agent/embedded/bin/kill"
-AGENTUSER="dd-agent"
-FORWARDERPATH="/opt/datadog-agent/agent/ddagent.py"
-NAME="datadog-agent"
-DESC="Datadog Agent"
-SUPERVISOR_PIDFILE="/opt/datadog-agent/run/datadog-supervisord.pid"
-SUPERVISOR_FILE="/etc/dd-agent/supervisor.conf"
-SUPERVISOR_SOCK="/opt/datadog-agent/run/datadog-supervisor.sock"
-SUPERVISORCTL_PATH="/opt/datadog-agent/bin/supervisorctl"
-SUPERVISORD_PATH="/opt/datadog-agent/bin/supervisord"
-COLLECTOR_PIDFILE="/opt/datadog-agent/run/dd-agent.pid"
-SYSTEM_PATH=/opt/datadog-agent/embedded/bin:/opt/datadog-agent/bin:$PATH
+AGENTPATH="/opt/stackstate-agent/agent/agent.py"
+AGENTCONF="/etc/sts-agent/stackstate-conf"
+DOGSTATSDPATH="/opt/stackstate-agent/agent/dogstatsd.py"
+KILL_PATH="/opt/stackstate-agent/embedded/bin/kill"
+AGENTUSER="sts-agent"
+FORWARDERPATH="/opt/stackstate-agent/agent/ddagent.py"
+NAME="stackstate-agent"
+DESC="StackState Agent"
+SUPERVISOR_PIDFILE="/opt/stackstate-agent/run/stackstate-supervisord.pid"
+SUPERVISOR_FILE="/etc/sts-agent/supervisor.conf"
+SUPERVISOR_SOCK="/opt/stackstate-agent/run/stackstate-supervisor.sock"
+SUPERVISORCTL_PATH="/opt/stackstate-agent/bin/supervisorctl"
+SUPERVISORD_PATH="/opt/stackstate-agent/bin/supervisord"
+COLLECTOR_PIDFILE="/opt/stackstate-agent/run/sts-agent.pid"
+SYSTEM_PATH=/opt/stackstate-agent/embedded/bin:/opt/stackstate-agent/bin:$PATH
 DD_OPT_PROC_REGEX="dogstatsd|jmxfetch|go-metro"
 
 if [ ! -x $AGENTPATH ]; then
@@ -127,7 +127,7 @@ case "$1" in
 
         su $AGENTUSER -c "$AGENTPATH configcheck" > /dev/null 2>&1
         if [ $? -ne 0 ]; then
-            log_daemon_msg "Invalid check configuration. Please run sudo /etc/init.d/datadog-agent configtest for more details."
+            log_daemon_msg "Invalid check configuration. Please run sudo /etc/init.d/stackstate-agent configtest for more details."
             log_daemon_msg "Resuming starting process."
         fi
 
@@ -188,7 +188,7 @@ case "$1" in
             NC='\033[0m' # No Color
             echo "${RED}Warning: Known bug in Linux Kernel 3.18+ causes 'status' to fail.${NC}"
             echo "Calling 'info', instead..."
-            service datadog-agent info
+            service stackstate-agent info
             if [ $? -ne 0 ]; then
                 exit 1
             fi

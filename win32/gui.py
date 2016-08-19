@@ -206,7 +206,7 @@ class EditorFile(object):
 
 class DatadogConf(EditorFile):
     def __init__(self, config_path):
-        EditorFile.__init__(self, config_path, "Agent settings file: datadog.conf")
+        EditorFile.__init__(self, config_path, "Agent settings file: stackstate.conf")
 
     @property
     def api_key(self):
