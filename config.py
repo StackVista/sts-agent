@@ -81,7 +81,7 @@ def get_parsed_args():
     parser = OptionParser()
     parser.add_option('-A', '--autorestart', action='store_true', default=False,
                       dest='autorestart')
-    parser.add_option('-d', '--sts_url', action='store', default=None,
+    parser.add_option('-d', '--dd_url', action='store', default=None,
                       dest='dd_url')
     parser.add_option('-u', '--use-local-forwarder', action='store_true',
                       default=False, dest='use_forwarder')
@@ -379,21 +379,21 @@ def get_config(parse_args=True, cfg_path=None, options=None):
             log.warning(u"No API key was found. Aborting.")
             sys.exit(2)
 
-        if not config.has_option('Main', 'sts_url'):
-            log.warning(u"No sts_url was found. Aborting.")
+        if not config.has_option('Main', 'dd_url'):
+            log.warning(u"No dd_url was found. Aborting.")
             sys.exit(2)
 
         # Endpoints
-        dd_url = clean_dd_url(config.get('Main', 'sts_url'))
+        dd_url = clean_dd_url(config.get('Main', 'dd_url'))
         api_key = config.get('Main', 'api_key').strip()
 
         # For collector and dogstatsd
         agentConfig['api_key'] = api_key
-        agentConfig['sts_url'] = dd_url
+        agentConfig['dd_url'] = dd_url
 
         # multiple endpoints
-        if config.has_option('Main', 'other_sts_urls'):
-            other_dd_urls = map(clean_dd_url, config.get('Main', 'other_sts_urls').split(','))
+        if config.has_option('Main', 'other_dd_urls'):
+            other_dd_urls = map(clean_dd_url, config.get('Main', 'other_dd_urls').split(','))
         else:
             other_dd_urls = []
         if config.has_option('Main', 'other_api_keys'):
