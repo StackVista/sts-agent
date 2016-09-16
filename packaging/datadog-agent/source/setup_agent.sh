@@ -394,15 +394,15 @@ $DOWNLOADER "$DD_HOME/requirements-opt.txt" "$BASE_GITHUB_URL/requirements-opt.t
 "$DD_HOME/agent/utils/pip-allow-failures.sh" "$DD_HOME/requirements-opt.txt"
 print_done
 
-print_console "* Setting up a datadog.conf generic configuration file"
+print_console "* Setting up a stackstate.conf generic configuration file"
 if [ -z "$SED_CMD" ]; then
-    print_console "    No sed command. Proceeding without installing datadog.conf
-    Please make sure that the agent's log files are explicitly configured in datadog.conf"
+    print_console "    No sed command. Proceeding without installing stackstate.conf
+    Please make sure that the agent's log files are explicitly configured in stackstate.conf"
 else
-    dd_conf_file="$DD_HOME/agent/datadog.conf"
+    dd_conf_file="$DD_HOME/agent/stackstate.conf"
 
     if [ "$DD_API_KEY" = "no_key" ]; then
-        print_console "    Got no API KEY through $DD_API_KEY. Proceeding without installing datadog.conf"
+        print_console "    Got no API KEY through $DD_API_KEY. Proceeding without installing stackstate.conf"
     else
         # Install API key
         $SED_CMD -e "s/api_key:.*/api_key: $DD_API_KEY/" "$dd_conf_file.example" > "$dd_conf_file"

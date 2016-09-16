@@ -130,7 +130,7 @@ namespace :ci do
 
     task :before_script do |t|
       section('BEFORE_SCRIPT')
-      sh %(cp #{ENV['TRAVIS_BUILD_DIR']}/ci/resources/datadog.conf.example\
+      sh %(cp #{ENV['TRAVIS_BUILD_DIR']}/ci/resources/stackstate.conf.example\
            #{ENV['TRAVIS_BUILD_DIR']}/stackstate.conf)
       t.reenable
     end
