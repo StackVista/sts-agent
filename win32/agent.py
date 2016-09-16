@@ -28,7 +28,7 @@ from config import (
     set_win32_cert_path,
     set_win32_requests_ca_bundle_path,
 )
-from ddagent import Application
+from stsagent import Application
 import dogstatsd
 from emitter import http_emitter
 from jmxfetch import JMXFetch

@@ -12,7 +12,7 @@ from tornado.web import Application
 
 # project
 from config import get_version
-from ddagent import (
+from stsagent import (
     APIMetricTransaction,
     APIServiceCheckTransaction,
     MAX_QUEUE_SIZE,
