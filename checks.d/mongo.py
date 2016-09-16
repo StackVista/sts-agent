@@ -655,12 +655,20 @@ class MongoDb(AgentCheck):
                 message=message)
             raise Exception(message)
 
-        self.service_check(
-            self.SERVICE_CHECK_NAME,
-            AgentCheck.OK,
-            tags=service_check_tags)
+        try:
+            status = db.command('serverStatus', tcmalloc=collect_tcmalloc_metrics)
+        except Exception:
+            self.service_check(
+                self.SERVICE_CHECK_NAME,
+                AgentCheck.CRITICAL,
+                tags=service_check_tags)
+            raise
+        else:
+            self.service_check(
+                self.SERVICE_CHECK_NAME,
+                AgentCheck.OK,
+                tags=service_check_tags)
 
-        status = db.command('serverStatus', tcmalloc=collect_tcmalloc_metrics)
         if status['ok'] == 0:
             raise Exception(status['errmsg'].__str__())
 
@@ -905,20 +913,22 @@ class MongoDb(AgentCheck):
                 # loop through the metrics
                 for m in self.collection_metrics_names:
                     coll_tags = tags + ["db:%s" % db_name, "collection:%s" % coll_name]
-                    value = stats[m]
+                    value = stats.get(m, None)
+                    if not value:
+                        continue
 
                     # if it's the index sizes, then it's a dict.
                     if m == 'indexSizes':
+                        submit_method, metric_name_alias = \
+                            self._resolve_metric('collection.%s' % m, self.COLLECTION_METRICS)
                         # loop through the indexes
                         for (idx, val) in value.iteritems():
                             # we tag the index
                             idx_tags = coll_tags + ["index:%s" % idx]
-                            submit_method, metric_name_alias = \
-                                self._resolve_metric('collection.%s' % m, metrics_to_collect)
                             submit_method(self, metric_name_alias, val, tags=idx_tags)
                     else:
                         submit_method, metric_name_alias = \
-                            self._resolve_metric('collection.%s' % '.'.join(m), metrics_to_collect)
+                            self._resolve_metric('collection.%s' % m, self.COLLECTION_METRICS)
                         submit_method(self, metric_name_alias, value, tags=coll_tags)
         except Exception as e:
             self.log.warning(u"Failed to record `collection` metrics.")
