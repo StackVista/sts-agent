@@ -29,11 +29,7 @@ function on_error() {
     printf "\033[31m$ERROR_MESSAGE
 It looks like you hit an issue when trying to install the Agent.
 
-Troubleshooting and basic usage information for the Agent are available at:
-
-    http://docs.datadoghq.com/guides/basic_agent_usage/
-
-If you're still having problems, please send an email to support@datadoghq.com
+Please send an email to info@stackstate.com
 with the contents of ddagent-install.log and we'll do our very best to help you
 solve your problem.\n\033[0m\n"
 }
@@ -49,17 +45,17 @@ if [ ! $apikey ]; then
 fi
 
 # Install the agent
-printf "\033[34m\n* Downloading datadog-agent\n\033[0m"
+printf "\033[34m\n* Downloading stackstate-agent\n\033[0m"
 rm -f $dmg_file
 curl $dmg_url > $dmg_file
-printf "\033[34m\n* Installing datadog-agent, you might be asked for your sudo password...\n\033[0m"
-$sudo_cmd hdiutil detach "/Volumes/datadog_agent" >/dev/null 2>&1 || true
+printf "\033[34m\n* Installing stackstate-agent, you might be asked for your sudo password...\n\033[0m"
+$sudo_cmd hdiutil detach "/Volumes/stackstate_agent" >/dev/null 2>&1 || true
 printf "\033[34m\n    - Mounting the DMG installer...\n\033[0m"
-$sudo_cmd hdiutil attach "$dmg_file" -mountpoint "/Volumes/datadog_agent" >/dev/null
+$sudo_cmd hdiutil attach "$dmg_file" -mountpoint "/Volumes/stackstate_agent" >/dev/null
 printf "\033[34m\n    - Unpacking and copying files (this usually takes about a minute) ...\n\033[0m"
-cd / && $sudo_cmd /usr/sbin/installer -pkg `find "/Volumes/datadog_agent" -name \*.pkg 2>/dev/null` -target / >/dev/null
+cd / && $sudo_cmd /usr/sbin/installer -pkg `find "/Volumes/stackstate_agent" -name \*.pkg 2>/dev/null` -target / >/dev/null
 printf "\033[34m\n    - Unmounting the DMG installer ...\n\033[0m"
-$sudo_cmd hdiutil detach "/Volumes/datadog_agent" >/dev/null
+$sudo_cmd hdiutil detach "/Volumes/stackstate_agent" >/dev/null
 
 # Set the configuration
 if egrep 'api_key:( APIKEY)?$' "/opt/stackstate-agent/etc/stackstate.conf" > /dev/null 2>&1; then
@@ -71,21 +67,18 @@ if egrep 'api_key:( APIKEY)?$' "/opt/stackstate-agent/etc/stackstate.conf" > /de
     $sudo_cmd chown $real_user:admin "/opt/stackstate-agent/etc/stackstate.conf"
     $sudo_cmd chmod 640 /opt/stackstate-agent/etc/stackstate.conf
     printf "\033[34m* Restarting the Agent...\n\033[0m\n"
-    $cmd_real_user "/opt/stackstate-agent/bin/datadog-agent" restart >/dev/null
+    $cmd_real_user "/opt/stackstate-agent/bin/stackstate-agent" restart >/dev/null
 else
     printf "\033[34m\n* Keeping old stackstate.conf configuration file\n\033[0m\n"
 fi
 
 # Starting the app
-$cmd_real_user open -a 'Datadog Agent.app'
+$cmd_real_user open -a 'Stackstate Agent.app'
 
 # Wait for metrics to be submitted by the forwarder
 printf "\033[32m
 Your Agent has started up for the first time. We're currently verifying that
-data is being submitted. You should see your Agent show up in Datadog shortly
-at:
-
-    https://app.datadoghq.com/infrastructure\033[0m
+data is being submitted. You should see your Agent show up in Stackstate shortly.
 
 Waiting for metrics..."
 
@@ -109,10 +102,10 @@ done
 printf "\033[32m
 
 Your Agent is running and functioning properly. It will continue to run in the
-background and submit metrics to Datadog.
+background and submit metrics to Stackstate.
 
-If you ever want to stop the Agent, please use the Datadog Agent App or
-datadog-agent command.
+If you ever want to stop the Agent, please use the Stackstate Agent App or
+stackstate-agent command.
 
 It will start automatically at login, if you want to enable it at startup,
 run these commands: (the agent will still run as your user)
