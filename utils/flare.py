@@ -138,13 +138,13 @@ class Flare(object):
     def _collect(self):
         self._add_logs_tar()
         self._add_conf_tar()
-        log.info("  * datadog-agent configcheck output")
+        log.info("  * stackstate-agent configcheck output")
         self._add_command_output_tar('configcheck.log', configcheck)
         log.info("  * service discovery configcheck output")
         self._add_command_output_tar('sd_configcheck.log', sd_configcheck, agentConfig=self._config)
-        log.info("  * datadog-agent status output")
+        log.info("  * stackstate-agent status output")
         self._add_command_output_tar('status.log', self._supervisor_status)
-        log.info("  * datadog-agent info output")
+        log.info("  * stackstate-agent info output")
         self._add_command_output_tar('info.log', self._info_all)
         self._add_jmxinfo_tar()
         log.info("  * pip freeze")
@@ -190,7 +190,7 @@ class Flare(object):
         if not email:
             email = self._ask_for_email()
 
-        log.info("Uploading {0} to Datadog Support".format(self.tar_path))
+        log.info("Uploading {0} to StackState Support".format(self.tar_path))
         url = self._url
         if self._case_id:
             url = '{0}/{1}'.format(self._url, str(self._case_id))
@@ -320,7 +320,7 @@ class Flare(object):
 
             # beans lists
             for command in ['list_matching_attributes', 'list_everything']:
-                log.info("  * datadog-agent jmx {0} output".format(command))
+                log.info("  * stackstate-agent jmx {0} output".format(command))
                 self._add_command_output_tar(
                     os.path.join('jmxinfo', '{0}.log'.format(command)),
                     partial(self._jmx_command_call, command)

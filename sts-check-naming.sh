@@ -9,3 +9,6 @@ grep -r datadog_agent . | grep -v sts-check-naming | grep -v git/logs
 grep -r opt/datadog . | grep -v sts-check-naming
 grep -re "echo.*DataDog" . | grep -v sts-check-naming
 grep -r "from ddagent import" . | grep -v sts-check-naming
+grep -rie "log\.info.*DataDog" . | grep -v sts-check-naming
+grep -rie "log\.warn.*DataDog" . | grep -v sts-check-naming
+grep -rie "log\.error.*DataDog" . | grep -v sts-check-naming
