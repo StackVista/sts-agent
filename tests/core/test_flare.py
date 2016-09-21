@@ -83,7 +83,7 @@ class FlareTest(unittest.TestCase):
         self.assertEqual(f._case_id, 1337)
         self.assertEqual(f._api_key, conf['api_key'])
         self.assertEqual(f._url, 'https://6-6-6-flare.agent.datadoghq.com/support/flare')
-        self.assertEqual(f.tar_path, os.path.join(get_mocked_temp(), "datadog-agent-1.tar.bz2"))
+        self.assertEqual(f.tar_path, os.path.join(get_mocked_temp(), "stackstate-agent-1.tar.bz2"))
 
     @mock.patch('utils.flare.requests.post', return_value=FakeResponse())
     @mock.patch('config.get_version', side_effect=get_mocked_version)
@@ -106,7 +106,7 @@ class FlareTest(unittest.TestCase):
         )
         self.assertEqual(
             kwargs['files']['flare_file'].name,
-            os.path.join(get_mocked_temp(), "datadog-agent-1.tar.bz2")
+            os.path.join(get_mocked_temp(), "stackstate-agent-1.tar.bz2")
         )
         self.assertEqual(kwargs['data']['case_id'], 1337)
         self.assertEqual(kwargs['data']['email'], 'test@example.com')
@@ -133,7 +133,7 @@ class FlareTest(unittest.TestCase):
         )
         self.assertEqual(
             kwargs['files']['flare_file'].name,
-            os.path.join(get_mocked_temp(), "datadog-agent-1.tar.bz2")
+            os.path.join(get_mocked_temp(), "stackstate-agent-1.tar.bz2")
         )
         self.assertEqual(kwargs['data']['case_id'], None)
         self.assertEqual(kwargs['data']['email'], 'test@example.com')
@@ -160,7 +160,7 @@ class FlareTest(unittest.TestCase):
         )
         self.assertEqual(
             kwargs['files']['flare_file'].name,
-            os.path.join(get_mocked_temp(), "datadog-agent-1.tar.bz2")
+            os.path.join(get_mocked_temp(), "stackstate-agent-1.tar.bz2")
         )
         self.assertEqual(kwargs['data']['case_id'], 1337)
         self.assertEqual(kwargs['data']['email'], 'test@example.com')
