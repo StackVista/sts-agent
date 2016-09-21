@@ -101,14 +101,7 @@ def get_version():
 # Return url endpoint, here because needs access to version number
 def get_url_endpoint(default_url, endpoint_type='app'):
     parsed_url = urlparse(default_url)
-
-    subdomain = parsed_url.netloc.split(".")[0]
-
-    return default_url.replace(subdomain,
-        "{0}-{1}.agent".format(
-            get_version().replace(".", "-"),
-            endpoint_type))
-
+    return default_url
 
 def skip_leading_wsp(f):
     "Works on a file, returns a file-like object"
