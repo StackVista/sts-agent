@@ -138,12 +138,12 @@ def _windows_commondata_path():
 
 def _windows_config_path():
     common_data = _windows_commondata_path()
-    return _config_path(os.path.join(common_data, 'Datadog'))
+    return _config_path(os.path.join(common_data, 'StackState'))
 
 
 def _windows_confd_path():
     common_data = _windows_commondata_path()
-    return _confd_path(os.path.join(common_data, 'Datadog'))
+    return _confd_path(os.path.join(common_data, 'StackState'))
 
 
 def _windows_checksd_path():

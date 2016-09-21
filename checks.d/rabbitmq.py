@@ -249,7 +249,7 @@ class RabbitMQ(AgentCheck):
         if len(data) > max_detailed:
             # Display a warning in the info page
             self.warning(
-                "Too many queues to fetch. You must choose the %s you are interested in by editing the rabbitmq.yaml configuration file or get in touch with Datadog Support" % object_type)
+                "Too many queues to fetch. You must choose the %s you are interested in by editing the rabbitmq.yaml configuration file or get in touch with StackState Support" % object_type)
 
         for data_line in data[:max_detailed]:
             # We truncate the list of nodes/queues if it's above the limit
@@ -291,7 +291,7 @@ class RabbitMQ(AgentCheck):
         title = "RabbitMQ integration is approaching the limit on the number of %s that can be collected from on %s" % (
             object_type, self.hostname)
         msg = """%s %s are present. The limit is %s.
-        Please get in touch with Datadog support to increase the limit.""" % (size, object_type, max_detailed)
+        Please get in touch with StackState support to increase the limit.""" % (size, object_type, max_detailed)
 
         event = {
             "timestamp": int(time.time()),

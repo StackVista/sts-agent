@@ -50,7 +50,7 @@ check_status() {
 
     # If the socket exists, we can use supervisorctl
     if [ -e $SUPERVISOR_SOCK ]; then
-        # If we're using supervisor, check the number of datadog processes
+        # If we're using supervisor, check the number of stackstate processes
         # supervisor is currently controlling, and make sure that it's the
         # same as the number of programs specified in the supervisor config
         # file:

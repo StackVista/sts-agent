@@ -98,7 +98,7 @@ class VSphereEvent(object):
 
         return False
 
-    def get_datadog_payload(self):
+    def get_stackstate_payload(self):
         if self._is_filtered():
             return None
 
@@ -299,7 +299,7 @@ def atomic_method(method):
 
 
 class VSphereCheck(AgentCheck):
-    """ Get performance metrics from a vCenter server and upload them to Datadog
+    """ Get performance metrics from a vCenter server and upload them to StackState
     References:
         http://pubs.vmware.com/vsphere-51/index.jsp#com.vmware.wssdk.apiref.doc/vim.PerformanceManager.html
 
@@ -405,7 +405,7 @@ class VSphereCheck(AgentCheck):
             for event in new_events:
                 normalized_event = VSphereEvent(event, self.event_config[i_key])
                 # Can return None if the event if filtered out
-                event_payload = normalized_event.get_datadog_payload()
+                event_payload = normalized_event.get_stackstate_payload()
                 if event_payload is not None:
                     self.event(event_payload)
                 last_time = event.createdTime + timedelta(seconds=1)
