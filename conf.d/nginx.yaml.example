@@ -5,10 +5,7 @@ instances:
   # supply a list of tags.  This plugin requires nginx to be compiled with
   # the nginx stub status module option, and activated with the correct
   # configuration stanza.  On debian/ubuntu, this is included in the
-  # `nginx-extras` package.  For more details, see:
-  #
-  #   http://docs.datadoghq.com/integrations/nginx/
-  #
+  # `nginx-extras` package.
 
   - nginx_status_url: http://localhost/nginx_status/
   #   tags:
