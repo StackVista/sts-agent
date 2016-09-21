@@ -23,15 +23,15 @@ class TestFunctions(TestCase):
         self.assertEqual(mapto_v6('ff00::'), 'ff00::')
 
     def test_get_socket_address(self):
-        with mock.patch('dogstatsd.socket.getaddrinfo') as getaddrinfo:
+        with mock.patch('stsstatsd.socket.getaddrinfo') as getaddrinfo:
             getaddrinfo.return_value = [(2, 2, 17, '', ('192.168.1.1', 80))]
             self.assertEqual(get_socket_address('example.com', 80), ('::ffff:192.168.1.1', 80, 0, 0))
             getaddrinfo.return_value = [(30, 2, 17, '', ('::1', 80, 0, 0))]
             self.assertEqual(get_socket_address('example.com', 80), ('::1', 80, 0, 0))
         self.assertIsNone(get_socket_address('foo', 80))
 
-    @mock.patch('dogstatsd.get_config')
-    @mock.patch('dogstatsd.Server')
+    @mock.patch('stsstatsd.get_config')
+    @mock.patch('stsstatsd.Server')
     def test_init(self, s, gc):
         gc.return_value = defaultdict(str)
         gc.return_value['non_local_traffic'] = True
@@ -46,7 +46,7 @@ class TestFunctions(TestCase):
 
 
 class TestServer(TestCase):
-    @mock.patch('dogstatsd.get_socket_address')
+    @mock.patch('stsstatsd.get_socket_address')
     def test_init(self, nh):
         nh.return_value = 'foo'
 
@@ -56,7 +56,7 @@ class TestServer(TestCase):
         self.assertEqual(s.sockaddr, 'foo')
         self.assertIsNone(s.socket)
 
-    @mock.patch('dogstatsd.select')
+    @mock.patch('stsstatsd.select')
     def test_start(self, select):
         select.select.side_effect = [KeyboardInterrupt, SystemExit]
         s1 = Server(mock.MagicMock(), '::1', '1234')

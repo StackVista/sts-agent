@@ -121,10 +121,10 @@ class TestUnitMetricsBucketAggregator(unittest.TestCase):
         nt.assert_equal(third['host'], 'myhost')
 
     def test_tags_gh442(self):
-        import dogstatsd
+        import stsstatsd
         from aggregator import api_formatter
 
-        serialized = dogstatsd.serialize_metrics([api_formatter("foo", 12, 1, ('tag',), 'host')], "test-host")
+        serialized = ststatsd.serialize_metrics([api_formatter("foo", 12, 1, ('tag',), 'host')], "test-host")
         self.assertTrue('"tags": ["tag"]' in serialized[0], serialized)
 
     def test_counter(self):
@@ -843,14 +843,14 @@ class TestUnitMetricsBucketAggregator(unittest.TestCase):
         stats = MetricsBucketAggregator('myhost', interval=self.interval)
         for i in xrange(10):
             stats.submit_packets('metric:10|c')
-        stats.send_packet_count('datadog.dogstatsd.packet.count')
+        stats.send_packet_count('stackstate.stsstatsd.packet.count')
 
         self.sleep_for_interval_length()
         metrics = self.sort_metrics(stats.flush())
         nt.assert_equals(2, len(metrics))
         first, second = metrics
 
-        nt.assert_equal(first['metric'], 'datadog.dogstatsd.packet.count')
+        nt.assert_equal(first['metric'], 'stackstate.stsstatsd.packet.count')
         nt.assert_equal(first['points'][0][1], 10)
 
     def test_histogram_counter(self):
