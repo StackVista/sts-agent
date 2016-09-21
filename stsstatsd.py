@@ -1,9 +1,5 @@
 #!/opt/stackstate-agent/embedded/bin/python
 
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
-
 """
 A Python Statsd implementation with some datadog special sauce.
 """

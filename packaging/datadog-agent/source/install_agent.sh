@@ -1,9 +1,4 @@
 #!/bin/bash
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
-# Datadog Agent installation script: install and set up the Agent on supported Linux distributions
-# using the package manager and Datadog repositories.
 
 set -e
 logfile="ddagent-install.log"

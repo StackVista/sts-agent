@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 '''
 As of zookeeper 3.4.0, the `mntr` admin command is provided for easy parsing of zookeeper stats.

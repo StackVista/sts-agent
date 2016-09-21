@@ -1,9 +1,3 @@
-# (C) Datadog, Inc. 2013-2016
-# (C) Brett Langdon <brett@blangdon.com> 2013
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
-
-
 # stdlib
 from fnmatch import fnmatch
 from os import stat
