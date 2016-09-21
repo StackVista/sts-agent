@@ -213,7 +213,6 @@ class DockerDaemon(AgentCheck):
         """Run the Docker check for one instance."""
         if not self.init_success:
             # Initialization can fail if cgroups are not ready. So we retry if needed
-            # https://github.com/DataDog/dd-agent/issues/1896
             self.init()
             if not self.init_success:
                 # Initialization failed, will try later

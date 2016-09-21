@@ -81,7 +81,7 @@ class GraphiteConnection(object):
 
     def _processMetric(self, metric, datapoint):
         """Parse the metric name to fetch (host, metric, device) and
-            send the datapoint to datadog"""
+            send the datapoint to stackstate"""
 
         log.debug("New metric: %s, values: %s" % (metric, datapoint))
         (metric, host, device) = self._parseMetric(metric)

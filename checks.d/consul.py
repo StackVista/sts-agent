@@ -105,7 +105,7 @@ class ConsulCheck(AgentCheck):
             # A few things could be happening here.
             #   1. Consul Agent is Down
             #   2. The cluster is in the midst of a leader election
-            #   3. The Datadog agent is not able to reach the Consul instance (network partition et al.)
+            #   3. The StackState agent is not able to reach the Consul instance (network partition et al.)
             self.log.warn('Consul Leader information is not available!')
             return
 

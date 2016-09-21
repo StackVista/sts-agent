@@ -25,7 +25,7 @@ class Ganglia(Check):
         if not self.deprecation_shown:
             # Just display the deprecation messsage once
             self.logger.warning("The Ganglia integration is deprecated and will "
-                "be removed in a future version of the Datadog Agent")
+                "be removed in a future version of the StackState Agent")
             self.deprecation_shown = True
 
         try:

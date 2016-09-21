@@ -51,10 +51,10 @@ log = logging.getLogger(__name__)
 class Flare(object):
     """
     Compress all important logs and configuration files for debug,
-    and then send them to Datadog (which transfers them to Support)
+    and then send them to StackState (which transfers them to Support)
     """
 
-    DATADOG_SUPPORT_URL = '/support/flare'
+    STACKSTATE_SUPPORT_URL = '/support/flare'
 
     CredentialPattern = namedtuple('CredentialPattern', ['pattern', 'replacement', 'label'])
     CHECK_CREDENTIALS = [
@@ -88,7 +88,7 @@ class Flare(object):
     ]
     COMMENT_REGEX = re.compile('^ *#.*')
 
-    COMPRESSED_FILE = 'datadog-agent-{0}.tar.bz2'
+    COMPRESSED_FILE = 'stackstate-agent-{0}.tar.bz2'
     # We limit to 10MB arbitrarily
     MAX_UPLOAD_SIZE = 10485000
     TIMEOUT = 60
@@ -103,10 +103,10 @@ class Flare(object):
         self._api_key = self._config.get('api_key')
         self._url = "{0}{1}".format(
             get_url_endpoint(self._config.get('dd_url'), endpoint_type='flare'),
-            self.DATADOG_SUPPORT_URL
+            self.STACKSTATE_SUPPORT_URL
         )
         self._hostname = get_hostname(self._config)
-        self._prefix = "datadog-{0}".format(self._hostname)
+        self._prefix = "stackstate-{0}".format(self._hostname)
 
     # On Unix system, check that the user is root (to call supervisorctl & status)
     # Otherwise emit a warning, and ask for confirmation
@@ -175,7 +175,7 @@ class Flare(object):
         if self._config.get('skip_ssl_validation', False):
             options['verify'] = False
         elif Platform.is_windows():
-            options['verify'] = get_ssl_certificate('windows', 'datadog-cert.pem')
+            options['verify'] = get_ssl_certificate('windows', 'stackstate-cert.pem')
 
     # Upload the tar file
     def upload(self, email=None):
@@ -562,7 +562,7 @@ class Flare(object):
 
     # Function to ask for confirmation before upload
     def _ask_for_confirmation(self):
-        print '{0} is going to be uploaded to Datadog.'.format(self.tar_path)
+        print '{0} is going to be uploaded to StackState.'.format(self.tar_path)
         choice = raw_input('Do you want to continue [Y/n]? ')
         if choice.strip().lower() not in ['yes', 'y', '']:
             print 'Aborting (you can still use {0})'.format(self.tar_path)

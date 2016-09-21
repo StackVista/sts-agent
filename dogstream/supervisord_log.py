@@ -1,10 +1,10 @@
 
 """
-Custom parser for supervisord log suitable for use by Datadog 'dogstreams'
+Custom parser for supervisord log suitable for use by StackState 'dogstreams'
 
 Add to stackstate.conf as follows:
 
-dogstreams: [path_to_supervisord.log]:datadog.streams.supervisord:parse_supervisord
+dogstreams: [path_to_supervisord.log]:stackstate.streams.supervisord:parse_supervisord
 
 """
 # stdlib

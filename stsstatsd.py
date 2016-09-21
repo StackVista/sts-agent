@@ -1,7 +1,7 @@
 #!/opt/stackstate-agent/embedded/bin/python
 
 """
-A Python Statsd implementation with some datadog special sauce.
+A Python Statsd implementation with some stackstate special sauce.
 """
 
 # set up logging before importing any other components

@@ -26,7 +26,7 @@ class NTPUtil():
         except Exception:
             settings = {}
 
-        self.host = settings.get('host') or "{0}.datadog.pool.ntp.org".format(random.randint(0, 3))
+        self.host = settings.get('host') or "{0}.stackstate.pool.ntp.org".format(random.randint(0, 3))
         self.version = int(settings.get("version") or NTPUtil.DEFAULT_VERSION)
         self.port = settings.get('port') or NTPUtil.DEFAULT_PORT
         self.timeout = float(settings.get('timeout') or NTPUtil.DEFAULT_TIMEOUT)

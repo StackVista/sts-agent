@@ -85,7 +85,7 @@ def get_os():
 def headers(agentConfig, **kwargs):
     # Build the request headers
     res = {
-        'User-Agent': 'Datadog Agent/%s' % agentConfig['version'],
+        'User-Agent': 'StackState Agent/%s' % agentConfig['version'],
         'Content-Type': 'application/x-www-form-urlencoded',
         'Accept': 'text/html, */*',
     }

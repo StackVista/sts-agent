@@ -72,7 +72,7 @@ def http_emitter(message, log, agentConfig, endpoint):
 
 def post_headers(agentConfig, payload):
     return {
-        'User-Agent': 'Datadog Agent/%s' % agentConfig['version'],
+        'User-Agent': 'StackState Agent/%s' % agentConfig['version'],
         'Content-Type': 'application/json',
         'Content-Encoding': 'deflate',
         'Accept': 'text/html, */*',
