@@ -124,7 +124,7 @@ class TestUnitMetricsBucketAggregator(unittest.TestCase):
         import stsstatsd
         from aggregator import api_formatter
 
-        serialized = ststatsd.serialize_metrics([api_formatter("foo", 12, 1, ('tag',), 'host')], "test-host")
+        serialized = stsstatsd.serialize_metrics([api_formatter("foo", 12, 1, ('tag',), 'host')], "test-host")
         self.assertTrue('"tags": ["tag"]' in serialized[0], serialized)
 
     def test_counter(self):
