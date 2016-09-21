@@ -26,10 +26,10 @@ def configcheck():
         else:
             print "%s is valid" % basename
     if all_valid:
-        print "All yaml files passed. You can now run the Datadog agent."
+        print "All yaml files passed. You can now run the StackState agent."
         return 0
     else:
-        print("Fix the invalid yaml files above in order to start the Datadog agent. "
+        print("Fix the invalid yaml files above in order to start the StackState agent. "
               "A useful external tool for yaml parsing can be found at "
               "http://yaml-online-parser.appspot.com/")
         return 1

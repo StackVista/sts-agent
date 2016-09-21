@@ -58,13 +58,13 @@ check_status() {
         supervisor_processes=$($SUPERVISORCTL_PATH -c $SUPERVISOR_FILE status)
 
         # Number of RUNNING supervisord programs (ignoring dogstatsd, jmxfetch and go-metro)
-        datadog_supervisor_processes=$(echo "$supervisor_processes" |
+        stackstate_supervisor_processes=$(echo "$supervisor_processes" |
                                        grep -Ev $DD_OPT_PROC_REGEX |
                                        grep $NAME |
                                        grep -c RUNNING)
 
         # Number of non-failed OPTIONAL supervisord programs (dogstatsd, jmxfetch and go-metro)
-        datadog_supervisor_opt_processes=$(echo "$supervisor_processes" |
+        stackstate_supervisor_opt_processes=$(echo "$supervisor_processes" |
                                        grep -E $DD_OPT_PROC_REGEX |
                                        grep $NAME |
                                        grep -cv FATAL)
@@ -77,11 +77,11 @@ check_status() {
         supervisor_config_opt_programs=$(grep -E $DD_OPT_PROC_REGEX $SUPERVISOR_FILE |
                                      grep -c '\[program:')
 
-        if [ "$datadog_supervisor_processes" -ne "$supervisor_config_programs" ]; then
+        if [ "$stackstate_supervisor_processes" -ne "$supervisor_config_programs" ]; then
             ESSENTIAL=1
         fi
 
-        if [ "$datadog_supervisor_opt_processes" -ne "$supervisor_config_opt_programs" ]  ; then
+        if [ "$stackstate_supervisor_opt_processes" -ne "$supervisor_config_opt_programs" ]  ; then
             OPTIONAL=1
         fi
 

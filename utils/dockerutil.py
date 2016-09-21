@@ -14,7 +14,7 @@ from docker.errors import NullResource
 from utils.singleton import Singleton
 from utils.service_discovery.config_stores import get_config_store
 
-DATADOG_ID = 'com.datadoghq.sd.check.id'
+STACKSTATE_ID = 'com.stackstate.sd.check.id'
 
 
 class MountException(Exception):
@@ -130,8 +130,8 @@ class DockerUtil:
 
     def _get_checks_from_inspect(self, inspect):
         """Get the list of checks applied to a container from the identifier_to_checks cache in the config store.
-        Use the DATADOG_ID label or the image."""
-        identifier = inspect.get('Config', {}).get('Labels', {}).get(DATADOG_ID) or \
+        Use the STACKSTATE_ID label or the image."""
+        identifier = inspect.get('Config', {}).get('Labels', {}).get(STACKSTATE_ID) or \
             inspect.get('Config', {}).get('Image')
 
         return self.config_store.identifier_to_checks[identifier]

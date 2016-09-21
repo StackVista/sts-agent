@@ -148,7 +148,7 @@ class GoExpvar(AgentCheck):
 
                 if count >= max_metrics:
                     self.warning("Reporting more metrics than the allowed maximum. "
-                                 "Please contact support@datadoghq.com for more information.")
+                                 "Please contact support@stackstate.com for more information.")
                     return
 
                 SUPPORTED_TYPES[metric_type](self, metric_name, value, metric_tags)

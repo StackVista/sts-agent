@@ -1,7 +1,6 @@
 # stdlib
 from collections import namedtuple
 
-# Datadog
 from checks import AgentCheck
 
 # 3p

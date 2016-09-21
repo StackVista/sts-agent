@@ -15,7 +15,6 @@ A lightweight Python WMI module wrapper built on top of `pywin32` and `win32com`
 *\* `Raw` data formatting relies on the avaibility of the corresponding calculator.
 Please refer to `checks.lib.wmi.counter_type` for more information*
 
-Original discussion thread: https://github.com/DataDog/dd-agent/issues/1952
 Credits to @TheCloudlessSky (https://github.com/TheCloudlessSky)
 """
 

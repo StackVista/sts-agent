@@ -86,7 +86,6 @@ class AgentMetrics(AgentCheck):
 
          This creates a metric like `stackstate.agent.collector.{key_1}.{key_2}` where key_1 is a top-level
          key in `stats`, and key_2 is a nested key.
-         E.g. datadog.agent.collector.memory_info.rss
         """
 
         base_metric = 'stackstate.agent.collector.{0}.{1}'

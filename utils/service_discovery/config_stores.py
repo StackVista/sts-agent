@@ -8,7 +8,7 @@ from utils.service_discovery.consul_config_store import ConsulStore
 
 
 SD_CONFIG_BACKENDS = ['etcd', 'consul']  # noqa: used somewhere else
-SD_TEMPLATE_DIR = '/datadog/check_configs'
+SD_TEMPLATE_DIR = '/stackstate/check_configs'
 
 
 def get_config_store(agentConfig):
