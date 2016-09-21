@@ -314,7 +314,7 @@ class DogstatsdProcess(multiprocessing.Process):
         initialize_logging('windows_stsstatsd')
         if self.is_enabled:
             log.debug("Windows Service - Starting StsStatsD server")
-            self.reporter, self.server, _ = dogstatsd.init(use_forwarder=True)
+            self.reporter, self.server, _ = stsstatsd.init(use_forwarder=True)
             self.reporter.start()
             self.server.start()
         else:
