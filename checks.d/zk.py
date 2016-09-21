@@ -172,7 +172,7 @@ class ZookeeperCheck(AgentCheck):
             raise
         except Exception as e:
             self.warning(e)
-            self.increment('zookeeper.datadog_client_exception')
+            self.increment('zookeeper.stackstate_client_exception')
             if report_instance_mode:
                 self.report_instance_mode(hostname, 'unknown', tags)
             raise
@@ -211,7 +211,7 @@ class ZookeeperCheck(AgentCheck):
                 raise
             except Exception as e:
                 self.warning(e)
-                self.increment('zookeeper.datadog_client_exception')
+                self.increment('zookeeper.stackstate_client_exception')
                 if report_instance_mode:
                     self.report_instance_mode(hostname, 'unknown', tags)
                 raise

@@ -88,12 +88,12 @@ class AgentMetrics(AgentCheck):
          ...
          }
 
-         This creates a metric like `datadog.agent.collector.{key_1}.{key_2}` where key_1 is a top-level
+         This creates a metric like `stackstate.agent.collector.{key_1}.{key_2}` where key_1 is a top-level
          key in `stats`, and key_2 is a nested key.
          E.g. datadog.agent.collector.memory_info.rss
         """
 
-        base_metric = 'datadog.agent.collector.{0}.{1}'
+        base_metric = 'stackstate.agent.collector.{0}.{1}'
         # TODO: May have to call self.normalize(metric_name) to get a compliant name
         for k, v in stats.iteritems():
             metric_type = names_to_metric_types[k]
@@ -102,7 +102,7 @@ class AgentMetrics(AgentCheck):
                     full_metric_name = base_metric.format(k, _k)
                     self._send_single_metric(full_metric_name, _v, metric_type)
             else:
-                full_metric_name = 'datadog.agent.collector.{0}'.format(k)
+                full_metric_name = 'stackstate.agent.collector.{0}'.format(k)
                 self._send_single_metric(full_metric_name, v, metric_type)
 
     def set_metric_context(self, payload, context):
@@ -124,14 +124,14 @@ class AgentMetrics(AgentCheck):
         cpu_time = context.get('cpu_time', None)
 
         if threading.activeCount() > MAX_THREADS_COUNT:
-            self.gauge('datadog.agent.collector.threads.count', threading.activeCount())
+            self.gauge('stackstate.agent.collector.threads.count', threading.activeCount())
             self.log.info("Thread count is high: %d" % threading.activeCount())
 
         collect_time_exceeds_threshold = collection_time > MAX_COLLECTION_TIME
         if collection_time is not None and \
                 (collect_time_exceeds_threshold or self.in_developer_mode):
 
-            self.gauge('datadog.agent.collector.collection.time', collection_time)
+            self.gauge('stackstate.agent.collector.collection.time', collection_time)
             if collect_time_exceeds_threshold:
                 self.log.info("Collection time (s) is high: %.1f, metrics count: %d, events count: %d",
                               collection_time, len(payload['metrics']), len(payload['events']))
@@ -139,7 +139,7 @@ class AgentMetrics(AgentCheck):
         emit_time_exceeds_threshold = emit_time > MAX_EMIT_TIME
         if emit_time is not None and \
                 (emit_time_exceeds_threshold or self.in_developer_mode):
-            self.gauge('datadog.agent.emitter.emit.time', emit_time)
+            self.gauge('stackstate.agent.emitter.emit.time', emit_time)
             if emit_time_exceeds_threshold:
                 self.log.info("Emit time (s) is high: %.1f, metrics count: %d, events count: %d",
                               emit_time, len(payload['metrics']), len(payload['events']))
@@ -148,7 +148,7 @@ class AgentMetrics(AgentCheck):
             try:
                 cpu_used_pct = 100.0 * float(cpu_time)/float(collection_time)
                 if cpu_used_pct > MAX_CPU_PCT:
-                    self.gauge('datadog.agent.collector.cpu.used', cpu_used_pct)
+                    self.gauge('stackstate.agent.collector.cpu.used', cpu_used_pct)
                     self.log.info("CPU consumed (%%) is high: %.1f, metrics count: %d, events count: %d",
                                   cpu_used_pct, len(payload['metrics']), len(payload['events']))
             except Exception as e:
