@@ -544,7 +544,7 @@ class MainWindow(QSplitter):
         )
         self.dogstatsd_log_file = EditorFile(
             config.get('%sdogstatsd_log_file' % prefix),
-            "Dogstatsd log file"
+            "StsStatsD log file"
         )
         self.jmxfetch_log_file = EditorFile(
             config.get('jmxfetch_log_file'),

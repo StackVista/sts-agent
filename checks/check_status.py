@@ -719,7 +719,7 @@ class CollectorStatus(AgentStatus):
 
 class DogstatsdStatus(AgentStatus):
 
-    NAME = 'Dogstatsd'
+    NAME = 'StsStatsD'
 
     def __init__(self, flush_count=0, packet_count=0, packets_per_second=0,
                  metric_count=0, event_count=0, service_check_count=0):

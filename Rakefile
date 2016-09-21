@@ -73,9 +73,9 @@ task 'setup_env' do
 end
 
 namespace :test do
-  desc 'Run dogstatsd tests'
-  task 'dogstatsd' do
-    sh 'nosetests tests/core/test_dogstatsd.py'
+  desc 'Run stsstatsd tests'
+  task 'stsstatsd' do
+    sh 'nosetests tests/core/test_stsstatsd.py'
   end
 
   desc 'Run performance tests'

@@ -164,10 +164,10 @@ class TestMetricsAggregator(unittest.TestCase):
         nt.assert_equal(fourth['device_name'], 'floppy')
 
     def test_tags_gh442(self):
-        import dogstatsd
+        import stsstatsd
         from aggregator import api_formatter
 
-        serialized = dogstatsd.serialize_metrics([api_formatter("foo", 12, 1, ('tag',), 'host')], "test-host")
+        serialized = stsstatsd.serialize_metrics([api_formatter("foo", 12, 1, ('tag',), 'host')], "test-host")
         assert '"tags": ["tag"]' in serialized[0]
 
     def test_counter(self):

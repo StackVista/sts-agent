@@ -10,7 +10,7 @@ import nose.tools as nt
 
 # project
 from aggregator import DEFAULT_HISTOGRAM_AGGREGATES
-from dogstatsd import MetricsBucketAggregator
+from stsstatsd import MetricsBucketAggregator
 
 @attr(requires='core_integration')
 class TestUnitMetricsBucketAggregator(unittest.TestCase):

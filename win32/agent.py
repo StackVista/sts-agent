@@ -29,7 +29,7 @@ from config import (
     set_win32_requests_ca_bundle_path,
 )
 from stsagent import Application
-import dogstatsd
+import stsstatsd
 from emitter import http_emitter
 from jmxfetch import JMXFetch
 import modules
@@ -81,7 +81,7 @@ class AgentSvc(win32serviceutil.ServiceFramework):
             'forwarder': ProcessWatchDog("forwarder", DDForwarder(config, self.hostname)),
             'collector': ProcessWatchDog("collector", DDAgent(agentConfig, self.hostname,
                                          heartbeat=self._collector_send_heartbeat)),
-            'dogstatsd': ProcessWatchDog("dogstatsd", DogstatsdProcess(config, self.hostname)),
+            'stsstatsd': ProcessWatchDog("stsstatsd", DogstatsdProcess(config, self.hostname)),
             'jmxfetch': ProcessWatchDog("jmxfetch", JMXFetchProcess(config, self.hostname), 3),
         }
 
@@ -303,7 +303,7 @@ class DDForwarder(multiprocessing.Process):
 
 class DogstatsdProcess(multiprocessing.Process):
     def __init__(self, agentConfig, hostname, **options):
-        multiprocessing.Process.__init__(self, name='dogstatsd')
+        multiprocessing.Process.__init__(self, name='stsstatsd')
         self.config = agentConfig
         self.is_enabled = self.config.get('use_dogstatsd', True)
         self.hostname = hostname
@@ -311,18 +311,18 @@ class DogstatsdProcess(multiprocessing.Process):
 
     def run(self):
         from config import initialize_logging
-        initialize_logging('windows_dogstatsd')
+        initialize_logging('windows_stsstatsd')
         if self.is_enabled:
-            log.debug("Windows Service - Starting Dogstatsd server")
+            log.debug("Windows Service - Starting StsStatsD server")
             self.reporter, self.server, _ = dogstatsd.init(use_forwarder=True)
             self.reporter.start()
             self.server.start()
         else:
-            log.info("Dogstatsd is not enabled, not starting it.")
+            log.info("StsStatsD is not enabled, not starting it.")
 
     def stop(self):
         if self.is_enabled:
-            log.debug("Windows Service - Stopping Dogstatsd server")
+            log.debug("Windows Service - Stopping StsStatsD server")
             self.server.stop()
             self.reporter.stop()
             self.reporter.join()

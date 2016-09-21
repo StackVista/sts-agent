@@ -24,7 +24,7 @@
 
 AGENTPATH="/opt/stackstate-agent/agent/agent.py"
 AGENTCONF="/etc/sts-agent/stackstate.conf"
-DOGSTATSDPATH="/opt/stackstate-agent/agent/dogstatsd.py"
+DOGSTATSDPATH="/opt/stackstate-agent/agent/stsstatsd.py"
 KILL_PATH="/opt/stackstate-agent/embedded/bin/kill"
 AGENTUSER="sts-agent"
 PIDPATH="/var/run/sts-agent/"

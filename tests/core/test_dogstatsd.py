@@ -9,8 +9,8 @@ from collections import defaultdict
 import mock
 
 # project
-from dogstatsd import mapto_v6, get_socket_address
-from dogstatsd import Server, init
+from stsstatsd import mapto_v6, get_socket_address
+from stsstatsd import Server, init
 from utils.net import IPV6_V6ONLY, IPPROTO_IPV6
 
 

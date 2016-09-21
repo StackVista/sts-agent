@@ -3,7 +3,7 @@ NAME="stackstate-agent"
 DESC="StackState Agent"
 AGENTPATH="/opt/stackstate-agent/agent/agent.py"
 FORWARDERPATH="/opt/stackstate-agent/agent/stsagent.py"
-DOGSTATSDPATH="/opt/stackstate-agent/agent/dogstatsd.py"
+DOGSTATSDPATH="/opt/stackstate-agent/agent/stsstatsd.py"
 AGENTCONF="/opt/stackstate-agent/etc/stackstate.conf"
 SUPERVISOR_PIDFILE="/opt/stackstate-agent/run/stackstate-supervisord.pid"
 SUPERVISOR_CONF_FILE="/opt/stackstate-agent/etc/supervisor.conf"
@@ -28,10 +28,10 @@ check_status() {
 
         supervisor_processes=$($SUPERVISORCTL_PATH -c $SUPERVISOR_CONF_FILE status)
         datadog_supervisor_processes=$(echo "$supervisor_processes" |
-                                       grep -Ev 'dogstatsd|jmxfetch' |
+                                       grep -Ev 'stsstatsd|jmxfetch' |
                                        grep $NAME |
                                        grep -c -E 'RUNNING|STARTING')
-        supervisor_config_programs=$(grep -v -Ev 'dogstatsd|jmxfetch' "$DIR/$SUPERVISOR_CONF_FILE" |
+        supervisor_config_programs=$(grep -v -Ev 'stsstatsd|jmxfetch' "$DIR/$SUPERVISOR_CONF_FILE" |
                                      grep -c '\[program:')
 
         if [ "$datadog_supervisor_processes" -ne "$supervisor_config_programs" ]; then

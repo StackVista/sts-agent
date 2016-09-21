@@ -1,7 +1,7 @@
 [Main]
 
 # The host of the StackState intake server to send Agent data to
-dd_url: 
+dd_url: http://localhost:7070/stsAgent/
 
 # If you need a proxy to connect to the Internet, provide the settings here (default: disabled)
 # proxy_host: my-proxy.com
@@ -79,7 +79,7 @@ gce_updated_hostname: yes
 # between curl client and simple http client (default: simple http client)
 # use_curl_http_client: no
 
-# The loopback address the Forwarder and Dogstatsd will bind.
+# The loopback address the Forwarder and StsStatsd will bind.
 # Optional, it is mainly used when running the agent on Openshift
 # bind_host: localhost
 
@@ -137,23 +137,23 @@ gce_updated_hostname: yes
 # procfs_path: /proc
 
 # ========================================================================== #
-# DogStatsd configuration                                                    #
-# DogStatsd is a small server that aggregates your custom app metrics. For   #
+# StsStatsd configuration                                                    #
+# StsStatsd is a small server that aggregates your custom app metrics. For   #
 # ========================================================================== #
 
-# If you don't want to enable the DogStatsd server, set this option to no
+# If you don't want to enable the StsStatsd server, set this option to no
 # use_dogstatsd: yes
 
 #  Make sure your client is sending to the same port.
 # dogstatsd_port: 8125
 
-# By default dogstatsd will post aggregate metrics to the Agent (which handles
+# By default stsstatsd will post aggregate metrics to the Agent (which handles
 # errors/timeouts/retries/etc).
 # dogstatsd_target: http://localhost:17123
 
-# If you want to forward every packet received by the dogstatsd server
+# If you want to forward every packet received by the stsstatsd server
 # to another statsd server, uncomment these lines.
-# WARNING: Make sure that forwarded packets are regular statsd packets and not "dogstatsd" packets,
+# WARNING: Make sure that forwarded packets are regular statsd packets and not "stsstatsd" packets,
 # as your other statsd server might not be able to handle them.
 # statsd_forward_host: address_of_own_statsd_server
 # statsd_forward_port: 8125
@@ -163,10 +163,10 @@ gce_updated_hostname: yes
 # like `metric.name` will instead become `namespace.metric.name`
 # statsd_metric_namespace:
 
-# By default, dogstatsd supports only plain ASCII packets. However, most
-# (dog)statsd client support UTF8 by encoding packets before sending them
+# By default, stsstatsd supports only plain ASCII packets. However, most
+# (sts)statsd client support UTF8 by encoding packets before sending them
 # this option enables UTF8 decoding in case you need it.
-# However, it comes with a performance overhead of ~10% in the dogstatsd
+# However, it comes with a performance overhead of ~10% in the stsstatsd
 # server. This will be taken care of properly in the new gen agent core.
 # utf8_decoding: false
 
@@ -238,7 +238,7 @@ gce_updated_hostname: yes
 
 # collector_log_file: /var/log/stackstate/collector.log
 # forwarder_log_file: /var/log/stackstate/forwarder.log
-# dogstatsd_log_file: /var/log/stackstate/dogstatsd.log
+# dogstatsd_log_file: /var/log/stackstate/stsstatsd.log
 
 # if syslog is enabled but a host and port are not set, a local domain socket
 # connection will be attempted

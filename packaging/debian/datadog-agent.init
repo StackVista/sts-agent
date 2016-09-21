@@ -15,7 +15,7 @@ PATH=$PATH:/sbin # add the location of start-stop-daemon on Debian
 
 AGENTPATH="/opt/stackstate-agent/agent/agent.py"
 AGENTCONF="/etc/sts-agent/stackstate.conf"
-DOGSTATSDPATH="/opt/stackstate-agent/agent/dogstatsd.py"
+DOGSTATSDPATH="/opt/stackstate-agent/agent/stsstatsd.py"
 KILL_PATH="/opt/stackstate-agent/embedded/bin/kill"
 AGENTUSER="sts-agent"
 FORWARDERPATH="/opt/stackstate-agent/agent/stsagent.py"
@@ -28,7 +28,7 @@ SUPERVISORCTL_PATH="/opt/stackstate-agent/bin/supervisorctl"
 SUPERVISORD_PATH="/opt/stackstate-agent/bin/supervisord"
 COLLECTOR_PIDFILE="/opt/stackstate-agent/run/sts-agent.pid"
 SYSTEM_PATH=/opt/stackstate-agent/embedded/bin:/opt/stackstate-agent/bin:$PATH
-DD_OPT_PROC_REGEX="dogstatsd|jmxfetch|go-metro"
+DD_OPT_PROC_REGEX="stsstatsd|jmxfetch|go-metro"
 
 if [ ! -x $AGENTPATH ]; then
     echo "$AGENTPATH not found. Exiting."

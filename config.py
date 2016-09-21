@@ -1136,7 +1136,7 @@ def get_logging_config(cfg_path=None):
     else:
         logging_config['collector_log_file'] = '/var/log/stackstate/collector.log'
         logging_config['forwarder_log_file'] = '/var/log/stackstate/forwarder.log'
-        logging_config['dogstatsd_log_file'] = '/var/log/stackstate/dogstatsd.log'
+        logging_config['dogstatsd_log_file'] = '/var/log/stackstate/stsstatsd.log'
         logging_config['jmxfetch_log_file'] = '/var/log/stackstate/jmxfetch.log'
         logging_config['go-metro_log_file'] = '/var/log/stackstate/go-metro.log'
         logging_config['log_to_syslog'] = True
