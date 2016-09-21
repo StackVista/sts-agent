@@ -790,7 +790,6 @@ class DockerDaemon(AgentCheck):
             self.warning("Unable to find any pid directory in {0}. "
                 "If you are running the agent in a container, make sure to "
                 'share the volume properly: "/proc:/host/proc:ro". '
-                "See https://github.com/DataDog/docker-dd-agent/blob/master/README.md for more information. "
                 "Network metrics will be missing".format(proc_path))
             self._disable_net_metrics = True
             return container_dict
