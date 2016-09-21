@@ -14,7 +14,7 @@
 PATH=$PATH:/sbin # add the location of start-stop-daemon on Debian
 
 AGENTPATH="/opt/stackstate-agent/agent/agent.py"
-AGENTCONF="/etc/sts-agent/stackstate-conf"
+AGENTCONF="/etc/sts-agent/stackstate.conf"
 DOGSTATSDPATH="/opt/stackstate-agent/agent/dogstatsd.py"
 KILL_PATH="/opt/stackstate-agent/embedded/bin/kill"
 AGENTUSER="sts-agent"
