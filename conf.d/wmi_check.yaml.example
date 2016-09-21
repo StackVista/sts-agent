@@ -17,7 +17,7 @@ instances:
   #
   # `namespace` is the optionnal WMI namespace to connect to (default to `cimv2`).
   #
-  # `provider` is the optional WMI provider (default to `32` on Datadog Agent 32-bit or `64`).
+  # `provider` is the optional WMI provider (default to `32` on StackState Agent 32-bit or `64`).
   # It is used to request WMI data from the non-default provider. Available options are: `32` or `64`.
   # For more information: https://msdn.microsoft.com/en-us/library/aa393067(v=vs.85).aspx
   #
@@ -28,7 +28,7 @@ instances:
   #   The standard properties are also available on the MSDN docs for each
   #   class.
   #
-  # - The metric name is the name you want to show up in Datadog.
+  # - The metric name is the name you want to show up in StackState.
   #
   # - The metric type is from the standard choices for all agent checks, such
   #   as gauge, rate, histogram or counter.

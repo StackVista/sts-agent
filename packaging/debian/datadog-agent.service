@@ -1,5 +1,5 @@
 [Unit]
-Description="Datadog Agent"
+Description="StackState Agent"
 After=network.target
 
 [Service]

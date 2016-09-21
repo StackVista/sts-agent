@@ -14,7 +14,7 @@
 #        Additionally, go-mtro runs standalone so it will *NOT* currently appear on the agent's info page.
 #
 #        Finally, because the go-metro binary is only bundled with the 64-bit RPM and DEB distributions of the
-#        datadog-agent, it will only be available in those packaged versions (ie. go-metro is currently
+#        stackstate-agent, it will only be available in those packaged versions (ie. go-metro is currently
 #        unavailable with the source install or the 32-bit packages).
 
 init_config:

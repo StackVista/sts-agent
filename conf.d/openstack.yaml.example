@@ -54,7 +54,7 @@ instances:
       # `user` should resolve to a structure like {'password': 'my_password', 'name': 'my_name', 'domain': {'id': 'my_domain_id'}}
       user:
           password: my_password
-          name: datadog
+          name: stackstate
           domain:
               id: default
 
