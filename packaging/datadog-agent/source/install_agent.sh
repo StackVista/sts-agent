@@ -156,7 +156,7 @@ determine the cause.
 If the cause is unclear, please contact Datadog support.
 *****
 "
-    $sudo_cmd apt-get install -y --force-yes datadog-agent
+    $sudo_cmd apt-get install -y --force-yes stackstate-agent
     ERROR_MESSAGE=""
 else
     printf "\033[31mYour OS or distribution are not supported by this install script.
@@ -250,10 +250,10 @@ background and submit metrics to Datadog.
 
 If you ever want to stop the Agent, run:
 
-    sudo /etc/init.d/datadog-agent stop
+    sudo /etc/init.d/stackstate-agent stop
 
 And to run it again run:
 
-    sudo /etc/init.d/datadog-agent start
+    sudo /etc/init.d/stackstate-agent start
 
 \033[0m"
