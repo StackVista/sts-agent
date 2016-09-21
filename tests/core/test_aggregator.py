@@ -40,11 +40,11 @@ class TestMetricsAggregator(unittest.TestCase):
 
     def test_formatter(self):
         stats = MetricsAggregator('myhost', interval=10,
-            formatter = get_formatter({"statsd_metric_namespace": "datadog"}))
+            formatter = get_formatter({"statsd_metric_namespace": "stackstate"}))
         stats.submit_packets('gauge:16|c|#tag3,tag4')
         metrics = self.sort_metrics(stats.flush())
         self.assertTrue(len(metrics) == 1)
-        self.assertTrue(metrics[0]['metric'] == "datadog.gauge")
+        self.assertTrue(metrics[0]['metric'] == "stackstate.gauge")
 
         stats = MetricsAggregator('myhost', interval=10,
             formatter = get_formatter({"statsd_metric_namespace": "datadoge."}))
@@ -565,12 +565,14 @@ class TestMetricsAggregator(unittest.TestCase):
         stats = MetricsAggregator('myhost')
         for i in xrange(10):
             stats.submit_packets('metric:10|c')
-        stats.send_packet_count('stackstate.stsstatsd.packet.count')
+        stats.send_packet_count('a.stsstatsd.packet.count')
         metrics = self.sort_metrics(stats.flush())
         nt.assert_equals(2, len(metrics))
         first, second = metrics
+	
+        print first, second
 
-        nt.assert_equal(first['metric'], 'stackstate.stsstatsd.packet.count')
+        nt.assert_equal(first['metric'], 'a.stsstatsd.packet.count')
         nt.assert_equal(first['points'][0][1], 10)
 
     @attr(requires='core_integration')
