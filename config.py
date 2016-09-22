@@ -100,7 +100,6 @@ def get_version():
 
 # Return url endpoint, here because needs access to version number
 def get_url_endpoint(default_url, endpoint_type='app'):
-    parsed_url = urlparse(default_url)
     return default_url
 
 def skip_leading_wsp(f):

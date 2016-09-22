@@ -569,8 +569,6 @@ class TestMetricsAggregator(unittest.TestCase):
         metrics = self.sort_metrics(stats.flush())
         nt.assert_equals(2, len(metrics))
         first, second = metrics
-	
-        print first, second
 
         nt.assert_equal(first['metric'], 'a.stsstatsd.packet.count')
         nt.assert_equal(first['points'][0][1], 10)

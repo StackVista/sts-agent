@@ -146,7 +146,7 @@ class Jenkins(AgentCheck):
         under the Configuration tab.
         """
         self.warning("This check is deprecated in favor of our Jenkins StackState plugin."
-                     " It will be removed in a future version of the StackState Agent." )
+                     " It will be removed in a future version of the StackState Agent.")
 
         if self.high_watermarks.get(instance.get('name'), None) is None:
             # On the first run of check(), prime the high_watermarks dict

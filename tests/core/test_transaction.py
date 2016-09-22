@@ -6,15 +6,15 @@ import unittest
 
 # 3rd party
 from nose.plugins.attrib import attr
-import requests
-import simplejson as json
+#import requests
+#import simplejson as json
 from tornado.web import Application
 
 # project
-from config import get_version
+#from config import get_version
 from stsagent import (
-    APIMetricTransaction,
-    APIServiceCheckTransaction,
+    #APIMetricTransaction,
+    #APIServiceCheckTransaction,
     MAX_QUEUE_SIZE,
     MetricTransaction,
     THROTTLING_DELAY,
