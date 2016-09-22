@@ -75,7 +75,7 @@ end
 namespace :test do
   desc 'Run stsstatsd tests'
   task 'stsstatsd' do
-    sh 'nosetests tests/core/test_stsstatsd.py'
+    sh 'nosetests tests/core/test_dogstatsd.py'
   end
 
   desc 'Run performance tests'
