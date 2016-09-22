@@ -17,7 +17,7 @@ from socket import gaierror, gethostbyname
 import string
 import sys
 import traceback
-from urlparse import urlparse
+#from urlparse import urlparse
 
 # project
 from util import check_yaml, get_os
