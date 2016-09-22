@@ -3,6 +3,8 @@
 # removed in a future version of the StackState Agent. Please move to using the StackState
 # plugin for Jenkins.init_config:
 
+init_config:
+
 instances:
   - name: default
     jenkins_home: /var/lib/jenkins
