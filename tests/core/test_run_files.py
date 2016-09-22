@@ -21,7 +21,7 @@ class TestRunFiles(unittest.TestCase):
     @mock.patch('utils.platform.Platform.is_win32', return_value=True)
     def test_agent_status_pickle_file_win32(self, *mocks):
         ''' Test pickle file location on win32 '''
-        expected_path = os.path.join('C:\Windows\App Data', 'Datadog', 'AgentStatus.pickle')
+        expected_path = os.path.join('C:\Windows\App Data', 'StackState', 'AgentStatus.pickle')
         # check AgentStatus pickle created
         self.assertEqual(AgentStatus._get_pickle_path(), expected_path)
 
