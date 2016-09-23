@@ -20,8 +20,8 @@ import traceback
 #from urlparse import urlparse
 
 # project
-from util import check_yaml, get_os
-from utils.platform import Platform
+from util import check_yaml
+from utils.platform import Platform, get_os
 from utils.proxy import get_proxy
 from utils.service_discovery.config import extract_agent_config
 from utils.service_discovery.config_stores import CONFIG_FROM_FILE, TRACE_CONFIG
@@ -305,6 +305,10 @@ def clean_dd_url(url):
     return url[:-1] if url.endswith('/') else url
 
 
+def remove_empty(string_array):
+    return filter(lambda x: x, string_array)
+
+
 def get_config(parse_args=True, cfg_path=None, options=None):
     if parse_args:
         options, _ = get_parsed_args()
@@ -364,35 +368,28 @@ def get_config(parse_args=True, cfg_path=None, options=None):
             sys.exit(2)
 
         # Endpoints
-        dd_url = clean_dd_url(config.get('Main', 'dd_url'))
-        api_key = config.get('Main', 'api_key').strip()
+        dd_urls = map(clean_dd_url, config.get('Main', 'dd_url').split(','))
+        api_keys = map(lambda el: el.strip(), config.get('Main', 'api_key').split(','))
 
         # For collector and dogstatsd
-        agentConfig['api_key'] = api_key
-        agentConfig['dd_url'] = dd_url
-
-        # multiple endpoints
-        if config.has_option('Main', 'other_dd_urls'):
-            other_dd_urls = map(clean_dd_url, config.get('Main', 'other_dd_urls').split(','))
-        else:
-            other_dd_urls = []
-        if config.has_option('Main', 'other_api_keys'):
-            other_api_keys = map(lambda x: x.strip(), config.get('Main', 'other_api_keys').split(','))
-        else:
-            other_api_keys = []
+        agentConfig['dd_url'] = dd_urls[0]
+        agentConfig['api_key'] = api_keys[0]
 
         # Forwarder endpoints logic
         # endpoints is:
         # {
         #    'https://app.example.com': ['api_key_xyz']
         # }
-        endpoints = {dd_url: [api_key]}
-        if len(other_dd_urls) == 0:
-            endpoints[dd_url] += other_api_keys
+        endpoints = {}
+        dd_urls = remove_empty(dd_urls)
+        api_keys = remove_empty(api_keys)
+        if len(dd_urls) == 1:
+            if len(api_keys) > 0:
+                endpoints[dd_urls[0]] = api_keys
         else:
-            assert len(other_dd_urls) == len(other_api_keys), 'Please provide one api_key for each url'
-            for i, other_dd_url in enumerate(other_dd_urls):
-                endpoints[other_dd_url] = endpoints.get(other_dd_url, []) + [other_api_keys[i]]
+            assert len(dd_urls) == len(api_keys), 'Please provide one api_key for each url'
+            for i, dd_url in enumerate(dd_urls):
+                endpoints[dd_url] = endpoints.get(dd_url, []) + [api_keys[i]]
 
         agentConfig['endpoints'] = endpoints
 

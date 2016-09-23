@@ -18,7 +18,7 @@ except ImportError:
 
 # project
 from checks import Check
-from util import get_hostname
+from utils.hostname import get_hostname
 from utils.platform import Platform
 from utils.subprocess_output import get_subprocess_output
 

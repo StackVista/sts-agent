@@ -13,7 +13,6 @@ from pymongo import (
 
 # project
 from checks import AgentCheck
-from util import get_hostname
 
 DEFAULT_TIMEOUT = 10
 
@@ -239,7 +238,6 @@ class TokuMX(AgentCheck):
                 return 'Rollback'
 
         status = get_state_description(state)
-        hostname = get_hostname(agentConfig)
         msg_title = "%s is %s" % (server, status)
         msg = "TokuMX %s just reported as %s" % (server, status)
 
@@ -248,7 +246,7 @@ class TokuMX(AgentCheck):
             'event_type': 'tokumx',
             'msg_title': msg_title,
             'msg_text': msg,
-            'host': hostname
+            'host': self.hostname
         })
 
     def _get_ssl_params(self, instance):
