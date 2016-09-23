@@ -110,3 +110,5 @@ script:
 after_failure:
   - echo "Logs from installation process come here / DEBUG LOGS"
   - cat /tmp/ci.log
+  - pip install pipdeptree
+  - pipdeptree -fl
