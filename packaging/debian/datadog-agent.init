@@ -167,7 +167,7 @@ case "$1" in
     info)
         shift # Shift 'info' out of args so we can pass any
               # addtional options to the real command
-              # (right now only dd-agent supports additional flags)
+              # (right now only sts-agent supports additional flags)
         su $AGENTUSER -c "$AGENTPATH info $@"
         COLLECTOR_RETURN=$?
         su $AGENTUSER -c "$DOGSTATSDPATH info"

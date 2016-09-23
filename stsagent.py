@@ -245,7 +245,7 @@ class AgentTransaction(Transaction):
 
         if use_curl:
             if pycurl is None:
-                log.error("dd-agent is configured to use the Curl HTTP Client, but pycurl is not available on this system.")
+                log.error("sts-agent is configured to use the Curl HTTP Client, but pycurl is not available on this system.")
             else:
                 log.debug("Using CurlAsyncHTTPClient")
                 tornado.httpclient.AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")

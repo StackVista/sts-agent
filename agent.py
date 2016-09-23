@@ -40,7 +40,7 @@ from utils.service_discovery.config_stores import get_config_store
 from utils.service_discovery.sd_backend import get_sd_backend
 
 # Constants
-PID_NAME = "dd-agent"
+PID_NAME = "sts-agent"
 PID_DIR = None
 WATCHDOG_MULTIPLIER = 10
 RESTART_INTERVAL = 4 * 24 * 60 * 60  # Defaults to 4 days

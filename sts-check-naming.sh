@@ -7,6 +7,7 @@ echo "When it produces any output beyond this header, decide whether to change t
 grep -r etc/dd . | grep -v README | grep -v CHANGELOG | grep -ve "^[^:]*:\\s*\#.*"
 grep -r datadog\\.conf . | grep -v sts-check-naming | grep -v Binary | grep -v CHANGELOG | grep -ve "^[^:]*:\\s*\#.*" | grep -v README | grep -v git/logs
 grep -r ddagent.py . | grep -v sts-check-naming | grep -v Binary | grep -v git/logs
+grep -r dd-agent . | grep -v dd-agent-testing | grep -v README | grep -v CONTRIBUTING | grep -v appveyor | grep -v dd-agent/wiki | grep -v dd-agent/issues | grep -v .git/config | grep -ve ".py:\\s*#" | grep -v sts-check-naming | grep -v Binary | grep -v git/logs | grep -v CHANGELOG | grep -ve "^./ci/" | grep -v smartos | grep -v win32 | grep -v osx | grep -v blah | grep -v /source/ | grep -ve "^./tests"
 grep -r datadog_agent . | grep -v sts-check-naming | grep -v git/logs
 grep -r opt/datadog . | grep -v sts-check-naming | grep -v CHANGELOG
 grep -re "echo.*DataDog" . | grep -v sts-check-naming

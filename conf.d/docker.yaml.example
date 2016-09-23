@@ -1,10 +1,10 @@
 # Warning
-# The user running the StackState Agent (usually "dd-agent") must be part of the "docker" group
+# The user running the StackState Agent (usually "sts-agent") must be part of the "docker" group
 
 init_config:
   # Change the root directory to look at to get cgroup statistics. Useful when running inside a
   # container with host directories mounted on a different folder. Default: /.
-  # Example for the docker-dd-agent container:
+  # Example for the docker-sts-agent container:
   # docker_root: /host
 
   docker_root: /
