@@ -38,7 +38,7 @@
         <CustomAction
             Id="ReplaceAPIKey"
             BinaryKey="FindReplace"
-            ExeCommand='"[CommonAppDataFolder]\Datadog\datadog.conf" APIKEYHERE [APIKEY]'
+            ExeCommand='"[CommonAppDataFolder]\Datadog\stackstate.conf" APIKEYHERE [APIKEY]'
             Execute="deferred"
             Return="check"
             Impersonate="no" />
@@ -46,7 +46,7 @@
         <CustomAction
             Id="ReplaceTags"
             BinaryKey="FindReplace"
-            ExeCommand='"[CommonAppDataFolder]\Datadog\datadog.conf" "# tags: mytag0, mytag1" "tags: [TAGS]"'
+            ExeCommand='"[CommonAppDataFolder]\Datadog\stackstate.conf" "# tags: mytag0, mytag1" "tags: [TAGS]"'
             Execute="deferred"
             Return="check"
             Impersonate="no" />
@@ -54,7 +54,7 @@
         <CustomAction
             Id="ReplaceHostname"
             BinaryKey="FindReplace"
-            ExeCommand='"[CommonAppDataFolder]\Datadog\datadog.conf" "# hostname: mymachine.mydomain" "hostname: [HOSTNAME]"'
+            ExeCommand='"[CommonAppDataFolder]\Datadog\stackstate.conf" "# hostname: mymachine.mydomain" "hostname: [HOSTNAME]"'
             Execute="deferred"
             Return="check"
             Impersonate="no" />
@@ -104,8 +104,8 @@
         </DirectoryRef>
 
         <DirectoryRef Id="APPLIDATIONDATADIRECTORY">
-            <Component Id="datadog.conf" Guid="83461594-01AC-11E2-BE35-37EC6088709B" NeverOverwrite="yes" Permanent="yes">
-                <File Id="datadog.conf" Name="datadog.conf" Source="$(var.InstallFiles)\datadog_win32.conf">
+            <Component Id="stackstate.conf" Guid="83461594-01AC-11E2-BE35-37EC6088709B" NeverOverwrite="yes" Permanent="yes">
+                <File Id="stackstate.conf" Name="stackstate.conf" Source="$(var.InstallFiles)\stackstate_win32.conf">
                     <Permission User="[WIX_ACCOUNT_ADMINISTRATORS]" GenericAll="yes" />
                     <Permission User="[WIX_ACCOUNT_LOCALSYSTEM]" GenericAll="yes" />
                     <Permission User="[WIX_ACCOUNT_USERS]" GenericAll="no"/>
@@ -127,7 +127,7 @@
             <ComponentRef Id="Microsoft.VC90.CRT.manifest" />
             <ComponentRef Id="msvcp90.dll" />
             <ComponentRef Id="msvcr90.dll" />
-            <ComponentRef Id="datadog.conf" />
+            <ComponentRef Id="stackstate.conf" />
             <ComponentGroupRef Id="checks.d" />
             <ComponentGroupRef Id="conf.d" />
             <ComponentGroupRef Id="files" />

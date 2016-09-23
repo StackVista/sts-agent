@@ -3,18 +3,18 @@
 #        (debian based - alternatively) $ sudo apt-get install libcap2-bin
 #        (redhat based) $ sudo yum install libcap
 #        (redhat based - alternatively) $ sudo yum install compat-libcap1
-#        $ sudo setcap cap_net_raw+ep /opt/datadog-agent/bin/go-metro
+#        $ sudo setcap cap_net_raw+ep /opt/stackstate-agent/bin/go-metro
 #
 #        Because of different package names for different distros, if the instructions above
 #        don't work for you, please issue an `apt-cache search libcap` or `yum search libcap` and you
 #        should get a shortlist of packages that might provide the binary. Feel free to reach out
 #        should you require assistance.
 #
-#        Also, please note that go-metro logs to its own file - found in /var/log/datadog/go-metro.log.
+#        Also, please note that go-metro logs to its own file - found in /var/log/stackstate/go-metro.log.
 #        Additionally, go-mtro runs standalone so it will *NOT* currently appear on the agent's info page.
 #
 #        Finally, because the go-metro binary is only bundled with the 64-bit RPM and DEB distributions of the
-#        datadog-agent, it will only be available in those packaged versions (ie. go-metro is currently
+#        stackstate-agent, it will only be available in those packaged versions (ie. go-metro is currently
 #        unavailable with the source install or the 32-bit packages).
 
 init_config:

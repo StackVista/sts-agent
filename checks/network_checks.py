@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 # stdlib
 from collections import defaultdict
@@ -180,7 +177,7 @@ class NetworkCheck(AgentCheck):
             # service_checks
             skip_event = _is_affirmative(instance.get('skip_event', False))
             if not skip_event:
-                self.warning("Using events for service checks is deprecated in favor of monitors and will be removed in future versions of the Datadog Agent.")
+                self.warning("Using events for service checks is deprecated in favor of monitors and will be removed in future versions of the StackState Agent.")
                 event = None
 
                 if instance_name not in self.statuses:

@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 # stdlib
 import atexit
@@ -54,10 +51,10 @@ log = logging.getLogger(__name__)
 class Flare(object):
     """
     Compress all important logs and configuration files for debug,
-    and then send them to Datadog (which transfers them to Support)
+    and then send them to StackState (which transfers them to Support)
     """
 
-    DATADOG_SUPPORT_URL = '/support/flare'
+    STACKSTATE_SUPPORT_URL = '/support/flare'
 
     CredentialPattern = namedtuple('CredentialPattern', ['pattern', 'replacement', 'label'])
     CHECK_CREDENTIALS = [
@@ -91,7 +88,7 @@ class Flare(object):
     ]
     COMMENT_REGEX = re.compile('^ *#.*')
 
-    COMPRESSED_FILE = 'datadog-agent-{0}.tar.bz2'
+    COMPRESSED_FILE = 'stackstate-agent-{0}.tar.bz2'
     # We limit to 10MB arbitrarily
     MAX_UPLOAD_SIZE = 10485000
     TIMEOUT = 60
@@ -106,10 +103,10 @@ class Flare(object):
         self._api_key = self._config.get('api_key')
         self._url = "{0}{1}".format(
             get_url_endpoint(self._config.get('dd_url'), endpoint_type='flare'),
-            self.DATADOG_SUPPORT_URL
+            self.STACKSTATE_SUPPORT_URL
         )
         self._hostname = get_hostname(self._config)
-        self._prefix = "datadog-{0}".format(self._hostname)
+        self._prefix = "stackstate-{0}".format(self._hostname)
 
     # On Unix system, check that the user is root (to call supervisorctl & status)
     # Otherwise emit a warning, and ask for confirmation
@@ -138,13 +135,13 @@ class Flare(object):
     def _collect(self):
         self._add_logs_tar()
         self._add_conf_tar()
-        log.info("  * datadog-agent configcheck output")
+        log.info("  * stackstate-agent configcheck output")
         self._add_command_output_tar('configcheck.log', configcheck)
         log.info("  * service discovery configcheck output")
         self._add_command_output_tar('sd_configcheck.log', sd_configcheck, agentConfig=self._config)
-        log.info("  * datadog-agent status output")
+        log.info("  * stackstate-agent status output")
         self._add_command_output_tar('status.log', self._supervisor_status)
-        log.info("  * datadog-agent info output")
+        log.info("  * stackstate-agent info output")
         self._add_command_output_tar('info.log', self._info_all)
         self._add_jmxinfo_tar()
         log.info("  * pip freeze")
@@ -178,7 +175,7 @@ class Flare(object):
         if self._config.get('skip_ssl_validation', False):
             options['verify'] = False
         elif Platform.is_windows():
-            options['verify'] = get_ssl_certificate('windows', 'datadog-cert.pem')
+            options['verify'] = get_ssl_certificate('windows', 'stackstate-cert.pem')
 
     # Upload the tar file
     def upload(self, email=None):
@@ -190,7 +187,7 @@ class Flare(object):
         if not email:
             email = self._ask_for_email()
 
-        log.info("Uploading {0} to Datadog Support".format(self.tar_path))
+        log.info("Uploading {0} to StackState Support".format(self.tar_path))
         url = self._url
         if self._case_id:
             url = '{0}/{1}'.format(self._url, str(self._case_id))
@@ -320,7 +317,7 @@ class Flare(object):
 
             # beans lists
             for command in ['list_matching_attributes', 'list_everything']:
-                log.info("  * datadog-agent jmx {0} output".format(command))
+                log.info("  * stackstate-agent jmx {0} output".format(command))
                 self._add_command_output_tar(
                     os.path.join('jmxinfo', '{0}.log'.format(command)),
                     partial(self._jmx_command_call, command)
@@ -484,9 +481,9 @@ class Flare(object):
     # Find the agent exec (package or source)
     def _get_path_agent_exec(self):
         if Platform.is_mac():
-            agent_exec = '/opt/datadog-agent/bin/datadog-agent'
+            agent_exec = '/opt/stackstate-agent/bin/stackstate-agent'
         else:
-            agent_exec = '/etc/init.d/datadog-agent'
+            agent_exec = '/etc/init.d/stackstate-agent'
 
         if not os.path.isfile(agent_exec):
             agent_exec = os.path.join(
@@ -497,7 +494,7 @@ class Flare(object):
 
     # Find the supervisor exec (package or source)
     def _get_path_supervisor_exec(self):
-        supervisor_exec = '/opt/datadog-agent/bin/supervisorctl'
+        supervisor_exec = '/opt/stackstate-agent/bin/supervisorctl'
         if not os.path.isfile(supervisor_exec):
             supervisor_exec = os.path.join(
                 os.path.dirname(os.path.realpath(__file__)),
@@ -508,9 +505,9 @@ class Flare(object):
     # Find the supervisor conf (package or source)
     def _get_path_supervisor_conf(self):
         if Platform.is_mac():
-            supervisor_conf = '/opt/datadog-agent/etc/supervisor.conf'
+            supervisor_conf = '/opt/stackstate-agent/etc/supervisor.conf'
         else:
-            supervisor_conf = '/etc/dd-agent/supervisor.conf'
+            supervisor_conf = '/etc/sts-agent/supervisor.conf'
 
         if not os.path.isfile(supervisor_conf):
             supervisor_conf = os.path.join(
@@ -565,7 +562,7 @@ class Flare(object):
 
     # Function to ask for confirmation before upload
     def _ask_for_confirmation(self):
-        print '{0} is going to be uploaded to Datadog.'.format(self.tar_path)
+        print '{0} is going to be uploaded to StackState.'.format(self.tar_path)
         choice = raw_input('Do you want to continue [Y/n]? ')
         if choice.strip().lower() not in ['yes', 'y', '']:
             print 'Aborting (you can still use {0})'.format(self.tar_path)

@@ -15,7 +15,7 @@ from nose.plugins.attrib import attr
 # project
 # needed because of the subprocess calls
 sys.path.append(os.getcwd())
-from ddagent import Application
+from stsagent import Application
 from util import Watchdog
 
 

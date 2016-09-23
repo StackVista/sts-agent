@@ -57,7 +57,7 @@ instances:
     #   - security
 
     # The (optional) `event_format` parameter will instruct the check to generate
-    # Datadog's event bodies with the specified list of event properties.
+    # StackState's event bodies with the specified list of event properties.
     # If unspecified, the EventLog's `Message` or `InsertionStrings` are used by default.
     # event_format:
     #   - Logfile

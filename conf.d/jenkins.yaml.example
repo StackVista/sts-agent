@@ -1,8 +1,7 @@
 # DEPRECATED:
 # This Jenkins check is deprecated and not actively developed anymore. It will be
-# removed in a future version of the Datadog Agent. Please move to using the Datadog
-# plugin for Jenkins. More information can be found on the Jenkins Integration panel
-# under the Configuration tab (https://app.datadoghq.com/account/settings#integrations/jenkins)
+# removed in a future version of the StackState Agent. Please move to using the StackState
+# plugin for Jenkins.init_config:
 
 init_config:
 

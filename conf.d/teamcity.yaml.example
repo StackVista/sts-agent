@@ -1,7 +1,7 @@
 init_config:
 
 # Add your different projects in here to monitor their build
-# success with Datadog events
+# success with StackState events
 instances:
     # A custom unique name per build configuration that will show
     # in the events

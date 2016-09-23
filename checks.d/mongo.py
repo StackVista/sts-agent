@@ -418,7 +418,7 @@ class MongoDb(AgentCheck):
         if state in self.REPLSET_MEMBER_STATES:
             return self.REPLSET_MEMBER_STATES[state][1]
         else:
-            return 'Replset state %d is unknown to the Datadog agent' % state
+            return 'Replset state %d is unknown to the StackState agent' % state
 
     def get_state_name(self, state):
         if state in self.REPLSET_MEMBER_STATES:

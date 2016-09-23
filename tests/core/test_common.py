@@ -171,7 +171,7 @@ class TestCore(unittest.TestCase):
 
         # Check that we got a timing metric for all checks.
         timing_metrics = [m for m in metrics
-            if m[0] == 'datadog.agent.check_run_time']
+            if m[0] == 'stackstate.agent.check_run_time']
         all_tags = []
         for metric in timing_metrics:
             all_tags.extend(metric[3]['tags'])
@@ -387,7 +387,7 @@ class TestCore(unittest.TestCase):
         except Exception:
             pass
 
-        self.assertTrue(ntp_util.args["host"].endswith("datadog.pool.ntp.org"))
+        self.assertTrue(ntp_util.args["host"].endswith("stackstate.pool.ntp.org"))
         self.assertEqual(ntp_util.args["port"], "ntp")
         self.assertEqual(ntp_util.args["version"], 3)
         self.assertEqual(ntp_util.args["timeout"], 1.0)

@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 # set up logging before importing any other components
 if __name__ == '__main__':
@@ -65,7 +62,7 @@ JMX_LIST_COMMANDS = {
     'list_limited_attributes': "List attributes that do match one of your instances configuration but that are not being collected because it would exceed the number of metrics that can be collected",
     JMX_COLLECT_COMMAND: "Start the collection of metrics based on your current configuration and display them in the console"}
 
-LINK_TO_DOC = "See http://docs.datadoghq.com/integrations/java/ for more information"
+LINK_TO_DOC = "See http://www.stackstate.com/ for more information"
 
 
 class InvalidJMXConfiguration(Exception):

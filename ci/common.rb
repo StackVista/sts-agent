@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 require 'colorize'
 require 'httparty'
@@ -130,8 +127,8 @@ namespace :ci do
 
     task :before_script do |t|
       section('BEFORE_SCRIPT')
-      sh %(cp #{ENV['TRAVIS_BUILD_DIR']}/ci/resources/datadog.conf.example\
-           #{ENV['TRAVIS_BUILD_DIR']}/datadog.conf)
+      sh %(cp #{ENV['TRAVIS_BUILD_DIR']}/ci/resources/stackstate.conf.example\
+           #{ENV['TRAVIS_BUILD_DIR']}/stackstate.conf)
       t.reenable
     end
 

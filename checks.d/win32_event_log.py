@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 '''
 Monitor the Windows Event Log
@@ -179,7 +176,7 @@ class LogEvent(object):
     @property
     def _msg_text(self):
         """
-        Generate the event's body to send to Datadog.
+        Generate the event's body to send to StackState.
 
         Consider `event_format` parameter:
         * Only use the specified list of event properties.

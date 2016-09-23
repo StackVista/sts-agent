@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 # stdlib
 import collections
@@ -437,7 +434,7 @@ class Collector(object):
                 status = AgentCheck.OK
             elif check_status.status == STATUS_ERROR:
                 status = AgentCheck.CRITICAL
-            check.service_check('datadog.agent.check_status', status, tags=service_check_tags)
+            check.service_check('stackstate.agent.check_status', status, tags=service_check_tags)
 
             # Collect the service checks and save them in the payload
             current_check_service_checks = check.get_service_checks()
@@ -454,7 +451,7 @@ class Collector(object):
 
             # Intrument check run timings if enabled.
             if self.check_timings:
-                metric = 'datadog.agent.check_run_time'
+                metric = 'stackstate.agent.check_run_time'
                 meta = {'tags': ["check:%s" % check.name]}
                 metrics.append((metric, time.time(), check_run_time, meta))
 
@@ -467,7 +464,7 @@ class Collector(object):
             check_statuses.append(check_status)
 
         # Add a service check for the agent
-        service_checks.append(create_service_check('datadog.agent.up', AgentCheck.OK,
+        service_checks.append(create_service_check('stackstate.agent.up', AgentCheck.OK,
                               hostname=self.hostname))
 
         # Store the metrics and events in the payload.

@@ -146,7 +146,7 @@ class TestConfig(unittest.TestCase):
             Platform.is_win32 = staticmethod(func)
 
     def testDefaultChecks(self):
-        checks = load_check_directory({"additional_checksd": "/etc/dd-agent/checks.d/"}, "foo")
+        checks = load_check_directory({"additional_checksd": "/etc/sts-agent/checks.d/"}, "foo")
         init_checks_names = [c.name for c in checks['initialized_checks']]
 
         for c in DEFAULT_CHECKS:
@@ -194,7 +194,7 @@ class TestConfigLoadCheckDirectory(unittest.TestCase):
         """
         # Samples
         check_name = u"haproxy"
-        unix_check_path = u"/etc/dd-agent/conf.d/haproxy.yaml"
+        unix_check_path = u"/etc/sts-agent/conf.d/haproxy.yaml"
         win_check_path = u"C:\\ProgramData\\Datadog\\conf.d\\haproxy.yaml"
         with mock.patch('config.os.path.splitext', side_effect=ntpath.splitext):
             with mock.patch('config.os.path.split', side_effect=ntpath.split):

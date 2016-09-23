@@ -1,14 +1,10 @@
-# (C) Datadog, Inc. 2012-2016
-# (C) Robert Leftwich <rleftwich@lightkeeper.com> 2012
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 """
-Custom parser for supervisord log suitable for use by Datadog 'dogstreams'
+Custom parser for supervisord log suitable for use by StackState 'dogstreams'
 
-Add to datadog.conf as follows:
+Add to stackstate.conf as follows:
 
-dogstreams: [path_to_supervisord.log]:datadog.streams.supervisord:parse_supervisord
+dogstreams: [path_to_supervisord.log]:stackstate.streams.supervisord:parse_supervisord
 
 """
 # stdlib

@@ -83,7 +83,7 @@ class TestServiceDiscovery(unittest.TestCase):
         u'Image': u'nginx',
         u'Name': u'/nginx',
         u'NetworkSettings': {u'IPAddress': u'172.17.0.21', u'Ports': {u'443/tcp': None, u'80/tcp': None}},
-        u'Labels': {'com.datadoghq.sd.check.id': 'custom-nginx'}
+        u'Labels': {'com.stackstate.sd.check.id': 'custom-nginx'}
     }
     kubernetes_container_inspect = {
         u'Id': u'389dc8a4361f3d6c866e9e9a7b6972b26a31c589c4e2f097375d55656a070bc9',
@@ -168,7 +168,7 @@ class TestServiceDiscovery(unittest.TestCase):
             'service_discovery': True,
             'service_discovery_backend': 'docker',
             'sd_template_dir': '/datadog/check_configs',
-            'additional_checksd': '/etc/dd-agent/checks.d/',
+            'additional_checksd': '/etc/sts-agent/checks.d/',
         }
         self.agentConfigs = [self.etcd_agentConfig, self.consul_agentConfig, self.auto_conf_agentConfig]
 

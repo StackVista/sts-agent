@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 # stdlib
 import ConfigParser
@@ -20,7 +17,7 @@ from socket import gaierror, gethostbyname
 import string
 import sys
 import traceback
-from urlparse import urlparse
+#from urlparse import urlparse
 
 # project
 from util import check_yaml, get_os
@@ -36,9 +33,9 @@ from utils.subprocess_output import (
 
 # CONSTANTS
 AGENT_VERSION = "5.9.0"
-DATADOG_CONF = "datadog.conf"
-UNIX_CONFIG_PATH = '/etc/dd-agent'
-MAC_CONFIG_PATH = '/opt/datadog-agent/etc'
+STACKSTATE_CONF = "stackstate.conf"
+UNIX_CONFIG_PATH = '/etc/sts-agent'
+MAC_CONFIG_PATH = '/opt/stackstate-agent/etc'
 DEFAULT_CHECK_FREQUENCY = 15   # seconds
 LOGGING_MAX_BYTES = 10 * 1024 * 1024
 SDK_INTEGRATIONS_DIR = 'integrations'
@@ -66,12 +63,6 @@ NAGIOS_OLD_CONF_KEYS = [
     'nagios_log',
     'nagios_perf_cfg'
 ]
-
-LEGACY_DATADOG_URLS = [
-    "app.datadoghq.com",
-    "app.datad0g.com",
-]
-
 
 class PathNotFound(Exception):
     pass
@@ -109,18 +100,7 @@ def get_version():
 
 # Return url endpoint, here because needs access to version number
 def get_url_endpoint(default_url, endpoint_type='app'):
-    parsed_url = urlparse(default_url)
-    if parsed_url.netloc not in LEGACY_DATADOG_URLS:
-        return default_url
-
-    subdomain = parsed_url.netloc.split(".")[0]
-
-    # Replace https://app.datadoghq.com in https://5-2-0-app.agent.datadoghq.com
-    return default_url.replace(subdomain,
-        "{0}-{1}.agent".format(
-            get_version().replace(".", "-"),
-            endpoint_type))
-
+    return default_url
 
 def skip_leading_wsp(f):
     "Works on a file, returns a file-like object"
@@ -150,12 +130,12 @@ def _windows_commondata_path():
 
 def _windows_config_path():
     common_data = _windows_commondata_path()
-    return _config_path(os.path.join(common_data, 'Datadog'))
+    return _config_path(os.path.join(common_data, 'StackState'))
 
 
 def _windows_confd_path():
     common_data = _windows_commondata_path()
-    return _confd_path(os.path.join(common_data, 'Datadog'))
+    return _confd_path(os.path.join(common_data, 'StackState'))
 
 
 def _windows_checksd_path():
@@ -196,7 +176,7 @@ def _unix_checksd_path():
 
 
 def _config_path(directory):
-    path = os.path.join(directory, DATADOG_CONF)
+    path = os.path.join(directory, STACKSTATE_CONF)
     if os.path.exists(path):
         return path
     raise PathNotFound(path)
@@ -341,14 +321,14 @@ def get_config(parse_args=True, cfg_path=None, options=None):
         'use_ec2_instance_id': False,  # DEPRECATED
         'version': get_version(),
         'watchdog': True,
-        'additional_checksd': '/etc/dd-agent/checks.d/',
+        'additional_checksd': '/etc/sts-agent/checks.d/',
         'bind_host': get_default_bind_host(),
         'statsd_metric_namespace': None,
         'utf8_decoding': False
     }
 
     if Platform.is_mac():
-        agentConfig['additional_checksd'] = '/opt/datadog-agent/etc/checks.d'
+        agentConfig['additional_checksd'] = '/opt/stackstate-agent/etc/checks.d'
 
     # Config handling
     try:
@@ -404,7 +384,6 @@ def get_config(parse_args=True, cfg_path=None, options=None):
         # Forwarder endpoints logic
         # endpoints is:
         # {
-        #    'https://app.datadoghq.com': ['api_key_abc', 'api_key_def'],
         #    'https://app.example.com': ['api_key_xyz']
         # }
         endpoints = {dd_url: [api_key]}
@@ -441,7 +420,7 @@ def get_config(parse_args=True, cfg_path=None, options=None):
         elif get_os() == 'windows':
             # default windows location
             common_path = _windows_commondata_path()
-            agentConfig['additional_checksd'] = os.path.join(common_path, 'Datadog', 'checks.d')
+            agentConfig['additional_checksd'] = os.path.join(common_path, 'StackState', 'checks.d')
 
         if config.has_option('Main', 'use_dogstatsd'):
             agentConfig['use_dogstatsd'] = config.get('Main', 'use_dogstatsd').lower() in ("yes", "true")
@@ -611,7 +590,7 @@ def get_config(parse_args=True, cfg_path=None, options=None):
     # Storing proxy settings in the agentConfig
     agentConfig['proxy_settings'] = get_proxy(agentConfig)
     if agentConfig.get('ca_certs', None) is None:
-        agentConfig['ssl_certificate'] = get_ssl_certificate(get_os(), 'datadog-cert.pem')
+        agentConfig['ssl_certificate'] = get_ssl_certificate(get_os(), 'stackstate-cert.pem')
     else:
         agentConfig['ssl_certificate'] = agentConfig['ca_certs']
 
@@ -673,7 +652,7 @@ def set_win32_cert_path():
         crt_path = os.path.join(prog_path, 'ca-certificates.crt')
     else:
         cur_path = os.path.dirname(__file__)
-        crt_path = os.path.join(cur_path, 'packaging', 'datadog-agent', 'win32',
+        crt_path = os.path.join(cur_path, 'packaging', 'stackstate-agent', 'win32',
                                 'install_files', 'ca-certificates.crt')
     import tornado.simple_httpclient
     log.info("Windows certificate path: %s" % crt_path)
@@ -832,7 +811,7 @@ def _deprecated_configs(agentConfig):
     deprecated_checks = {}
     deprecated_configs_enabled = [v for k, v in OLD_STYLE_PARAMETERS if len([l for l in agentConfig if l.startswith(k)]) > 0]
     for deprecated_config in deprecated_configs_enabled:
-        msg = "Configuring %s in datadog.conf is not supported anymore. Please use conf.d" % deprecated_config
+        msg = "Configuring %s in stackstate.conf is not supported anymore. Please use conf.d" % deprecated_config
         deprecated_checks[deprecated_config] = {'error': msg, 'traceback': None}
         log.error(msg)
     return deprecated_checks
@@ -856,10 +835,8 @@ def _file_configs_paths(osname, agentConfig):
                 all_file_configs.append(default_config)
 
     # Compatibility code for the Nagios checks if it's still configured
-    # in datadog.conf
     # FIXME: 6.x, should be removed
     if not any('nagios' in config for config in itertools.chain(*all_file_configs)):
-        # check if it's configured in datadog.conf the old way
         if any([nagios_key in agentConfig for nagios_key in NAGIOS_OLD_CONF_KEYS]):
             all_file_configs.append('deprecated/nagios')
 
@@ -912,7 +889,7 @@ def get_checks_places(osname, agentConfig):
 
 def _load_file_config(config_path, check_name, agentConfig):
     if config_path == 'deprecated/nagios':
-        log.warning("Configuring Nagios in datadog.conf is deprecated "
+        log.warning("Configuring Nagios in stackstate.conf is deprecated "
                     "and will be removed in a future version. "
                     "Please use conf.d")
         check_config = {'instances': [dict((key, value) for (key, value) in agentConfig.iteritems() if key in NAGIOS_OLD_CONF_KEYS)]}
@@ -1129,16 +1106,16 @@ def get_logging_config(cfg_path=None):
         'syslog_port': None,
     }
     if system_os == 'windows':
-        logging_config['windows_collector_log_file'] = os.path.join(_windows_commondata_path(), 'Datadog', 'logs', 'collector.log')
-        logging_config['windows_forwarder_log_file'] = os.path.join(_windows_commondata_path(), 'Datadog', 'logs', 'forwarder.log')
-        logging_config['windows_dogstatsd_log_file'] = os.path.join(_windows_commondata_path(), 'Datadog', 'logs', 'dogstatsd.log')
-        logging_config['jmxfetch_log_file'] = os.path.join(_windows_commondata_path(), 'Datadog', 'logs', 'jmxfetch.log')
+        logging_config['windows_collector_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'collector.log')
+        logging_config['windows_forwarder_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'forwarder.log')
+        logging_config['windows_dogstatsd_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'dogstatsd.log')
+        logging_config['jmxfetch_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'jmxfetch.log')
     else:
-        logging_config['collector_log_file'] = '/var/log/datadog/collector.log'
-        logging_config['forwarder_log_file'] = '/var/log/datadog/forwarder.log'
-        logging_config['dogstatsd_log_file'] = '/var/log/datadog/dogstatsd.log'
-        logging_config['jmxfetch_log_file'] = '/var/log/datadog/jmxfetch.log'
-        logging_config['go-metro_log_file'] = '/var/log/datadog/go-metro.log'
+        logging_config['collector_log_file'] = '/var/log/stackstate/collector.log'
+        logging_config['forwarder_log_file'] = '/var/log/stackstate/forwarder.log'
+        logging_config['dogstatsd_log_file'] = '/var/log/stackstate/stsstatsd.log'
+        logging_config['jmxfetch_log_file'] = '/var/log/stackstate/jmxfetch.log'
+        logging_config['go-metro_log_file'] = '/var/log/stackstate/go-metro.log'
         logging_config['log_to_syslog'] = True
 
     config_path = get_config_path(cfg_path, os_name=system_os)
@@ -1146,15 +1123,8 @@ def get_logging_config(cfg_path=None):
     config.readfp(skip_leading_wsp(open(config_path)))
 
     if config.has_section('handlers') or config.has_section('loggers') or config.has_section('formatters'):
-        if system_os == 'windows':
-            config_example_file = "https://github.com/DataDog/dd-agent/blob/master/packaging/datadog-agent/win32/install_files/datadog_win32.conf"
-        else:
-            config_example_file = "https://github.com/DataDog/dd-agent/blob/master/datadog.conf.example"
-
         sys.stderr.write("""Python logging config is no longer supported and will be ignored.
-            To configure logging, update the logging portion of 'datadog.conf' to match:
-             '%s'.
-             """ % config_example_file)
+            To configure logging, update the logging portion of 'stackstate.conf'.""")
 
     for option in logging_config:
         if config.has_option('Main', option):

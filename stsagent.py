@@ -1,14 +1,5 @@
-#!/opt/datadog-agent/embedded/bin/python
-'''
-    Datadog
-    www.datadoghq.com
-    ----
-    Make sense of your IT Data
+#!/opt/stackstate-agent/embedded/bin/python
 
-    Licensed under Simplified BSD License (see LICENSE)
-    (C) Boxed Ice 2010 all rights reserved
-    (C) Datadog, Inc. 2010-2016 all rights reserved
-'''
 # set up logging before importing any other components
 from config import initialize_logging  # noqa
 initialize_logging('forwarder')
@@ -254,7 +245,7 @@ class AgentTransaction(Transaction):
 
         if use_curl:
             if pycurl is None:
-                log.error("dd-agent is configured to use the Curl HTTP Client, but pycurl is not available on this system.")
+                log.error("sts-agent is configured to use the Curl HTTP Client, but pycurl is not available on this system.")
             else:
                 log.debug("Using CurlAsyncHTTPClient")
                 tornado.httpclient.AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")

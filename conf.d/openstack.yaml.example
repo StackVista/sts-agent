@@ -27,7 +27,7 @@ init_config:
       # need to set to false when using self-signed certs
       # ssl_verify: true
 
-     # Whether the dd-agent proxy should also be used for openstack API requests (if set)
+     # Whether the sts-agent proxy should also be used for openstack API requests (if set)
      # use_agent_proxy: true
 
 instances:
@@ -54,7 +54,7 @@ instances:
       # `user` should resolve to a structure like {'password': 'my_password', 'name': 'my_name', 'domain': {'id': 'my_domain_id'}}
       user:
           password: my_password
-          name: datadog
+          name: stackstate
           domain:
               id: default
 

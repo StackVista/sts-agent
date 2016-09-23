@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2015-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 """Mesos Master check
 

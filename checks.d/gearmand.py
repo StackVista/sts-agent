@@ -1,8 +1,3 @@
-# (C) Datadog, Inc. 2013-2016
-# (C) Patrick Galbraith <patg@patg.net> 2013
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
-
 # 3rd party
 import gearman
 
@@ -54,7 +49,7 @@ class Gearman(AgentCheck):
         if len(tasks) > MAX_NUM_TASKS:
             # Display a warning in the info page
             self.warning(
-                "Too many tasks to fetch. You must choose the tasks you are interested in by editing the gearmand.yaml configuration file or get in touch with Datadog Support")
+                "Too many tasks to fetch. You must choose the tasks you are interested in by editing the gearmand.yaml configuration file or get in touch with StackState Support")
 
         for stat in tasks[:MAX_NUM_TASKS]:
             running = stat['running']

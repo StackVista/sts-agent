@@ -1,11 +1,11 @@
-# The user running dd-agent must have passwordless sudo access for the find
+# The user running sts-agent must have passwordless sudo access for the find
 # command to run the postfix check.  Here's an example:
 #
 # example /etc/sudoers entry:
-#          dd-agent ALL=(ALL) NOPASSWD:/usr/bin/find
+#          sts-agent ALL=(ALL) NOPASSWD:/usr/bin/find
 #
 # Redhat/CentOS/Amazon Linux flavours will need to add:
-#          Defaults:dd-agent !requiretty
+#          Defaults:sts-agent !requiretty
 
 init_config:
 

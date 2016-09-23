@@ -1,9 +1,4 @@
 #!/bin/bash
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
-# Datadog Agent installation script: install and set up the Agent on supported Linux distributions
-# using the package manager and Datadog repositories.
 
 set -e
 logfile="ddagent-install.log"
@@ -156,7 +151,7 @@ determine the cause.
 If the cause is unclear, please contact Datadog support.
 *****
 "
-    $sudo_cmd apt-get install -y --force-yes datadog-agent
+    $sudo_cmd apt-get install -y --force-yes stackstate-agent
     ERROR_MESSAGE=""
 else
     printf "\033[31mYour OS or distribution are not supported by this install script.
@@ -167,22 +162,22 @@ Please follow the instructions on the Agent setup page:
 fi
 
 # Set the configuration
-if [ -e /etc/dd-agent/datadog.conf ]; then
-    printf "\033[34m\n* Keeping old datadog.conf configuration file\n\033[0m\n"
+if [ -e /etc/sts-agent/stackstate.conf ]; then
+    printf "\033[34m\n* Keeping old stackstate.conf configuration file\n\033[0m\n"
 else
-    printf "\033[34m\n* Adding your API key to the Agent configuration: /etc/dd-agent/datadog.conf\n\033[0m\n"
-    $sudo_cmd sh -c "sed 's/api_key:.*/api_key: $apikey/' /etc/dd-agent/datadog.conf.example > /etc/dd-agent/datadog.conf"
+    printf "\033[34m\n* Adding your API key to the Agent configuration: /etc/sts-agent/stackstate.conf\n\033[0m\n"
+    $sudo_cmd sh -c "sed 's/api_key:.*/api_key: $apikey/' /etc/sts-agent/stackstate.conf.example > /etc/sts-agent/stackstate.conf"
     if [ $dd_hostname ]; then
-        printf "\033[34m\n* Adding your HOSTNAME to the Agent configuration: /etc/dd-agent/datadog.conf\n\033[0m\n"
-        $sudo_cmd sh -c "sed -i 's/#hostname:.*/hostname: $dd_hostname/' /etc/dd-agent/datadog.conf"
+        printf "\033[34m\n* Adding your HOSTNAME to the Agent configuration: /etc/sts-agent/stackstate.conf\n\033[0m\n"
+        $sudo_cmd sh -c "sed -i 's/#hostname:.*/hostname: $dd_hostname/' /etc/sts-agent/stackstate.conf"
     fi
-    $sudo_cmd chown dd-agent:root /etc/dd-agent/datadog.conf
-    $sudo_cmd chmod 640 /etc/dd-agent/datadog.conf
+    $sudo_cmd chown sts-agent:root /etc/sts-agent/stackstate.conf
+    $sudo_cmd chmod 640 /etc/sts-agent/stackstate.conf
 fi
 
-restart_cmd="$sudo_cmd /etc/init.d/datadog-agent restart"
+restart_cmd="$sudo_cmd /etc/init.d/stackstate-agent restart"
 if command -v invoke-rc.d >/dev/null 2>&1; then
-    restart_cmd="$sudo_cmd invoke-rc.d datadog-agent restart"
+    restart_cmd="$sudo_cmd invoke-rc.d stackstate-agent restart"
 fi
 
 if $no_start; then
@@ -250,10 +245,10 @@ background and submit metrics to Datadog.
 
 If you ever want to stop the Agent, run:
 
-    sudo /etc/init.d/datadog-agent stop
+    sudo /etc/init.d/stackstate-agent stop
 
 And to run it again run:
 
-    sudo /etc/init.d/datadog-agent start
+    sudo /etc/init.d/stackstate-agent start
 
 \033[0m"

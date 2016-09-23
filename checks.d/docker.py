@@ -1,8 +1,3 @@
-# (C) Datadog, Inc. 2014-2016
-# (C) Steeve Morin <steeve.morin@gmail.com> 2014
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
-
 # stdlib
 import urllib2
 import urllib
@@ -392,7 +387,7 @@ class Docker(AgentCheck):
             request = self.url_opener.open(req)
         except urllib2.URLError as e:
             if "Errno 13" in str(e):
-                raise Exception("Unable to connect to socket. dd-agent user must be part of the 'docker' group")
+                raise Exception("Unable to connect to socket. sts-agent user must be part of the 'docker' group")
             raise
 
         response = request.read()

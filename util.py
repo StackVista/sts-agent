@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 # stdlib
 from collections import deque
@@ -88,7 +85,7 @@ def get_os():
 def headers(agentConfig, **kwargs):
     # Build the request headers
     res = {
-        'User-Agent': 'Datadog Agent/%s' % agentConfig['version'],
+        'User-Agent': 'StackState Agent/%s' % agentConfig['version'],
         'Content-Type': 'application/x-www-form-urlencoded',
         'Accept': 'text/html, */*',
     }
@@ -180,7 +177,7 @@ def get_hostname(config=None):
 
     Tries, in order:
 
-      * agent config (datadog.conf, "hostname:")
+      * agent config (stackstate.conf, "hostname:")
       * 'hostname -f' (on unix)
       * socket.gethostname()
     """
@@ -242,8 +239,8 @@ def get_hostname(config=None):
             hostname = socket_hostname
 
     if hostname is None:
-        log.critical('Unable to reliably determine host name. You can define one in datadog.conf or in your hosts file')
-        raise Exception('Unable to reliably determine host name. You can define one in datadog.conf or in your hosts file')
+        log.critical('Unable to reliably determine host name. You can define one in stackstate.conf or in your hosts file')
+        raise Exception('Unable to reliably determine host name. You can define one in stackstate.conf or in your hosts file')
     else:
         return hostname
 

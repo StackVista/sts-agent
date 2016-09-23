@@ -2117,7 +2117,7 @@ https://github.com/DataDog/dd-agent/compare/3.5.0...3.5.1
 https://github.com/DataDog/dd-agent/compare/3.4.4...3.5.0
 
 #### Changes
-* [FEATURE] Logging overhaul: Consistent locations in `/var/log/datadog/`, defaults to INFO level ([#297](https://github.com/DataDog/dd-agent/pull/297))
+* [FEATURE] Logging overhaul: Consistent locations in `/var/log/stackstate/`, defaults to INFO level ([#297](https://github.com/DataDog/dd-agent/pull/297))
 * [FEATURE] Add more memcached metrics ([#283](https://github.com/DataDog/dd-agent/pull/283)). Thanks to [@jkoppe][]
 * [FEATURE] RabbitMQ integration ([#330](https://github.com/DataDog/dd-agent/pull/330)). Thanks to [@brettlangdon][]
 * [FEATURE] Riak integration ([#332](https://github.com/DataDog/dd-agent/pull/332)). Thanks to [@stefan-mees][]

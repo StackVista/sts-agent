@@ -206,7 +206,7 @@ class EditorFile(object):
 
 class DatadogConf(EditorFile):
     def __init__(self, config_path):
-        EditorFile.__init__(self, config_path, "Agent settings file: datadog.conf")
+        EditorFile.__init__(self, config_path, "Agent settings file: stackstate.conf")
 
     @property
     def api_key(self):
@@ -544,7 +544,7 @@ class MainWindow(QSplitter):
         )
         self.dogstatsd_log_file = EditorFile(
             config.get('%sdogstatsd_log_file' % prefix),
-            "Dogstatsd log file"
+            "StsStatsD log file"
         )
         self.jmxfetch_log_file = EditorFile(
             config.get('jmxfetch_log_file'),
@@ -852,7 +852,7 @@ if __name__ == '__main__':
         add_image_path(osp.join(os.getcwd(), 'images'))
         # add datadog-agent in PATH
         os.environ['PATH'] = "{0}:{1}".format(
-            '/opt/datadog-agent/bin/',
+            '/opt/stackstate-agent/bin/',
             os.environ['PATH']
         )
         win = SystemTray() if len(sys.argv) < 2 else MainWindow()

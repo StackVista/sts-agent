@@ -1,7 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
-
 """ceph check
 Collects metrics from ceph clusters
 """
@@ -29,7 +25,7 @@ class Ceph(AgentCheck):
         if use_sudo:
             test_sudo = os.system('setsid sudo -l < /dev/null')
             if test_sudo != 0:
-                raise Exception('The dd-agent user does not have sudo access')
+                raise Exception('The sts-agent user does not have sudo access')
             ceph_args = ['sudo', ceph_cmd]
         else:
             ceph_args = [ceph_cmd]

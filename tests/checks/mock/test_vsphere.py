@@ -30,7 +30,7 @@ class MockedMOR(Mock):
         self.customValue = []
 
         if is_labeled:
-            self.customValue.append(Mock(value="DatadogMonitored"))
+            self.customValue.append(Mock(value="StackStateMonitored"))
 
 
 def create_topology(topology_json):

@@ -1,16 +1,12 @@
-#!/opt/datadog-agent/embedded/bin/python
-
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
+#!/opt/stackstate-agent/embedded/bin/python
 
 """
-A Python Statsd implementation with some datadog special sauce.
+A Python Statsd implementation with some stackstate special sauce.
 """
 
 # set up logging before importing any other components
 from config import initialize_logging  # noqa
-initialize_logging('dogstatsd')
+initialize_logging('stsstatsd')
 
 
 from utils.proxy import set_no_proxy_settings  # noqa
@@ -52,9 +48,9 @@ requests_log = logging.getLogger("requests.packages.urllib3")
 requests_log.setLevel(logging.WARN)
 requests_log.propagate = True
 
-log = logging.getLogger('dogstatsd')
+log = logging.getLogger('stsstatsd')
 
-PID_NAME = "dogstatsd"
+PID_NAME = "stsstatsd"
 PID_DIR = None
 
 # Dogstatsd constants in seconds
@@ -82,7 +78,7 @@ def add_serialization_status_metric(status, hostname):
     value = 1
     return {
         'tags': ["status:{0}".format(status)],
-        'metric': 'datadog.dogstatsd.serialization_status',
+        'metric': 'stackstate.stsstatsd.serialization_status',
         'interval': interval,
         'device_name': None,
         'host': hostname,
@@ -214,7 +210,7 @@ class Reporter(threading.Thread):
 
         while not self.finished.isSet():  # Use camel case isSet for 2.4 support.
             self.finished.wait(self.interval)
-            self.metrics_aggregator.send_packet_count('datadog.dogstatsd.packet.count')
+            self.metrics_aggregator.send_packet_count('stackstate.stsstatsd.packet.count')
             self.flush()
             if self.watchdog:
                 self.watchdog.reset()
@@ -373,7 +369,7 @@ class Server(object):
         try:
             self.socket.bind(self.sockaddr)
         except TypeError:
-            log.error('Unable to start Dogstatsd server loop, exiting...')
+            log.error('Unable to start StsStatsD server loop, exiting...')
             return
 
         log.info('Listening on socket address: %s', str(self.sockaddr))
@@ -442,14 +438,14 @@ class Dogstatsd(Daemon):
                 self.server.start()
             except Exception as e:
                 log.exception(
-                    'Error starting dogstatsd server on %s', self.server.sockaddr)
+                    'Error starting StsStatsd server on %s', self.server.sockaddr)
                 raise e
         finally:
             # The server will block until it's done. Once we're here, shutdown
             # the reporting thread.
             self.reporter.stop()
             self.reporter.join()
-            log.info("Dogstatsd is stopped")
+            log.info("StsStatsd is stopped")
             # Restart if asked to restart
             if self.autorestart:
                 sys.exit(AgentSupervisor.RESTART_EXIT_STATUS)
@@ -467,7 +463,7 @@ def init(config_path=None, use_watchdog=False, use_forwarder=False, args=None):
 
     if (not c['use_dogstatsd'] and
             (args and args[0] in ['start', 'restart'] or not args)):
-        log.info("Dogstatsd is disabled. Exiting")
+        log.info("StsStatsd is disabled. Exiting")
         # We're exiting purposefully, so exit with zero (supervisor's expected
         # code). HACK: Sleep a little bit so supervisor thinks we've started cleanly
         # and thus can exit cleanly.

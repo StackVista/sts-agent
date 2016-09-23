@@ -1,7 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
-
 # stdlib
 import os
 import re
@@ -79,7 +75,7 @@ class Disk(AgentCheck):
 
         if value == default and legacy_name in self.agentConfig:
             self.log.warn(
-                "Using `{0}` in datadog.conf has been deprecated"
+                "Using `{0}` in stackstate.conf has been deprecated"
                 " in favor of `{1}` in disk.yaml".format(legacy_name, option)
             )
             value = self.agentConfig.get(legacy_name) or default

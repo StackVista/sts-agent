@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/DataDog/dd-agent.svg?branch=master)](https://travis-ci.org/DataDog/dd-agent)
+[![Build Status](https://travis-ci.org/StackVista/sts-agent.svg?branch=manual_renames)](https://travis-ci.org/StackVista/sts-agent)
 
 The Datadog Agent faithfully collects events and metrics and brings
 them to [Datadog](https://app.datadoghq.com) on your behalf so that

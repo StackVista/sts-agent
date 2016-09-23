@@ -1,5 +1,5 @@
-# If you're running Varnish 4.1+, you must add the dd-agent user to the varnish group:
-# $ sudo usermod -G varnish -a dd-agent
+# If you're running Varnish 4.1+, you must add the sts-agent user to the varnish group:
+# $ sudo usermod -G varnish -a sts-agent
 
 init_config:
 
@@ -22,7 +22,7 @@ instances:
     # privilleges. You can configure your sudoers file for this:
     #
     # example /etc/sudoers entry:
-    #   dd-agent ALL=(ALL) NOPASSWD:/usr/bin/varnishadm
+    #   sts-agent ALL=(ALL) NOPASSWD:/usr/bin/varnishadm
     #
     # varnishadm: /usr/bin/varnishadm
 

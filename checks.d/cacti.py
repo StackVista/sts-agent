@@ -1,7 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
-
 # stdlib
 from collections import namedtuple
 from fnmatch import fnmatch
@@ -215,7 +211,7 @@ class Cacti(AgentCheck):
         return res
 
     def _format_metric_name(self, m_name, cfunc):
-        ''' Format a cacti metric name into a Datadog-friendly name '''
+        ''' Format a cacti metric name into a StackState-friendly name '''
         try:
             aggr = CFUNC_TO_AGGR[cfunc]
         except KeyError:

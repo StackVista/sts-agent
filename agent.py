@@ -1,14 +1,4 @@
-#!/opt/datadog-agent/embedded/bin/python
-"""
-    Datadog
-    www.datadoghq.com
-    ----
-    Cloud-Scale Monitoring. Monitoring that tracks your dynamic infrastructure.
-
-    Licensed under Simplified BSD License (see LICENSE)
-    (C) Boxed Ice 2010 all rights reserved
-    (C) Datadog, Inc. 2010-2016 all rights reserved
-"""
+#!/opt/stackstate-agent/embedded/bin/python
 # set up logging before importing any other components
 from config import get_version, initialize_logging  # noqa
 initialize_logging('collector')
@@ -50,7 +40,7 @@ from utils.service_discovery.config_stores import get_config_store
 from utils.service_discovery.sd_backend import get_sd_backend
 
 # Constants
-PID_NAME = "dd-agent"
+PID_NAME = "sts-agent"
 PID_DIR = None
 WATCHDOG_MULTIPLIER = 10
 RESTART_INTERVAL = 4 * 24 * 60 * 60  # Defaults to 4 days
