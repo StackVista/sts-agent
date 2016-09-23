@@ -3,7 +3,6 @@ sudo: false
 branches:
   only:
     - master
-    - manual_renames
     - /^\d+\.\d+\.x$/ # release forked patches branch
 
 language: python
