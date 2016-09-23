@@ -23,7 +23,7 @@ CHECK_NAMES = 'check_names'
 INIT_CONFIGS = 'init_configs'
 INSTANCES = 'instances'
 KUBE_ANNOTATIONS = 'kube_annotations'
-KUBE_ANNOTATION_PREFIX = 'com.datadoghq.sd/'
+KUBE_ANNOTATION_PREFIX = 'com.stackstate.sd/'
 
 
 class KeyNotFound(Exception):

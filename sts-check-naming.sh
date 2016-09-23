@@ -15,7 +15,7 @@ grep -r "from ddagent import" . | grep -v sts-check-naming
 grep -rie "log\.info.*DataDog" . | grep -v sts-check-naming
 grep -rie "log\.warn.*DataDog" . | grep -v sts-check-naming
 grep -rie "log\.error.*DataDog" . | grep -v sts-check-naming
-grep -r datadoghq.com . | grep -v sts-check-naming | grep -v CHANGELOG | grep -ve "^./ci/" | grep -v centos | grep -v "/source/" | grep -v win32 | grep -ve "^./tests/" | grep -v README | grep -v CONTRIBUTING | grep -v LICENSE | grep -v git/logs
+grep -r datadoghq . | grep -v sts-check-naming | grep -v CHANGELOG | grep -ve "^./ci/" | grep -v centos | grep -v "/source/" | grep -v win32 | grep -ve "^./tests/" | grep -v README | grep -v CONTRIBUTING | grep -v LICENSE | grep -v git/logs | grep -v osx | grep -ve "^./.git/"
 
 # Pending a decision on how far we go renaming dogstatsd, too
 # grep -r dogstatsd . | grep -v sts-check-naming | grep -ve "^./\\w*.py:\\s*\"\"\"" | grep -v CHANGELOG | grep -v CONTRIBUTING
