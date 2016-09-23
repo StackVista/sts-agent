@@ -22,7 +22,7 @@ setup_requires = []
 install_requires = []
 
 # Modified on mac
-app_name = 'datadog-agent'
+app_name = 'stackstate-agent'
 # plist (used only on mac)
 plist = None
 
@@ -135,12 +135,12 @@ if sys.platform == 'win32':
     }
 
 elif sys.platform == 'darwin':
-    app_name = 'Datadog Agent'
+    app_name = 'StackState Agent'
 
     from plistlib import Plist
     plist = Plist.fromFile(os.path.dirname(os.path.realpath(__file__)) + '/packaging/Info.plist')
     plist.update(dict(
-        CFBundleGetInfoString="{0}, Copyright (c) 2009-{1}, Datadog Inc.".format(
+        CFBundleGetInfoString="{0}, Copyright (c) 2009-{1}, Datadog Inc., (c) 2016-{1} StackState, Inc".format(
             get_version(), date.today().year),
         CFBundleVersion=get_version()
     ))
@@ -164,10 +164,10 @@ elif sys.platform == 'darwin':
 setup(
     name=app_name,
     version=get_version(),
-    description="DevOps' best friend",
-    author='DataDog',
-    author_email='dev@datadoghq.com',
-    url='http://www.datadoghq.com',
+    description="Hungry for Insight",
+    author='StackState',
+    author_email='info@stackstate.com',
+    url='http://www.stackstate.com',
     install_requires=install_requires,
     setup_requires=setup_requires,
     packages=find_packages(),
