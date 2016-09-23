@@ -50,7 +50,7 @@ init_config:
         domain: org.apache.cassandra.metrics
         type: ColumnFamily
         bean_regex:
-          - .*keyspace=.*  
+          - .*keyspace=.*
         name:
           - TotalDiskSpaceUsed
           - BloomFilterDiskSpaceUsed
@@ -65,6 +65,14 @@ init_config:
           - MemtableLiveDataSize
           - MemtableSwitchCount
           - MinRowSize
+          - ReadLatency
+          - WriteLatency
+        attribute:
+          - Value
+          - Count
+          - Mean
+          - 99thPercentile
+          - Max
       exclude:
         keyspace:
           - OpsCenter
