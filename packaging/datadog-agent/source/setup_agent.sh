@@ -11,12 +11,12 @@ set -u
 # SCRIPT KNOBS
 #######################################################################
 # Update for new releases, will pull this tag in the repo
-DEFAULT_AGENT_VERSION="5.8.0"
+DEFAULT_AGENT_VERSION="5.8.5"
 # Pin pip version, in the past there was some buggy releases and get-pip.py
 # always pulls the latest version
 PIP_VERSION="6.1.1"
 VIRTUALENV_VERSION="1.11.6"
-SUPERVISOR_VERSION="3.1.3"
+SUPERVISOR_VERSION="3.3.0"
 SETUPTOOLS_VERSION="20.9.0"
 
 #######################################################################
@@ -394,15 +394,15 @@ $DOWNLOADER "$DD_HOME/requirements-opt.txt" "$BASE_GITHUB_URL/requirements-opt.t
 "$DD_HOME/agent/utils/pip-allow-failures.sh" "$DD_HOME/requirements-opt.txt"
 print_done
 
-print_console "* Setting up a datadog.conf generic configuration file"
+print_console "* Setting up a stackstate.conf generic configuration file"
 if [ -z "$SED_CMD" ]; then
-    print_console "    No sed command. Proceeding without installing datadog.conf
-    Please make sure that the agent's log files are explicitly configured in datadog.conf"
+    print_console "    No sed command. Proceeding without installing stackstate.conf
+    Please make sure that the agent's log files are explicitly configured in stackstate.conf"
 else
-    dd_conf_file="$DD_HOME/agent/datadog.conf"
+    dd_conf_file="$DD_HOME/agent/stackstate.conf"
 
     if [ "$DD_API_KEY" = "no_key" ]; then
-        print_console "    Got no API KEY through $DD_API_KEY. Proceeding without installing datadog.conf"
+        print_console "    Got no API KEY through $DD_API_KEY. Proceeding without installing stackstate.conf"
     else
         # Install API key
         $SED_CMD -e "s/api_key:.*/api_key: $DD_API_KEY/" "$dd_conf_file.example" > "$dd_conf_file"

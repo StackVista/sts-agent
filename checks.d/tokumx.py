@@ -1,8 +1,3 @@
-# (C) Datadog, Inc. 2014-2016
-# (C) Leif Walsh <leif.walsh@gmail.com> 2014
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
-
 # stdlib
 import time
 import types
@@ -18,7 +13,6 @@ from pymongo import (
 
 # project
 from checks import AgentCheck
-from util import get_hostname
 
 DEFAULT_TIMEOUT = 10
 
@@ -244,7 +238,6 @@ class TokuMX(AgentCheck):
                 return 'Rollback'
 
         status = get_state_description(state)
-        hostname = get_hostname(agentConfig)
         msg_title = "%s is %s" % (server, status)
         msg = "TokuMX %s just reported as %s" % (server, status)
 
@@ -253,7 +246,7 @@ class TokuMX(AgentCheck):
             'event_type': 'tokumx',
             'msg_title': msg_title,
             'msg_text': msg,
-            'host': hostname
+            'host': self.hostname
         })
 
     def _get_ssl_params(self, instance):
@@ -379,7 +372,7 @@ class TokuMX(AgentCheck):
                 data['state'] = replSet['myState']
                 self.check_last_state(data['state'], server, self.agentConfig)
                 status['replSet'] = data
-        except Exception, e:
+        except Exception as e:
             if "OperationFailure" in repr(e) and "replSetGetStatus" in str(e):
                 pass
             else:

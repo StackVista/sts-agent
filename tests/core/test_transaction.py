@@ -6,15 +6,15 @@ import unittest
 
 # 3rd party
 from nose.plugins.attrib import attr
-import requests
-import simplejson as json
+#import requests
+#import simplejson as json
 from tornado.web import Application
 
 # project
-from config import get_version
-from ddagent import (
-    APIMetricTransaction,
-    APIServiceCheckTransaction,
+#from config import get_version
+from stsagent import (
+    #APIMetricTransaction,
+    #APIServiceCheckTransaction,
     MAX_QUEUE_SIZE,
     MetricTransaction,
     THROTTLING_DELAY,
@@ -167,79 +167,79 @@ class TestTransaction(unittest.TestCase):
         expected = ['https://foo.bar.com/intake/msgtype?api_key=foo']
         self.assertEqual(endpoints, expected, (endpoints, expected))
 
-    def testEndpoints(self):
-        """
-        Tests that the logic behind the agent version specific endpoints is ok.
-        Also tests that these endpoints actually exist.
-        """
-        MetricTransaction._endpoints = []
-        api_key = "a" * 32
-        config = {
-            "endpoints": {"https://app.datadoghq.com": [api_key]},
-            "dd_url": "https://app.datadoghq.com",
-            "api_key": api_key,
-            "use_dd": True
-        }
-
-        app = Application()
-        app.skip_ssl_validation = False
-        app._agentConfig = config
-        app.use_simple_http_client = True
-
-        trManager = TransactionManager(timedelta(seconds=0), MAX_QUEUE_SIZE,
-                                       THROTTLING_DELAY, max_endpoint_errors=100)
-        trManager._flush_without_ioloop = True  # Use blocking API to emulate tornado ioloop
-        MetricTransaction._trManager = trManager
-        MetricTransaction.set_application(app)
-        MetricTransaction.set_endpoints(config['endpoints'])
-
-        transaction = MetricTransaction(None, {}, "")
-        endpoints = []
-        for endpoint in transaction._endpoints:
-            for api_key in transaction._endpoints[endpoint]:
-                endpoints.append(transaction.get_url(endpoint, api_key))
-        expected = ['https://{0}-app.agent.datadoghq.com/intake/?api_key={1}'.format(
-            get_version().replace(".", "-"), api_key)]
-        self.assertEqual(endpoints, expected, (endpoints, expected))
-
-        for url in endpoints:
-            r = requests.post(url, data=json.dumps({"foo": "bar"}),
-                              headers={'Content-Type': "application/json"})
-            r.raise_for_status()
-
-        # API Metric Transaction
-        transaction = APIMetricTransaction(None, {})
-        endpoints = []
-        for endpoint in transaction._endpoints:
-            for api_key in transaction._endpoints[endpoint]:
-                endpoints.append(transaction.get_url(endpoint, api_key))
-        expected = ['https://{0}-app.agent.datadoghq.com/api/v1/series/?api_key={1}'.format(
-            get_version().replace(".", "-"), api_key)]
-        self.assertEqual(endpoints, expected, (endpoints, expected))
-
-        for url in endpoints:
-            r = requests.post(url, data=json.dumps({"foo": "bar"}),
-                              headers={'Content-Type': "application/json"})
-            r.raise_for_status()
-
-        # API Service Check Transaction
-        APIServiceCheckTransaction._trManager = trManager
-        APIServiceCheckTransaction.set_application(app)
-        APIServiceCheckTransaction.set_endpoints(config['endpoints'])
-
-        transaction = APIServiceCheckTransaction(None, {})
-        endpoints = []
-        for endpoint in transaction._endpoints:
-            for api_key in transaction._endpoints[endpoint]:
-                endpoints.append(transaction.get_url(endpoint, api_key))
-        expected = ['https://{0}-app.agent.datadoghq.com/api/v1/check_run/?api_key={1}'.format(
-            get_version().replace(".", "-"), api_key)]
-        self.assertEqual(endpoints, expected, (endpoints, expected))
-
-        for url in endpoints:
-            r = requests.post(url, data=json.dumps({'check': 'test', 'status': 0}),
-                              headers={'Content-Type': "application/json"})
-            r.raise_for_status()
+#    def testEndpoints(self):
+#        """
+#        Tests that the logic behind the agent version specific endpoints is ok.
+#        Also tests that these endpoints actually exist.
+#        """
+#        MetricTransaction._endpoints = []
+#        api_key = "a" * 32
+#        config = {
+#            "endpoints": {"https://app.datadoghq.com": [api_key]},
+#            "dd_url": "https://app.datadoghq.com",
+#            "api_key": api_key,
+#            "use_dd": True
+#        }
+#
+#        app = Application()
+#        app.skip_ssl_validation = False
+#        app._agentConfig = config
+#        app.use_simple_http_client = True
+#
+#        trManager = TransactionManager(timedelta(seconds=0), MAX_QUEUE_SIZE,
+#                                       THROTTLING_DELAY, max_endpoint_errors=100)
+#        trManager._flush_without_ioloop = True  # Use blocking API to emulate tornado ioloop
+#        MetricTransaction._trManager = trManager
+#        MetricTransaction.set_application(app)
+#        MetricTransaction.set_endpoints(config['endpoints'])
+#
+#        transaction = MetricTransaction(None, {}, "")
+#        endpoints = []
+#        for endpoint in transaction._endpoints:
+#            for api_key in transaction._endpoints[endpoint]:
+#                endpoints.append(transaction.get_url(endpoint, api_key))
+#        expected = ['https://{0}-app.agent.datadoghq.com/intake/?api_key={1}'.format(
+#            get_version().replace(".", "-"), api_key)]
+#        self.assertEqual(endpoints, expected, (endpoints, expected))
+#
+#        for url in endpoints:
+#            r = requests.post(url, data=json.dumps({"foo": "bar"}),
+#                              headers={'Content-Type': "application/json"})
+#            r.raise_for_status()
+#
+#        # API Metric Transaction
+#        transaction = APIMetricTransaction(None, {})
+#        endpoints = []
+#        for endpoint in transaction._endpoints:
+#            for api_key in transaction._endpoints[endpoint]:
+#                endpoints.append(transaction.get_url(endpoint, api_key))
+#        expected = ['https://{0}-app.agent.datadoghq.com/api/v1/series/?api_key={1}'.format(
+#            get_version().replace(".", "-"), api_key)]
+#        self.assertEqual(endpoints, expected, (endpoints, expected))
+#
+#        for url in endpoints:
+#            r = requests.post(url, data=json.dumps({"foo": "bar"}),
+#                              headers={'Content-Type': "application/json"})
+#            r.raise_for_status()
+#
+#        # API Service Check Transaction
+#        APIServiceCheckTransaction._trManager = trManager
+#        APIServiceCheckTransaction.set_application(app)
+#        APIServiceCheckTransaction.set_endpoints(config['endpoints'])
+#
+#        transaction = APIServiceCheckTransaction(None, {})
+#        endpoints = []
+#        for endpoint in transaction._endpoints:
+#            for api_key in transaction._endpoints[endpoint]:
+#                endpoints.append(transaction.get_url(endpoint, api_key))
+#        expected = ['https://{0}-app.agent.datadoghq.com/api/v1/check_run/?api_key={1}'.format(
+#            get_version().replace(".", "-"), api_key)]
+#        self.assertEqual(endpoints, expected, (endpoints, expected))
+#
+#        for url in endpoints:
+#            r = requests.post(url, data=json.dumps({'check': 'test', 'status': 0}),
+#                              headers={'Content-Type': "application/json"})
+#            r.raise_for_status()
 
     def test_endpoint_error(self):
         trManager = TransactionManager(timedelta(seconds=0), MAX_QUEUE_SIZE,
@@ -277,6 +277,7 @@ class TestTransaction(unittest.TestCase):
         trManager.flush()
         self.assertEqual(len(trManager._transactions), 0)
 
+    @attr('unix')
     def test_parallelism(self):
         step = 4
         trManager = TransactionManager(timedelta(seconds=0), MAX_QUEUE_SIZE,
@@ -310,7 +311,11 @@ class TestTransaction(unittest.TestCase):
             self.assertEqual(trManager._running_flushes, 1)
             self.assertEqual(trManager._finished_flushes, i)
             self.assertEqual(len(trManager._trs_to_flush), step - (i + 1))
-            time.sleep(1)
+            time.sleep(1.3)
+        # Once it's finished
+        self.assertEqual(trManager._running_flushes, 0)
+        self.assertEqual(trManager._finished_flushes, 2)
+        self.assertIs(trManager._trs_to_flush, None)
 
     def test_multiple_endpoints(self):
         config = {
@@ -336,3 +341,5 @@ class TestTransaction(unittest.TestCase):
         MetricTransaction({}, {})
         # 2 endpoints = 2 transactions
         self.assertEqual(len(trManager._transactions), 2)
+        self.assertEqual(trManager._transactions[0]._endpoint, 'https://app.datadoghq.com')
+        self.assertEqual(trManager._transactions[1]._endpoint, 'https://app.example.com')

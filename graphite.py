@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 # stdlib
 import cPickle as pickle
@@ -11,13 +8,16 @@ import struct
 from tornado.ioloop import IOLoop
 from tornado.tcpserver import TCPServer
 
+# project
+from utils.hostname import get_hostname
+
 log = logging.getLogger(__name__)
 
 
 class GraphiteServer(TCPServer):
 
     def __init__(self, app, hostname, io_loop=None, ssl_options=None, **kwargs):
-        log.warn('Graphite listener is started -- if you do not need graphite, turn it off in datadog.conf.')
+        log.warn('Graphite listener is started -- if you do not need graphite, turn it off in stackstate.conf.')
         log.warn('Graphite relay uses pickle to transport messages. Pickle is not secured against remote execution exploits.')
         log.warn('See http://blog.nelhage.com/2011/03/exploiting-pickle/ for more details')
         self.app = app
@@ -44,7 +44,7 @@ class GraphiteConnection(object):
             size = struct.unpack("!L", data)[0]
             log.debug("Receiving a string of size:" + str(size))
             self.stream.read_bytes(size, self._on_read_line)
-        except Exception, e:
+        except Exception as e:
             log.error(e)
 
     def _on_read_line(self, data):
@@ -84,7 +84,7 @@ class GraphiteConnection(object):
 
     def _processMetric(self, metric, datapoint):
         """Parse the metric name to fetch (host, metric, device) and
-            send the datapoint to datadog"""
+            send the datapoint to stackstate"""
 
         log.debug("New metric: %s, values: %s" % (metric, datapoint))
         (metric, host, device) = self._parseMetric(metric)
@@ -103,7 +103,7 @@ class GraphiteConnection(object):
         for (metric, datapoint) in datapoints:
             try:
                 datapoint = (float(datapoint[0]), float(datapoint[1]))
-            except Exception, e:
+            except Exception as e:
                 log.error(e)
                 continue
 
@@ -112,7 +112,6 @@ class GraphiteConnection(object):
         self.stream.read_bytes(4, self._on_read_header)
 
 def start_graphite_listener(port):
-    from util import get_hostname
     echo_server = GraphiteServer(None, get_hostname(None))
     echo_server.listen(port)
     IOLoop.instance().start()

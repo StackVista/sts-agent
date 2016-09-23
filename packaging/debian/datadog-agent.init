@@ -1,9 +1,9 @@
 #!/bin/sh
 
 ### BEGIN INIT INFO
-# Provides: dd-agent
-# Short-Description: Start and stop dd-agent
-# Description: dd-agent is the monitoring Agent component for Datadog
+# Provides: sts-agent
+# Short-Description: Start and stop sts-agent
+# Description: sts-agent is the monitoring Agent component for StackState
 # Required-Start: $remote_fs
 # Required-Stop: $remote_fs
 # Default-Start: 2 3 4 5
@@ -13,22 +13,22 @@
 . /lib/lsb/init-functions
 PATH=$PATH:/sbin # add the location of start-stop-daemon on Debian
 
-AGENTPATH="/opt/datadog-agent/agent/agent.py"
-AGENTCONF="/etc/dd-agent/datadog.conf"
-DOGSTATSDPATH="/opt/datadog-agent/agent/dogstatsd.py"
-KILL_PATH="/opt/datadog-agent/embedded/bin/kill"
-AGENTUSER="dd-agent"
-FORWARDERPATH="/opt/datadog-agent/agent/ddagent.py"
-NAME="datadog-agent"
-DESC="Datadog Agent"
-SUPERVISOR_PIDFILE="/opt/datadog-agent/run/datadog-supervisord.pid"
-SUPERVISOR_FILE="/etc/dd-agent/supervisor.conf"
-SUPERVISOR_SOCK="/opt/datadog-agent/run/datadog-supervisor.sock"
-SUPERVISORCTL_PATH="/opt/datadog-agent/bin/supervisorctl"
-SUPERVISORD_PATH="/opt/datadog-agent/bin/supervisord"
-COLLECTOR_PIDFILE="/opt/datadog-agent/run/dd-agent.pid"
-SYSTEM_PATH=/opt/datadog-agent/embedded/bin:/opt/datadog-agent/bin:$PATH
-DD_OPT_PROC_REGEX="dogstatsd|jmxfetch|go-metro"
+AGENTPATH="/opt/stackstate-agent/agent/agent.py"
+AGENTCONF="/etc/sts-agent/stackstate.conf"
+DOGSTATSDPATH="/opt/stackstate-agent/agent/stsstatsd.py"
+KILL_PATH="/opt/stackstate-agent/embedded/bin/kill"
+AGENTUSER="sts-agent"
+FORWARDERPATH="/opt/stackstate-agent/agent/stsagent.py"
+NAME="stackstate-agent"
+DESC="StackState Agent"
+SUPERVISOR_PIDFILE="/opt/stackstate-agent/run/stackstate-supervisord.pid"
+SUPERVISOR_FILE="/etc/sts-agent/supervisor.conf"
+SUPERVISOR_SOCK="/opt/stackstate-agent/run/stackstate-supervisor.sock"
+SUPERVISORCTL_PATH="/opt/stackstate-agent/bin/supervisorctl"
+SUPERVISORD_PATH="/opt/stackstate-agent/bin/supervisord"
+COLLECTOR_PIDFILE="/opt/stackstate-agent/run/sts-agent.pid"
+SYSTEM_PATH=/opt/stackstate-agent/embedded/bin:/opt/stackstate-agent/bin:$PATH
+DD_OPT_PROC_REGEX="stsstatsd|jmxfetch|go-metro"
 
 if [ ! -x $AGENTPATH ]; then
     echo "$AGENTPATH not found. Exiting."
@@ -50,7 +50,7 @@ check_status() {
 
     # If the socket exists, we can use supervisorctl
     if [ -e $SUPERVISOR_SOCK ]; then
-        # If we're using supervisor, check the number of datadog processes
+        # If we're using supervisor, check the number of stackstate processes
         # supervisor is currently controlling, and make sure that it's the
         # same as the number of programs specified in the supervisor config
         # file:
@@ -58,13 +58,13 @@ check_status() {
         supervisor_processes=$($SUPERVISORCTL_PATH -c $SUPERVISOR_FILE status)
 
         # Number of RUNNING supervisord programs (ignoring dogstatsd, jmxfetch and go-metro)
-        datadog_supervisor_processes=$(echo "$supervisor_processes" |
+        stackstate_supervisor_processes=$(echo "$supervisor_processes" |
                                        grep -Ev $DD_OPT_PROC_REGEX |
                                        grep $NAME |
                                        grep -c RUNNING)
 
         # Number of non-failed OPTIONAL supervisord programs (dogstatsd, jmxfetch and go-metro)
-        datadog_supervisor_opt_processes=$(echo "$supervisor_processes" |
+        stackstate_supervisor_opt_processes=$(echo "$supervisor_processes" |
                                        grep -E $DD_OPT_PROC_REGEX |
                                        grep $NAME |
                                        grep -cv FATAL)
@@ -77,11 +77,11 @@ check_status() {
         supervisor_config_opt_programs=$(grep -E $DD_OPT_PROC_REGEX $SUPERVISOR_FILE |
                                      grep -c '\[program:')
 
-        if [ "$datadog_supervisor_processes" -ne "$supervisor_config_programs" ]; then
+        if [ "$stackstate_supervisor_processes" -ne "$supervisor_config_programs" ]; then
             ESSENTIAL=1
         fi
 
-        if [ "$datadog_supervisor_opt_processes" -ne "$supervisor_config_opt_programs" ]  ; then
+        if [ "$stackstate_supervisor_opt_processes" -ne "$supervisor_config_opt_programs" ]  ; then
             OPTIONAL=1
         fi
 
@@ -125,9 +125,9 @@ case "$1" in
             $0 stop > /dev/null 2>&1
         fi
 
-        su $AGENTUSER -c "$AGENTPATH configcheck" > /dev/null
+        su $AGENTUSER -c "$AGENTPATH configcheck" > /dev/null 2>&1
         if [ $? -ne 0 ]; then
-            log_daemon_msg "Invalid check configuration. Please run sudo /etc/init.d/datadog-agent configtest for more details."
+            log_daemon_msg "Invalid check configuration. Please run sudo /etc/init.d/stackstate-agent configtest for more details."
             log_daemon_msg "Resuming starting process."
         fi
 
@@ -167,7 +167,7 @@ case "$1" in
     info)
         shift # Shift 'info' out of args so we can pass any
               # addtional options to the real command
-              # (right now only dd-agent supports additional flags)
+              # (right now only sts-agent supports additional flags)
         su $AGENTUSER -c "$AGENTPATH info $@"
         COLLECTOR_RETURN=$?
         su $AGENTUSER -c "$DOGSTATSDPATH info"
@@ -183,12 +183,12 @@ case "$1" in
         major=$(echo "$( uname -r )" | cut -d"." -f1)
         minor=$(echo "$( uname -r )" | cut -d"." -f2)
         # If major version 3, and minor version 18+, OR major version 4+
-        if ( [ $major -eq 3 ] && [ $minor -ge 18 ] ) || [ $major -gt 3 ]; then
+        if [ "$DOCKER_DD_AGENT" != "" ] && ( ( [ $major -eq 3 ] && [ $minor -ge 18 ] ) || [ $major -gt 3 ] ); then
             RED='\033[0;31m' # Red Text
             NC='\033[0m' # No Color
             echo "${RED}Warning: Known bug in Linux Kernel 3.18+ causes 'status' to fail.${NC}"
             echo "Calling 'info', instead..."
-            service datadog-agent info
+            service stackstate-agent info
             if [ $? -ne 0 ]; then
                 exit 1
             fi

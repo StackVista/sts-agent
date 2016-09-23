@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 # stdlib
 from collections import defaultdict
@@ -11,8 +8,6 @@ from xml.etree.ElementTree import ElementTree
 
 # project
 from checks import AgentCheck
-from util import get_hostname
-
 
 class Skip(Exception):
     """
@@ -137,10 +132,20 @@ class Jenkins(AgentCheck):
                     # If it not a new build, stop here
                     else:
                         break
-        except Exception, e:
+        except Exception as e:
             self.log.error("Error while working on job %s, exception: %s" % (job_name, e))
 
     def check(self, instance, create_event=True):
+        """
+        DEPRECATED:
+        This Jenkins check is deprecated and not actively developed anymore. It will be
+        removed in a future version of the StackState Agent. Please move to using the StackState
+        plugin for Jenkins. More information can be found on the Jenkins Integration panel
+        under the Configuration tab.
+        """
+        self.warning("This check is deprecated in favor of our Jenkins StackState plugin."
+                     " It will be removed in a future version of the StackState Agent.")
+
         if self.high_watermarks.get(instance.get('name'), None) is None:
             # On the first run of check(), prime the high_watermarks dict
             # so that we only send events that occured after the agent
@@ -165,7 +170,7 @@ class Jenkins(AgentCheck):
 
         for job_dir in job_dirs:
             for output in self._get_build_results(instance.get('name'), job_dir):
-                output['host'] = get_hostname(self.agentConfig)
+                output['host'] = self.hostname
                 if create_event:
                     self.log.debug("Creating event for job: %s" % output['job_name'])
                     self.event(output)

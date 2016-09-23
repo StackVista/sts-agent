@@ -1,7 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
-
 # stdlib
 import urlparse
 
@@ -26,6 +22,10 @@ class Apache(AgentCheck):
         'Uptime': 'apache.performance.uptime',
         'Total kBytes': 'apache.net.bytes',
         'Total Accesses': 'apache.net.hits',
+        'ConnsTotal': 'apache.conns_total',
+        'ConnsAsyncWriting': 'apache.conns_async_writing',
+        'ConnsAsyncKeepAlive': 'apache.conns_async_keep_alive',
+        'ConnsAsyncClosing' : 'apache.conns_async_closing'
     }
 
     RATES = {

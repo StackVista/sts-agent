@@ -22,7 +22,7 @@ CONFIG = {
         'timeout': 1,
         'name': 'DownService2'
     }, {
-        'host': 'datadoghq.com',
+        'host': 'stackstate.com',
         'port': 80,
         'timeout': 1,
         'name': 'UpService'
@@ -68,7 +68,7 @@ class TCPCheckTest(AgentCheckTest):
         self.assertWarning(
             "Using events for service checks is deprecated in "
             "favor of monitors and will be removed in future versions of the "
-            "Datadog Agent.",
+            "StackState Agent.",
             count=3
         )
 
@@ -88,7 +88,7 @@ class TCPCheckTest(AgentCheckTest):
         expected_tags = ["instance:DownService2", "target_host:126.0.0.1", "port:65530"]
         self.assertServiceCheckCritical("tcp.can_connect", tags=expected_tags)
 
-        expected_tags = ["instance:UpService", "target_host:datadoghq.com", "port:80"]
+        expected_tags = ["instance:UpService", "target_host:stackstate.com", "port:80"]
         self.assertServiceCheckOK("tcp.can_connect", tags=expected_tags)
 
         self.coverage_report()

@@ -1,7 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
-
 # stdlib
 import time
 
@@ -51,12 +47,14 @@ class DNSCheck(AgentCheck):
         if nameserver is not None:
             resolver.nameservers = [nameserver]
 
+        record_type = instance.get('record_type', 'A')
+
         status = AgentCheck.CRITICAL
         start_time = time.time()
         try:
-            self.log.debug('Resolving hostname %s...' % hostname)
-            answer = resolver.query(hostname)
-            assert(answer.rrset.items[0].address)
+            self.log.debug('Querying "%s" record for hostname "%s"...' % (record_type, hostname))
+            answer = resolver.query(hostname, rdtype=record_type)
+            assert(answer.rrset.items[0].to_text())
             end_time = time.time()
         except dns.exception.Timeout:
             self.log.error('DNS resolution of %s timed out' % hostname)

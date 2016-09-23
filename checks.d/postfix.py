@@ -1,7 +1,3 @@
-# (C) Datadog, Inc. 2013-2016
-# (C) Josiah C Webb <rootkix@gmail.com> 2013
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 # stdlib
 import os
@@ -13,11 +9,11 @@ from utils.subprocess_output import get_subprocess_output
 class PostfixCheck(AgentCheck):
     """This check provides metrics on the number of messages in a given postfix queue
 
-    WARNING: the user that dd-agent runs as must have sudo access for the 'find' command
-             sudo access is not required when running dd-agent as root (not recommended)
+    WARNING: the user that sts-agent runs as must have sudo access for the 'find' command
+             sudo access is not required when running sts-agent as root (not recommended)
 
     example /etc/sudoers entry:
-             dd-agent ALL=(ALL) NOPASSWD:/usr/bin/find
+             sts-agent ALL=(ALL) NOPASSWD:/usr/bin/find
 
     YAML config options:
         "directory" - the value of 'postconf -h queue_directory'
@@ -64,7 +60,7 @@ class PostfixCheck(AgentCheck):
                     output, _, _ = get_subprocess_output(['sudo', 'find', queue_path, '-type', 'f'], self.log)
                     count = len(output.splitlines())
                 else:
-                    raise Exception('The dd-agent user does not have sudo access')
+                    raise Exception('The sts-agent user does not have sudo access')
 
             # emit an individually tagged metric
             self.gauge('postfix.queue.size', count, tags=tags + ['queue:%s' % queue, 'instance:%s' % os.path.basename(directory)])

@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 # stdlib
 from collections import defaultdict
@@ -74,13 +71,14 @@ class NetworkCheck(AgentCheck):
         # to keep track of statuses
         names = []
         for inst in instances:
-            name = inst.get('name', None)
-            if not name:
+            inst_name = inst.get('name', None)
+            if not inst_name:
                 raise Exception("All instances should have a 'name' parameter,"
                                 " error on instance: {0}".format(inst))
-            if name in names:
+            if inst_name in names:
                 raise Exception("Duplicate names for instances with name {0}"
-                                .format(inst['name']))
+                                .format(inst_name))
+            names.append(inst_name)
 
     def stop(self):
         self.stop_pool()
@@ -147,6 +145,9 @@ class NetworkCheck(AgentCheck):
                     self.resultsq.put((status, msg, sc_name, instance))
 
         except Exception:
+            self.log.exception(
+                u"Failed to process instance '%s'.", instance.get('Name', u"")
+            )
             result = (FAILURE, FAILURE, FAILURE, instance)
             self.resultsq.put(result)
 
@@ -176,7 +177,7 @@ class NetworkCheck(AgentCheck):
             # service_checks
             skip_event = _is_affirmative(instance.get('skip_event', False))
             if not skip_event:
-                self.warning("Using events for service checks is deprecated in favor of monitors and will be removed in future versions of the Datadog Agent.")
+                self.warning("Using events for service checks is deprecated in favor of monitors and will be removed in future versions of the StackState Agent.")
                 event = None
 
                 if instance_name not in self.statuses:

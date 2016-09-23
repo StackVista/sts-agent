@@ -1,8 +1,3 @@
-# (C) Datadog, Inc. 2014-2016
-# (C) Steeve Morin <steeve.morin@gmail.com> 2014
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
-
 # stdlib
 import urllib2
 import urllib
@@ -12,8 +7,10 @@ import os
 import re
 import time
 from urlparse import urlsplit
-from util import json
 from collections import defaultdict
+
+# 3rd party
+import simplejson as json
 
 # project
 from checks import AgentCheck
@@ -163,7 +160,7 @@ class Docker(AgentCheck):
 
             self.gauge("docker.images.available", active_images, tags=tags)
             self.gauge("docker.images.intermediate", (all_images - active_images), tags=tags)
-        except Exception, e:
+        except Exception as e:
             self.warning("Failed to count Docker images. Exception: {0}".format(e))
 
     def _get_and_count_containers(self, instance):
@@ -174,7 +171,7 @@ class Docker(AgentCheck):
         try:
             running_containers = self._get_containers(instance, with_size=with_size)
             all_containers = self._get_containers(instance, get_all=True)
-        except (socket.timeout, urllib2.URLError), e:
+        except (socket.timeout, urllib2.URLError) as e:
             self.service_check(service_check_name, AgentCheck.CRITICAL,
                 message="Unable to list Docker containers: {0}".format(e))
             raise Exception("Failed to collect the list of containers. Exception: {0}".format(e))
@@ -390,9 +387,9 @@ class Docker(AgentCheck):
 
         try:
             request = self.url_opener.open(req)
-        except urllib2.URLError, e:
+        except urllib2.URLError as e:
             if "Errno 13" in str(e):
-                raise Exception("Unable to connect to socket. dd-agent user must be part of the 'docker' group")
+                raise Exception("Unable to connect to socket. sts-agent user must be part of the 'docker' group")
             raise
 
         response = request.read()

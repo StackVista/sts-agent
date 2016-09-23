@@ -117,9 +117,9 @@ case $action in
               # Currently only agent.py takes additional arguments
         python agent/agent.py info $@
         RETURN_VALUE=$?
-        python agent/dogstatsd.py info
+        python agent/stsstatsd.py info
         RETURN_VALUE=$(($RETURN_VALUE || $?))
-        python agent/ddagent.py info
+        python agent/stsagent.py info
         RETURN_VALUE=$(($RETURN_VALUE || $?))
         exit $RETURN_VALUE
         ;;
@@ -154,4 +154,3 @@ case $action in
         exit 2
         ;;
 esac
-

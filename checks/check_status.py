@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 """
 This module contains classes which are used to occasionally persist the status
@@ -263,7 +260,9 @@ class AgentStatus(object):
     @classmethod
     def _get_pickle_path(cls):
         if Platform.is_win32():
-            path = os.path.join(_windows_commondata_path(), 'Datadog')
+            path = os.path.join(_windows_commondata_path(), 'StackState')
+            if not os.path.isdir(path):
+                path = tempfile.gettempdir()
         elif os.path.isdir(PidFile.get_dir()):
             path = PidFile.get_dir()
         else:
@@ -454,7 +453,7 @@ class CollectorStatus(AgentStatus):
         try:
             ntp_offset, ntp_styles = get_ntp_info()
             lines.append('  ' + style('NTP offset', *ntp_styles) + ': ' + style('%s s' % round(ntp_offset, 4), *ntp_styles))
-        except Exception, e:
+        except Exception as e:
             lines.append('  NTP offset: Unknown (%s)' % str(e))
         lines.append('  System UTC time: ' + datetime.datetime.utcnow().__str__())
         lines.append('')
@@ -717,7 +716,7 @@ class CollectorStatus(AgentStatus):
 
 class DogstatsdStatus(AgentStatus):
 
-    NAME = 'Dogstatsd'
+    NAME = 'StsStatsD'
 
     def __init__(self, flush_count=0, packet_count=0, packets_per_second=0,
                  metric_count=0, event_count=0, service_check_count=0):
@@ -768,15 +767,9 @@ class ForwarderStatus(AgentStatus):
         self.flush_count = flush_count
         self.transactions_received = transactions_received
         self.transactions_flushed = transactions_flushed
-        self.proxy_data = get_config(parse_args=False).get('proxy_settings')
         self.hidden_username = None
         self.hidden_password = None
         self.too_big_count = too_big_count
-        if self.proxy_data and self.proxy_data.get('user'):
-            username = self.proxy_data.get('user')
-            hidden = len(username) / 2 if len(username) <= 7 else len(username) - 4
-            self.hidden_username = '*' * 5 + username[hidden:]
-            self.hidden_password = '*' * 10
 
     def body_lines(self):
         lines = [
@@ -789,20 +782,6 @@ class ForwarderStatus(AgentStatus):
             ""
         ]
 
-        if self.proxy_data:
-            lines += [
-                "Proxy",
-                "=====",
-                "",
-                "  Host: %s" % self.proxy_data.get('host'),
-                "  Port: %s" % self.proxy_data.get('port')
-            ]
-            if self.proxy_data.get('user'):
-                lines += [
-                    "  Username: %s" % self.hidden_username,
-                    "  Password: %s" % self.hidden_password
-                ]
-
         return lines
 
     def has_error(self):
@@ -814,9 +793,6 @@ class ForwarderStatus(AgentStatus):
             'flush_count': self.flush_count,
             'queue_length': self.queue_length,
             'queue_size': self.queue_size,
-            'proxy_data': self.proxy_data,
-            'hidden_username': self.hidden_username,
-            'hidden_password': self.hidden_password,
             'too_big_count': self.too_big_count,
             'transactions_received': self.transactions_received,
             'transactions_flushed': self.transactions_flushed

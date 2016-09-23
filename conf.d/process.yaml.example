@@ -16,7 +16,7 @@ instances:
 #                    return the counter of all the processes that contain the string
 #    exact_match: (optional) Boolean. Default to True, if you want to look for an arbitrary
 #                 string, use exact_match: False
-#    ignore_denied_access: (optional) Boolean. Default to True, when getting the number of files descriptors, dd-agent user might
+#    ignore_denied_access: (optional) Boolean. Default to True, when getting the number of files descriptors, sts-agent user might
 #    get a denied access. Set this to true to not issue a warning if that happens.
 #    thresholds: (optional) Two ranges: critical and warning
 #         warning: (optional) List of two values: If the number of processes found is below the first value or
@@ -48,3 +48,7 @@ instances:
 
   - name: nodeserver
     search_string: ['node server.js']
+
+  - name: pid_process
+    pid: 1278 
+    # Do not use search_string when searching by pid or multiple processes will be grabbed

@@ -13,7 +13,7 @@ import yaml
 
 # project
 from aggregator import MetricsAggregator
-from dogstatsd import Server
+from stsstatsd import Server
 from jmxfetch import JMXFetch
 from tests.checks.common import AgentCheckTest
 

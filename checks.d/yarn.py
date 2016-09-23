@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 '''
 YARN Cluster Metrics
@@ -271,7 +268,7 @@ class YarnCheck(AgentCheck):
             url = urljoin(url, '?' + query)
 
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=self.default_integration_http_timeout)
             response.raise_for_status()
             response_json = response.json()
 

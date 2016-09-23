@@ -17,7 +17,6 @@ Protocol.
 
     From: https://msdn.microsoft.com/en-us/library/aa389383(v=vs.85).aspx
 
-Original discussion thread: https://github.com/DataDog/dd-agent/issues/1952
 Credits to @TheCloudlessSky (https://github.com/TheCloudlessSky)
 """
 

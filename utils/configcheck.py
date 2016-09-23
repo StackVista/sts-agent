@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 # std
 import glob
@@ -12,7 +9,7 @@ from config import (
     load_check_directory,
     get_confd_path
 )
-from util import get_hostname
+from utils.hostname import get_hostname
 from utils.dockerutil import DockerUtil
 from utils.service_discovery.config_stores import get_config_store, SD_CONFIG_BACKENDS, TRACE_CONFIG
 
@@ -23,16 +20,16 @@ def configcheck():
         basename = os.path.basename(conf_path)
         try:
             check_yaml(conf_path)
-        except Exception, e:
+        except Exception as e:
             all_valid = False
             print "%s contains errors:\n    %s" % (basename, e)
         else:
             print "%s is valid" % basename
     if all_valid:
-        print "All yaml files passed. You can now run the Datadog agent."
+        print "All yaml files passed. You can now run the StackState agent."
         return 0
     else:
-        print("Fix the invalid yaml files above in order to start the Datadog agent. "
+        print("Fix the invalid yaml files above in order to start the StackState agent. "
               "A useful external tool for yaml parsing can be found at "
               "http://yaml-online-parser.appspot.com/")
         return 1

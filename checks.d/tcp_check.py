@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 # stdlib
 import socket
@@ -68,13 +65,13 @@ class TCPCheck(NetworkCheck):
             finally:
                 sock.close()
 
-        except socket.timeout, e:
+        except socket.timeout as e:
             # The connection timed out because it took more time than the specified value in the yaml config file
             length = int((time.time() - start) * 1000)
             self.log.info("%s:%s is DOWN (%s). Connection failed after %s ms" % (addr, port, str(e), length))
             return Status.DOWN, "%s. Connection failed after %s ms" % (str(e), length)
 
-        except socket.error, e:
+        except socket.error as e:
             length = int((time.time() - start) * 1000)
             if "timed out" in str(e):
 
@@ -88,7 +85,7 @@ class TCPCheck(NetworkCheck):
                 self.log.info("%s:%s is DOWN (%s). Connection failed after %s ms" % (addr, port, str(e), length))
                 return Status.DOWN, "%s. Connection failed after %s ms" % (str(e), length)
 
-        except Exception, e:
+        except Exception as e:
             length = int((time.time() - start) * 1000)
             self.log.info("%s:%s is DOWN (%s). Connection failed after %s ms" % (addr, port, str(e), length))
             return Status.DOWN, "%s. Connection failed after %s ms" % (str(e), length)

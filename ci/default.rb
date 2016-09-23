@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 require './ci/common'
 
@@ -46,12 +43,16 @@ namespace :ci do
     task before_script: ['ci:common:before_script']
 
     task lint: ['rubocop'] do
-      sh %(echo "PWD IS")
-      sh %(pwd)
-      sh %(flake8)
-      sh %(find . -name '*.py' -not\
-             \\( -path '*.cache*' -or -path '*embedded*' -or -path '*venv*' -or -path '*.git*' \\)\
-             | xargs -n 1 pylint --rcfile=./.pylintrc)
+      if ENV['SKIP_LINT']
+        puts 'Skipping lint'.yellow
+      else
+        sh %(echo "PWD IS")
+        sh %(pwd)
+        sh %(flake8)
+        sh %(find . -name '*.py' -not\
+               \\( -path '*.cache*' -or -path '*embedded*' -or -path '*venv*' -or -path '*.git*' -or -path \
+               '*.ropeproject*' \\) | xargs -n 100 -P 8 pylint --rcfile=./.pylintrc)
+      end
     end
 
     task script: ['ci:common:script', :coverage, :lint] do
@@ -63,23 +64,7 @@ namespace :ci do
     task cleanup: ['ci:common:cleanup']
 
     task :execute do
-      exception = nil
-      begin
-        %w(before_install install before_script
-           script).each do |t|
-          Rake::Task["#{flavor.scope.path}:#{t}"].invoke
-        end
-      rescue => e
-        exception = e
-        puts "Failed task: #{e.class} #{e.message}".red
-      end
-      if ENV['SKIP_CLEANUP']
-        puts 'Skipping cleanup, disposable environments are great'.yellow
-      else
-        puts 'Cleaning up'
-        Rake::Task["#{flavor.scope.path}:cleanup"].invoke
-      end
-      raise exception if exception
+      Rake::Task['ci:common:execute'].invoke(flavor)
     end
   end
 end

@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 '''
 Monitor the Windows Event Log
@@ -120,6 +117,7 @@ class Win32EventLogWMI(WinWMICheck):
             and_props=['Message']
         )
 
+        wmi_sampler.reset_filter(new_filters=filters)
         try:
             wmi_sampler.sample()
         except TimeoutException:
@@ -179,7 +177,7 @@ class LogEvent(object):
     @property
     def _msg_text(self):
         """
-        Generate the event's body to send to Datadog.
+        Generate the event's body to send to StackState.
 
         Consider `event_format` parameter:
         * Only use the specified list of event properties.
@@ -203,17 +201,17 @@ class LogEvent(object):
 
             msg_text_fields.append("```\n%%%")
 
-            msg_text = "\n".join(msg_text_fields)
+            msg_text = u"\n".join(msg_text_fields)
         else:
             # Override when verbosity
             if self.event.get('Message'):
-                msg_text = "{message}\n".format(message=self.event['Message'])
+                msg_text = u"{message}\n".format(message=self.event['Message'])
             elif self.event.get('InsertionStrings'):
-                msg_text = "\n".join([i_str for i_str in self.event['InsertionStrings']
+                msg_text = u"\n".join([i_str for i_str in self.event['InsertionStrings']
                                       if i_str.strip()])
 
         if self.notify_list:
-            msg_text += "\n{notify_list}".format(
+            msg_text += u"\n{notify_list}".format(
                 notify_list=' '.join([" @" + n for n in self.notify_list]))
 
         return msg_text

@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 # stdlib
 from cStringIO import StringIO
@@ -28,7 +25,7 @@ class Ganglia(Check):
         if not self.deprecation_shown:
             # Just display the deprecation messsage once
             self.logger.warning("The Ganglia integration is deprecated and will "
-                "be removed in a future version of the Datadog Agent")
+                "be removed in a future version of the StackState Agent")
             self.deprecation_shown = True
 
         try:

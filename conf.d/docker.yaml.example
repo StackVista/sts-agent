@@ -1,10 +1,10 @@
 # Warning
-# The user running the Datadog Agent (usually "dd-agent") must be part of the "docker" group
+# The user running the StackState Agent (usually "sts-agent") must be part of the "docker" group
 
 init_config:
   # Change the root directory to look at to get cgroup statistics. Useful when running inside a
   # container with host directories mounted on a different folder. Default: /.
-  # Example for the docker-dd-agent container:
+  # Example for the docker-sts-agent container:
   # docker_root: /host
 
   docker_root: /
@@ -54,6 +54,7 @@ instances:
     # Create events whenever a container status change.
     #
     # collect_events: true
+    #
 
     # Collect disk usage per container with docker.disk.size metric.
     # Warning: This feature is broken in some version of Docker (such as 1.2).

@@ -1,7 +1,7 @@
 init_config:
   # Change the root directory to look at to get cgroup statistics. Useful when running inside a
   # container with host directories mounted on a different folder. Default: /.
-  # Example for the docker-dd-agent container:
+  # Example for the docker-sts-agent container:
   # docker_root: /host
 
   # Timeout in seconds for the connection to the docker daemon
@@ -44,6 +44,12 @@ instances:
     # Defaults to false.
     #
     # collect_container_size: false
+
+    # Do you use custom cgroups for this particular instance?
+    # Note: enabling this option modifies the way in which we inspect the containers and causes
+    #       some overhead - if you run a high volume of containers we may timeout. Please only
+    #       enable if absolutely necessary.
+    # custom_cgroups: false
 
     # Collect images stats
     # Number of available active images and intermediate images as gauges.

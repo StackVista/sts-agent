@@ -1,9 +1,3 @@
-# (C) Datadog, Inc. 2013-2016
-# (C) Brett Langdon <brett@blangdon.com> 2013
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
-
-
 # stdlib
 from fnmatch import fnmatch
 from os import stat
@@ -21,7 +15,7 @@ from config import _is_affirmative
 class DirectoryCheck(AgentCheck):
     """This check is for monitoring and reporting metrics on the files for a provided directory
 
-    WARNING: the user/group that dd-agent runs as must have access to stat the files in the desired directory
+    WARNING: the user/group that sts-agent runs as must have access to stat the files in the desired directory
 
     Config options:
         "directory" - string, the directory to gather stats for. required
@@ -74,7 +68,7 @@ class DirectoryCheck(AgentCheck):
                 try:
                     file_stat = stat(filename)
 
-                except OSError, ose:
+                except OSError as ose:
                     self.warning("DirectoryCheck: could not stat file %s - %s" % (filename, ose))
                 else:
                     # file specific metrics

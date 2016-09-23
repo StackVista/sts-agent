@@ -8,14 +8,14 @@
     <string>com.datadoghq.agent</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/opt/datadog-agent/bin/datadog-agent</string>
+        <string>/opt/stackstate-agent/bin/datadog-agent</string>
         <string>restart</string>
     </array>
     <key>UserName</key>
     <string>USER_NAME</string>
     <key>StandardOutPath</key>
-    <string>/var/log/datadog/launchd.log</string>
+    <string>/var/log/stackstate/launchd.log</string>
     <key>StandardErrorPath</key>
-    <string>/var/log/datadog/launchd.log</string>
+    <string>/var/log/stackstate/launchd.log</string>
 </dict>
 </plist>

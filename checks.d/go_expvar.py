@@ -1,8 +1,3 @@
-# (C) Datadog, Inc. 2014-2016
-# (C) Cory Watson <cory@stripe.com> 2015-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
-
 # stdlib
 from collections import defaultdict
 import re
@@ -153,7 +148,7 @@ class GoExpvar(AgentCheck):
 
                 if count >= max_metrics:
                     self.warning("Reporting more metrics than the allowed maximum. "
-                                 "Please contact support@datadoghq.com for more information.")
+                                 "Please contact info@stackstate.com for more information.")
                     return
 
                 SUPPORTED_TYPES[metric_type](self, metric_name, value, metric_tags)

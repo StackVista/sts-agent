@@ -7,6 +7,7 @@ instances:
     # port: 3306             # Optional
     # sock: /path/to/sock    # Connect via Unix Socket
     # defaults_file: my.cnf  # Alternate configuration mechanism
+    # connect_timeout: None  # Optional integer seconds
     # tags:                  # Optional
     #   - optional_tag1
     #   - optional_tag2
@@ -39,7 +40,7 @@ instances:
     #           With the addition of new metrics to the MySQL catalog starting with agent >=5.7.0, because
     #           we query additional schemas to get this full set of metrics. Some of these require the user
     #           defined for the instance to have PROCESS and SELECT privileges. Please take a look at the
-    #           MySQL integration tile in the Datadog WebUI for further instructions.
+    #           MySQL integration tile in the StackState WebUI for further instructions.
     #
     # ssl:               # Optional
     #   key: /path/to/my/key.file

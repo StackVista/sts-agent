@@ -10,11 +10,12 @@ import nose.tools as nt
 
 # project
 from aggregator import DEFAULT_HISTOGRAM_AGGREGATES
-from dogstatsd import MetricsBucketAggregator
-
+from stsstatsd import MetricsBucketAggregator
 
 @attr(requires='core_integration')
 class TestUnitMetricsBucketAggregator(unittest.TestCase):
+    BUCKET_BOUNDARY_TOLERANCE = 0.1
+
     def setUp(self):
         self.interval = 1
 
@@ -31,11 +32,16 @@ class TestUnitMetricsBucketAggregator(unittest.TestCase):
         return sorted(metrics, key=sort_by)
 
     def sleep_for_interval_length(self, interval=None):
-        time.sleep(interval or self.interval)
+        start_time = time.time()
+        sleep_interval = interval or self.interval
+        time.sleep(sleep_interval)
+        # Make sure that we've slept at least for the interval length
+        while time.time() < start_time + sleep_interval:
+            time.sleep(start_time + sleep_interval - time.time())
 
     def wait_for_bucket_boundary(self, interval=None):
         i = interval or self.interval
-        while time.time() % i > 0.01:
+        while time.time() % i > self.BUCKET_BOUNDARY_TOLERANCE:
             pass
 
     @staticmethod
@@ -115,10 +121,10 @@ class TestUnitMetricsBucketAggregator(unittest.TestCase):
         nt.assert_equal(third['host'], 'myhost')
 
     def test_tags_gh442(self):
-        import dogstatsd
+        import stsstatsd
         from aggregator import api_formatter
 
-        serialized = dogstatsd.serialize_metrics([api_formatter("foo", 12, 1, ('tag',), 'host')], "test-host")
+        serialized = stsstatsd.serialize_metrics([api_formatter("foo", 12, 1, ('tag',), 'host')], "test-host")
         self.assertTrue('"tags": ["tag"]' in serialized[0], serialized)
 
     def test_counter(self):
@@ -614,6 +620,7 @@ class TestUnitMetricsBucketAggregator(unittest.TestCase):
                     m = 'my.p:%s|%s' % (i, type_)
                     stats.submit_packets(m)
 
+        time.sleep(self.BUCKET_BOUNDARY_TOLERANCE)  # Make sure that we're waiting for the _next_ bucket boundary
         self.wait_for_bucket_boundary(ag_interval)
         percentiles = range(50)
         random.shuffle(percentiles) # in place
@@ -671,6 +678,7 @@ class TestUnitMetricsBucketAggregator(unittest.TestCase):
                     m = 'my.p:%s|%s' % (i, type_)
                     stats.submit_packets(m)
 
+        time.sleep(self.BUCKET_BOUNDARY_TOLERANCE)  # Make sure that we'll wait for the _next_ bucket boundary
         self.wait_for_bucket_boundary(ag_interval)
         percentiles = range(50)
         random.shuffle(percentiles) # in place
@@ -835,14 +843,14 @@ class TestUnitMetricsBucketAggregator(unittest.TestCase):
         stats = MetricsBucketAggregator('myhost', interval=self.interval)
         for i in xrange(10):
             stats.submit_packets('metric:10|c')
-        stats.send_packet_count('datadog.dogstatsd.packet.count')
+        stats.send_packet_count('a.stsstatsd.packet.count')
 
         self.sleep_for_interval_length()
         metrics = self.sort_metrics(stats.flush())
         nt.assert_equals(2, len(metrics))
         first, second = metrics
 
-        nt.assert_equal(first['metric'], 'datadog.dogstatsd.packet.count')
+        nt.assert_equal(first['metric'], 'a.stsstatsd.packet.count')
         nt.assert_equal(first['points'][0][1], 10)
 
     def test_histogram_counter(self):

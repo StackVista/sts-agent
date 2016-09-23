@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 # stdlib
 from datetime import datetime, timedelta
@@ -27,7 +24,7 @@ SOURCE_TYPE = 'vsphere'
 REAL_TIME_INTERVAL = 20  # Default vCenter sampling interval
 
 # Metrics are only collected on vSphere VMs marked by custom field value
-VM_MONITORING_FLAG = 'DatadogMonitored'
+VM_MONITORING_FLAG = 'StackStateMonitored'
 # The size of the ThreadPool used to process the request queue
 DEFAULT_SIZE_POOL = 4
 # The interval in seconds between two refresh of the entities list
@@ -101,7 +98,7 @@ class VSphereEvent(object):
 
         return False
 
-    def get_datadog_payload(self):
+    def get_stackstate_payload(self):
         if self._is_filtered():
             return None
 
@@ -302,7 +299,7 @@ def atomic_method(method):
 
 
 class VSphereCheck(AgentCheck):
-    """ Get performance metrics from a vCenter server and upload them to Datadog
+    """ Get performance metrics from a vCenter server and upload them to StackState
     References:
         http://pubs.vmware.com/vsphere-51/index.jsp#com.vmware.wssdk.apiref.doc/vim.PerformanceManager.html
 
@@ -408,7 +405,7 @@ class VSphereCheck(AgentCheck):
             for event in new_events:
                 normalized_event = VSphereEvent(event, self.event_config[i_key])
                 # Can return None if the event if filtered out
-                event_payload = normalized_event.get_datadog_payload()
+                event_payload = normalized_event.get_stackstate_payload()
                 if event_payload is not None:
                     self.event(event_payload)
                 last_time = event.createdTime + timedelta(seconds=1)
@@ -748,7 +745,7 @@ class VSphereCheck(AgentCheck):
         self.morlist[i_key][mor_name]['last_seen'] = time.time()
 
         ### <TEST-INSTRUMENTATION>
-        self.histogram('datadog.agent.vsphere.morlist_process_atomic.time', t.total())
+        self.histogram('stackstate.agent.vsphere.morlist_process_atomic.time', t.total())
         ### </TEST-INSTRUMENTATION>
 
     def _cache_morlist_process(self, instance):
@@ -810,7 +807,7 @@ class VSphereCheck(AgentCheck):
         self.metrics_metadata[i_key] = new_metadata
 
         ### <TEST-INSTRUMENTATION>
-        self.histogram('datadog.agent.vsphere.metric_metadata_collection.time', t.total())
+        self.histogram('stackstate.agent.vsphere.metric_metadata_collection.time', t.total())
         ### </TEST-INSTRUMENTATION>
 
     def _transform_value(self, instance, counter_id, value):
@@ -871,7 +868,7 @@ class VSphereCheck(AgentCheck):
                 )
 
         ### <TEST-INSTRUMENTATION>
-        self.histogram('datadog.agent.vsphere.metric_colection.time', t.total())
+        self.histogram('stackstate.agent.vsphere.metric_colection.time', t.total())
         ### </TEST-INSTRUMENTATION>
 
     def collect_metrics(self, instance):
@@ -903,7 +900,7 @@ class VSphereCheck(AgentCheck):
         if not self.pool_started:
             self.start_pool()
         ### <TEST-INSTRUMENTATION>
-        self.gauge('datadog.agent.vsphere.queue_size', self.pool._workq.qsize(), tags=['instant:initial'])
+        self.gauge('stackstate.agent.vsphere.queue_size', self.pool._workq.qsize(), tags=['instant:initial'])
         ### </TEST-INSTRUMENTATION>
 
         # First part: make sure our object repository is neat & clean
@@ -934,7 +931,7 @@ class VSphereCheck(AgentCheck):
             raise Exception("One thread in the pool crashed, check the logs")
 
         ### <TEST-INSTRUMENTATION>
-        self.gauge('datadog.agent.vsphere.queue_size', self.pool._workq.qsize(), tags=['instant:final'])
+        self.gauge('stackstate.agent.vsphere.queue_size', self.pool._workq.qsize(), tags=['instant:final'])
         ### </TEST-INSTRUMENTATION>
 
 if __name__ == '__main__':

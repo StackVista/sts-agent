@@ -6,7 +6,7 @@ instances:
   # Note that you can specify a `type` for the metrics. One of:
   #  * counter
   #  * gauge (the default)
-  #  * rate (note that this will show up as a gauge in Datadog that is meant to be seen as a "per second rate")
+  #  * rate (note that this will show up as a gauge in StackState that is meant to be seen as a "per second rate")
 
   - expvar_url: http://localhost:8080/debug/vars
     # namespace: examplenamespace         # The default metric namespace is 'go_expvar', define your own
