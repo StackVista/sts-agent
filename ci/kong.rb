@@ -57,10 +57,10 @@ namespace :ci do
         sh %(bash #{kong_rootdir}/setup_serf.sh)
         sh %(bash #{kong_rootdir}/setup_dnsmasq.sh)
         set_kong_path
-        sh %(curl -s -L -o $VOLATILE_DIR/apache-cassandra-2.2.6-bin.tar.gz\
-             http://mirror.metrocast.net/apache/cassandra/2.2.6/apache-cassandra-2.2.6-bin.tar.gz)
+        sh %(curl -s -L -o $VOLATILE_DIR/apache-cassandra-2.2.7-bin.tar.gz\
+             http://mirror.metrocast.net/apache/cassandra/2.2.7/apache-cassandra-2.2.7-bin.tar.gz)
         sh %(mkdir -p #{cassandra_rootdir})
-        sh %(tar zxf $VOLATILE_DIR/apache-cassandra-2.2.6-bin.tar.gz\
+        sh %(tar zxf $VOLATILE_DIR/apache-cassandra-2.2.7-bin.tar.gz\
              -C #{cassandra_rootdir} --strip-components=1)
         sh %(bash #{kong_rootdir}/kong_install.sh)
       end
