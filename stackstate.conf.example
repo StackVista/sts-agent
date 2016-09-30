@@ -18,7 +18,7 @@ dd_url: http://localhost:7070/stsAgent/
 # The StackState api key to associate your Agent's data with your organization.
 # This can be a comma-separated list of api keys.
 # (default: None, the agent doesn't start without it)
-api_key:
+api_key: none
 
 # Force the hostname to whatever you want. (default: auto-detected)
 # hostname: mymachine.mydomain

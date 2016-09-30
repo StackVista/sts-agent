@@ -8,7 +8,7 @@ connbeat:
 
 output:
   http:
-    hosts: ["${STSURL}"]
+    hosts: ["${STSURL}connbeat?api_key=${APIKEY}"]
 
   #kafka:
   #  hosts: ["localhost:9092"]
