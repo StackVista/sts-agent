@@ -21,4 +21,4 @@ output:
     #  path: "connbeat.template.json"
 
   console:
-    pretty: true
+    pretty: false
