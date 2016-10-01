@@ -3,6 +3,7 @@ sudo: false
 branches:
   only:
     - master
+    - serviceDiscoveryTest
     - /^\d+\.\d+\.x$/ # release forked patches branch
 
 language: python

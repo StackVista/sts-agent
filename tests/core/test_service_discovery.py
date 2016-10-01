@@ -541,9 +541,9 @@ class TestServiceDiscovery(unittest.TestCase):
                 config_store.get_check_tpls(
                     'k8s-' + image, auto_conf=True,
                     kube_annotations=dict(zip(
-                        ['com.datadoghq.sd/check_names',
-                         'com.datadoghq.sd/init_configs',
-                         'com.datadoghq.sd/instances'],
+                        ['com.stackstate.sd/check_names',
+                         'com.stackstate.sd/init_configs',
+                         'com.stackstate.sd/instances'],
                         self.mock_tpls[image][0]))))
 
     def test_get_config_id(self):
