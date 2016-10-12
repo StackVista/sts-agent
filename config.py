@@ -32,7 +32,7 @@ from utils.subprocess_output import (
 )
 
 # CONSTANTS
-AGENT_VERSION = "5.9.0"
+AGENT_VERSION = "1.0.0"
 STACKSTATE_CONF = "stackstate.conf"
 UNIX_CONFIG_PATH = '/etc/sts-agent'
 MAC_CONFIG_PATH = '/opt/stackstate-agent/etc'
