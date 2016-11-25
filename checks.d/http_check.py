@@ -1,6 +1,7 @@
 
 # stdlib
 from datetime import datetime
+import _strptime # noqa
 import os.path
 from os import environ
 import re

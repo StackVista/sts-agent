@@ -72,12 +72,16 @@ class ProcessCheck(AgentCheck):
             )
         )
 
+        self._conflicting_procfs = False
+        self._deprecated_init_procfs = False
         if Platform.is_linux():
             procfs_path = init_config.get('procfs_path')
-            if not procfs_path:
-                procfs_path = self.agentConfig.get('procfs_path', '/proc').rstrip('/')
-
-            psutil.PROCFS_PATH = procfs_path
+            if procfs_path:
+                if 'procfs_path' in agentConfig and procfs_path != agentConfig.get('procfs_path').rstrip('/'):
+                    self._conflicting_procfs = True
+                else:
+                    self._deprecated_init_procfs = True
+                    psutil.PROCFS_PATH = procfs_path
 
         # Process cache, indexed by instance
         self.process_cache = defaultdict(dict)
@@ -299,12 +303,21 @@ class ProcessCheck(AgentCheck):
         search_string = instance.get('search_string', None)
         ignore_ad = _is_affirmative(instance.get('ignore_denied_access', True))
         pid = instance.get('pid')
+        pid_file = instance.get('pid_file', None)
 
-        if not isinstance(search_string, list) and pid is None:
-            raise KeyError('"search_string" parameter should be a list')
+        if self._conflicting_procfs:
+            self.warning('The `procfs_path` defined in `process.yaml` is different from the one defined in '
+                         '`datadog.conf`. This is currently not supported by the Agent. Defaulting to the '
+                         'value defined in `datadog.conf`: {}'.format(psutil.PROCFS_PATH))
+        elif self._deprecated_init_procfs:
+            self.warning('DEPRECATION NOTICE: Specifying `procfs_path` in `process.yaml` is deprecated. '
+                         'Please specify it in `datadog.conf` instead')
+
+        if not isinstance(search_string, list) and pid is None and pid_file is None:
+            raise ValueError('"search_string" or "pid" or "pid_file" parameter is required')
 
         # FIXME 6.x remove me
-        if pid is None:
+        if search_string is not None:
             if "All" in search_string:
                 self.warning('Deprecated: Having "All" in your search_string will'
                          'greatly reduce the performance of the check and '
@@ -324,6 +337,10 @@ class ProcessCheck(AgentCheck):
             # we use Process(pid) as a means to search, if pid not found
             # psutil.NoSuchProcess is raised.
             pids = set([psutil.Process(pid).pid])
+        elif pid_file is not None:
+            with open(pid_file, 'r') as file_pid:
+                pid_line = file_pid.readline().strip()
+                pids = set([psutil.Process(int(pid_line)).pid])
         else:
             raise ValueError('The "search_string" or "pid" options are required for process identification')
 

@@ -254,7 +254,7 @@ def get_histogram_aggregates(configstr=None):
 
     try:
         vals = configstr.split(',')
-        valid_values = ['min', 'max', 'median', 'avg', 'count']
+        valid_values = ['min', 'max', 'median', 'avg', 'sum', 'count']
         result = []
 
         for val in vals:

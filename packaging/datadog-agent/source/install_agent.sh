@@ -126,7 +126,7 @@ if [ $OS = "RedHat" ]; then
             $sudo_cmd yum -y remove datadog-agent-base
         fi
     fi
-    $sudo_cmd yum -y --disablerepo='*' --enablerepo='datadog' install datadog-agent
+    $sudo_cmd yum -y --disablerepo='*' --enablerepo='datadog' install datadog-agent || $sudo_cmd yum -y install datadog-agent
 elif [ $OS = "Debian" ]; then
     printf "\033[34m\n* Installing apt-transport-https\n\033[0m\n"
     $sudo_cmd apt-get update || printf "\033[31m'apt-get update' failed, the script will not install the latest version of apt-transport-https.\033[0m\n"
@@ -169,7 +169,7 @@ else
     $sudo_cmd sh -c "sed 's/api_key:.*/api_key: $apikey/' /etc/sts-agent/stackstate.conf.example > /etc/sts-agent/stackstate.conf"
     if [ $dd_hostname ]; then
         printf "\033[34m\n* Adding your HOSTNAME to the Agent configuration: /etc/sts-agent/stackstate.conf\n\033[0m\n"
-        $sudo_cmd sh -c "sed -i 's/#hostname:.*/hostname: $dd_hostname/' /etc/sts-agent/stackstate.conf"
+        $sudo_cmd sh -c "sed -i 's/# hostname:.*/hostname: $dd_hostname/' /etc/sts-agent/stackstate.conf"
     fi
     $sudo_cmd chown sts-agent:root /etc/sts-agent/stackstate.conf
     $sudo_cmd chmod 640 /etc/sts-agent/stackstate.conf
