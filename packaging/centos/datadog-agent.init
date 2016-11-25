@@ -1,16 +1,4 @@
 #!/bin/sh
-###############################################################################
-# datadog-agent
-#
-# Inspired by Boxed Ice <hello@boxedice.com>
-# Forked by Datadog, Inc. <package@datadoghq.com>
-#
-# Licensed under Simplified BSD License (see LICENSE)
-#
-###############################################################################
-#
-# chkconfig: 345 85 15
-# description: StackState Monitoring Agent
 
 ### BEGIN INIT INFO
 # Provides: stackstate-agent
