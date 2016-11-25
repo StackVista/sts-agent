@@ -8,6 +8,7 @@ from fnmatch import fnmatch
 import numbers
 import re
 import time
+import calendar
 
 # 3rd party
 import requests
@@ -368,7 +369,7 @@ class Kubernetes(AgentCheck):
 
         for event in event_items:
             # skip if the event is too old
-            event_ts = int(time.mktime(time.strptime(event.get('lastTimestamp'), '%Y-%m-%dT%H:%M:%SZ')))
+            event_ts = calendar.timegm(time.strptime(event.get('lastTimestamp'), '%Y-%m-%dT%H:%M:%SZ'))
             if event_ts <= last_read:
                 continue
 
