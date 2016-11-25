@@ -60,7 +60,7 @@ def mocked_strftime(t):
 
 
 def mocked_os_remove(path):
-    if 'datadog-agent-1.tar.bz2' not in path:
+    if 'stackstate-agent-1.tar.bz2' not in path:
         os.remove(path)
 
 
