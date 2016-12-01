@@ -22,7 +22,7 @@ ntplib==0.3.3
 pyyaml==3.11
 # note: requests is also used in many checks
 # upgrade with caution
-requests==2.6.0
+requests==2.6.2
 # note: simplejson is used in many checks to inteface APIs
 simplejson==3.6.5
 supervisor==3.3.0
@@ -45,6 +45,7 @@ httplib2==0.9
 
 # checks.d/kafka_consumer.py
 kafka-python==1.2.5
+kazoo==2.2.1
 
 # checks.d/postgres.py
 pg8000==1.10.1
