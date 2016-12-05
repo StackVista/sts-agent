@@ -1,6 +1,4 @@
-# (C) Datadog, Inc. 2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
+
 from checks import AgentCheck, CheckException
 from utils.prometheus import parse_metric_family
 from utils.kubernetes import KubeStateProcessor
