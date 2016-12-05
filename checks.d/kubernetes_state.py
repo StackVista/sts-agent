@@ -24,7 +24,7 @@ class KubernetesState(AgentCheck):
     def _update_kube_state_metrics(self, instance):
         """
         Retrieve the binary payload and process Prometheus metrics into
-        Datadog metrics.
+        StackState metrics.
         """
         kube_state_url = instance.get('kube_state_url')
         if kube_state_url is None:

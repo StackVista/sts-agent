@@ -17,7 +17,6 @@ instances:
   # Kafka / Zookeper nodes for a single check instance. This way you
   # only generate a single check process, but if one host goes down,
   # KafkaClient / KazooClient will try contacting the next host.
-  # Details: https://github.com/DataDog/dd-agent/issues/2943
   #
   # - kafka_connect_str: 
   #   - <kafka_host1:port>
