@@ -84,6 +84,8 @@ class Check(object):
         #               None: [(ts, value), (ts, value)]}
         #                 untagged values are indexed by None
         self._sample_store = {}
+        self._topology_components_store = []
+        self._topology_relations_store = []
         self._counters = {}  # metric_name: bool
         self.logger = logger
 
@@ -287,6 +289,12 @@ class Check(object):
             except Exception:
                 pass
         return metrics
+
+    def announce_component(self, id, display_name, type, collection_timestamp, description=None, tags = None):
+        """Save component value"""
+
+    def announce_relation(self, from_id, to_id, type):
+        """Save relation value"""
 
 
 class AgentCheck(object):
