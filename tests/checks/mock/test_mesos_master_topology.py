@@ -21,7 +21,8 @@ class TestMesosMasterTopology(AgentCheckTest):
             'init_config': {},
             'instances': [
                 {
-                    'url': 'http://localhost:5050'
+                    'url': 'http://localhost:5050',
+                    'tags': ['mytag', 'mytag2']
                 }
             ]
         }
@@ -39,13 +40,23 @@ class TestMesosMasterTopology(AgentCheckTest):
             self.assertEqual(component["display_name"], "nginx3.e5dda204-d1b2-11e6-a015-0242ac110005")
             self.assertEqual(component["description"], "nginx3")
             self.assertEqual(component["type"], "DOCKER")
-            self.assertIsNotNone(component, "collection_timestamp")
 
-            self.assertComponentTag(component, "ip_address", "172.17.0.8")
-            self.assertComponentTag(component, "docker_image", "nginx")
-            self.assertComponentTag(component, "docker_privileged", False)
-            self.assertComponentTag(component, "docker_network", "BRIDGE")
-            self.assertComponentTag(component, "labels", "label1:value")
+            self.assertEqual(component["tags"], ["mytag", "mytag2"])
+            self.assertEqual(component["payload"],
+                             {"ip_addresses": ["172.17.0.8"],
+                              "labels": {"key": "label1", "value": "value"},
+                              "docker": {"image": "nginx",
+                                         "network": "BRIDGE",
+                                         "privileged": False,
+                                         "port_mappings": [
+                                             {
+                                                 "host_port": 31945,
+                                                 "container_port": 31945,
+                                                 "protocol": "tcp"
+                                             }
+                                         ]
+                                         }
+                              })
 
 
 def _mocked_get_topology_minimal_state(*args, **kwargs):
@@ -79,8 +90,8 @@ class TestMesosMasterTopologyMinimal(AgentCheckTest):
             self.assertEqual(component["display_name"], "nginx3.e5dda204-d1b2-11e6-a015-0242ac110005")
             self.assertEqual(component["description"], "nginx3")
             self.assertEqual(component["type"], "SOMETYPE")
-            self.assertIsNotNone(component, "collection_timestamp")
             self.assertEqual(component["tags"], [])
+            self.assertEqual(component["payload"], {})
 
 
 def _mocked_get_topology_incomplete_state(*args, **kwargs):

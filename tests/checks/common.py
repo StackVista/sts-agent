@@ -357,9 +357,6 @@ WARNINGS
                     mtuple[3]['tested'] = True
         log.debug("{0} FOUND !".format(metric_name))
 
-    def assertComponentTag(self, component, tag, value):
-        self.assertIn(tag + ":" + value, component['tags'])
-
     def assertMetricTagPrefix(self, metric_name, tag_prefix, count=None, at_least=1):
         log.debug("Looking for a tag starting with `{0}:` on metric {1}"
                   .format(tag_prefix, metric_name))
