@@ -25,7 +25,7 @@ class DummyTopologyCheck(AgentCheck):
             'tags': ['tag1', 'tag2'],
             'collection_timestamp': 1298066183.607717,
             'type': 'container',
-            'id': 'test-component1'},
+            'id': 'test-component1'}
         expected_component2 = {
             'display_name': u'test-component2',
             'description': u'desc',
