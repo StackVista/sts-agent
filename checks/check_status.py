@@ -71,7 +71,7 @@ class Stylizer(object):
         """ stylize the text. """
         if not cls.ENABLED:
             return text
-        # don't bother about escaping, not that complicated.
+        # don't bother about escaping, not thatplicated.
         fmt = '\033[%dm%s'
 
         for style in styles or []:
@@ -318,7 +318,9 @@ class InstanceStatus(object):
 class CheckStatus(object):
 
     def __init__(self, check_name, instance_statuses, metric_count=None,
-                 event_count=None, service_check_count=None, service_metadata=[],
+                 event_count=None, service_check_count=None,
+                 component_count=None, relation_count=None,
+                 service_metadata=[],
                  init_failed_error=None, init_failed_traceback=None,
                  library_versions=None, source_type_name=None,
                  check_stats=None):
@@ -328,6 +330,8 @@ class CheckStatus(object):
         self.metric_count = metric_count or 0
         self.event_count = event_count or 0
         self.service_check_count = service_check_count or 0
+        self.component_count = component_count or 0
+        self.relation_count = relation_count or 0
         self.init_failed_error = init_failed_error
         self.init_failed_traceback = init_failed_traceback
         self.library_versions = library_versions
@@ -431,10 +435,13 @@ class CollectorStatus(AgentStatus):
                                        s.traceback.split('\n'))
 
             check_lines += [
-                "    - Collected %s metric%s, %s event%s & %s service check%s" % (
+                "    - Collected %s metric%s, %s event%s, %s service check%s, %s component%s & %s relation%s" % (
                     cs.metric_count, plural(cs.metric_count),
                     cs.event_count, plural(cs.event_count),
-                    cs.service_check_count, plural(cs.service_check_count)),
+                    cs.service_check_count, plural(cs.service_check_count),
+                    cs.component_count, plural(cs.component_count),
+                    cs.relation_count, plural(cs.relation_count)
+                ),
             ]
 
             if cs.check_stats is not None:

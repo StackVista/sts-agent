@@ -3,7 +3,6 @@ import json
 
 # 3p
 from mock import patch
-from nose.plugins.attrib import attr
 
 # project
 from tests.checks.common import AgentCheckTest, Fixtures, get_check_class

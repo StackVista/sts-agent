@@ -549,6 +549,8 @@ class Collector(object):
         instance_statuses = []
         metric_count = 0
         event_count = 0
+        component_count = 0
+        relation_count = 0
         service_check_count = 0
         check_stats = None
 
@@ -561,6 +563,8 @@ class Collector(object):
             current_check_events = check.get_events()
             current_service_checks = check.get_service_checks()
             current_service_metadata = check.get_service_metadata()
+            current_topology_components = check.get_topology_components()
+            current_topology_relations = check.get_topology_relations()
 
             check_stats = check._get_internal_profiling_stats()
 
@@ -568,9 +572,13 @@ class Collector(object):
             metric_count = len(current_check_metrics)
             event_count = len(current_check_events)
             service_check_count = len(current_service_checks)
+            component_count = len(current_topology_components)
+            relation_count = len(current_topology_relations)
 
             print "Metrics: \n{0}".format(pprint.pformat(current_check_metrics))
             print "Events: \n{0}".format(pprint.pformat(current_check_events))
+            print "Components: \n{0}".format(pprint.pformat(current_topology_components))
+            print "Relations: \n{0}".format(pprint.pformat(current_topology_relations))
             print "Service Checks: \n{0}".format(pprint.pformat(current_service_checks))
             print "Service Metadata: \n{0}".format(pprint.pformat(current_service_metadata))
 
@@ -579,7 +587,7 @@ class Collector(object):
 
         check_status = CheckStatus(
             check.name, instance_statuses, metric_count,
-            event_count, service_check_count,
+            event_count, service_check_count, component_count, relation_count,
             library_versions=check.get_library_info(),
             source_type_name=check.SOURCE_TYPE_NAME or check.name,
             check_stats=check_stats
