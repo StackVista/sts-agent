@@ -612,6 +612,7 @@ class Collector(object):
         payload['events'] = {}
         payload['metrics'] = []
         payload['service_checks'] = []
+        payload['']
         payload['resources'] = {}
         payload['internalHostname'] = self.hostname
         payload['uuid'] = get_uuid()

@@ -180,24 +180,26 @@ class TestCore(unittest.TestCase):
             assert tag in all_tags, all_tags
 
     def test_announce_topology_data(self):
+        self.setUpAgentCheck()
+
         #id, display_name, description, type, collection_timestamp, tags
-        self.c.announce_component("test-component1", "test-component1", "container", 1298066183.607717, "desc", ['tag1', 'tag2'])
-        self.assertEquals(len(self.c._topology_components_store), 1)
-        self.assertEquals(len(self.c._topology_relations_store), 0)
+        self.ac.announce_component("test-component1", "test-component1", "container", 1298066183.607717, "desc", ['tag1', 'tag2'])
+        self.assertEquals(len(self.ac._topology_components_store), 1)
+        self.assertEquals(len(self.ac._topology_relations_store), 0)
         expected_component_1 = {"id": "test-component1", "display_name": "test-component1", "description" :"desc", "type": "container", "collection_timestamp": 1298066183.607717, "tags":['tag1', 'tag2']}
-        self.assertEquals(self.c._topology_components_store[0], expected_component_1)
+        self.assertEquals(self.ac._topology_components_store[0], expected_component_1)
 
-        self.c.announce_component("test-component2", "test-component2", "container", 1298066183.607717, "desc", ['tag3', 'tag4'])
-        self.assertEquals(len(self.c._topology_components_store), 2)
-        self.assertEquals(len(self.c._topology_relations_store), 0)
+        self.ac.announce_component("test-component2", "test-component2", "container", 1298066183.607717, "desc", ['tag3', 'tag4'])
+        self.assertEquals(len(self.ac._topology_components_store), 2)
+        self.assertEquals(len(self.ac._topology_relations_store), 0)
         expected_component_2 = {"id": "test-component2", "display_name": "test-component2", "description" :"desc", "type": "container", "collection_timestamp": 1298066183.607717, "tags":['tag3', 'tag4']}
-        self.assertEquals(self.c._topology_components_store[1], expected_component_2)
+        self.assertEquals(self.ac._topology_components_store[1], expected_component_2)
 
-        self.c.announce_relation("test-component1", "test-component2", "dependsOn")
-        self.assertEquals(len(self.c._topology_components_store), 1)
-        self.assertEquals(len(self.c._topology_relations_store), 2)
+        self.ac.announce_relation("test-component1", "test-component2", "dependsOn")
+        self.assertEquals(len(self.ac._topology_components_store), 1)
+        self.assertEquals(len(self.ac._topology_relations_store), 2)
         expected_relation = {"id": "test-component1:dependsOn:test-component2", "from_id": "test-component1", "to_id":"test-component2", "type": "dependsOn"}
-        self.assertEquals(self.c._topology_relations_store[0], expected_relation)
+        self.assertEquals(self.ac._topology_relations_store[0], expected_relation)
 
     def test_apptags(self):
         '''
