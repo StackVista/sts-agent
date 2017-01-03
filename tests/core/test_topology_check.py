@@ -1,17 +1,7 @@
 # 3p
-from nose.plugins.attrib import attr
-import nose.tools as nt
 
 # project
 from checks import AgentCheck
-from checks.check_status import (
-    CheckStatus,
-    CollectorStatus,
-    InstanceStatus,
-    STATUS_ERROR,
-    STATUS_OK,
-)
-
 
 class DummyTopologyCheck(AgentCheck):
     def check(self, instance):
