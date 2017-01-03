@@ -14,7 +14,6 @@ def _mocked_get_topology_state(*args, **kwargs):
     return state
 
 
-@attr(requires='mesos_master_topology')
 class TestMesosMasterTopology(AgentCheckTest):
     CHECK_NAME = 'mesos_master_topology'
 
@@ -55,7 +54,6 @@ def _mocked_get_topology_minimal_state(*args, **kwargs):
     return state
 
 
-@attr(requires='mesos_master_topology')
 class TestMesosMasterTopologyMinimal(AgentCheckTest):
     CHECK_NAME = 'mesos_master_topology'
 
@@ -91,7 +89,6 @@ def _mocked_get_topology_incomplete_state(*args, **kwargs):
     return state
 
 
-@attr(requires='mesos_master_topology')
 class TestMesosMasterTopologyIncomplete(AgentCheckTest):
     CHECK_NAME = 'mesos_master_topology'
 
