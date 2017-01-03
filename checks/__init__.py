@@ -598,7 +598,7 @@ class AgentCheck(object):
         :param tags: (optional) list of strings, a list of tags for this component
         """
 
-        self._topology_components_store.append({
+        self.topology_components.append({
             'id': id,
             'display_name': display_name,
             'description': description,
@@ -616,7 +616,7 @@ class AgentCheck(object):
         :param type: string, type of relation, for example: app1 'is hosted on' srv1
         """
 
-        self._topology_relations_store.append({
+        self.topology_relations.append({
             'from_id': from_id,
             'to_id': to_id,
             'type': type
