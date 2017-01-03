@@ -586,7 +586,7 @@ class AgentCheck(object):
                                  hostname, check_run_id, message)
         )
 
-    def announce_component(self, id, display_name, type, collection_timestamp, description=None, tags=None):
+    def announce_component(self, id, display_name, type, description=None, tags=None):
         """
         Accounce a component to StackState.
 
@@ -594,7 +594,6 @@ class AgentCheck(object):
         :param display_name: string, name of component to display in Stackstate
         :param description: string, description of the component, if any.
         :param type: string, type of component, for example: 'docker'
-        :param collection_timestamp: float, unix timestamp for when the component was retrieved
         :param tags: (optional) list of strings, a list of tags for this component
         """
 
@@ -603,7 +602,6 @@ class AgentCheck(object):
             'display_name': unicode(display_name),
             'description': unicode(description),
             'type': type,
-            'collection_timestamp': collection_timestamp,
             'tags': tags
         })
 
