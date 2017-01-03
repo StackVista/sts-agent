@@ -15,28 +15,24 @@ import requests
 from checks import AgentCheck, CheckException
 
 class MesosMasterTopology(AgentCheck):
+    SERVICE_CHECK_NAME = "mesos_master.topology_information"
+    service_check_needed = True
+
 
     def check(self, instance):
         if 'url' not in instance:
             raise Exception('Mesos topology instance missing "url" value.')
 
-        url = instance['url']
+        # url = instance['url']
 
-        default_timeout = self.init_config.get('default_timeout', 5)
-        timeout = float(instance.get('timeout', default_timeout))
+        #default_timeout = self.init_config.get('default_timeout', 5)
+        # timeout = float(instance.get('timeout', default_timeout))
 
-        state = self._get_master_state(url, timeout)
+        #state = self._get_master_state(url, timeout)
 
-        #state['version']
+        #for framework in state['frameworks']:
+        #    for  framework['tasks']
 
-# self.leader = False
-#
-# if state_metrics is not None:
-#     self.version = map(int, state_metrics['version'].split('.'))
-#     if state_metrics['leader'] == state_metrics['pid']:
-#         self.leader = True
-#
-# return state_metrics
 
 
 
