@@ -600,8 +600,8 @@ class AgentCheck(object):
 
         self.topology_components.append({
             'id': id,
-            'display_name': display_name,
-            'description': description,
+            'display_name': unicode(display_name),
+            'description': unicode(description),
             'type': type,
             'collection_timestamp': collection_timestamp,
             'tags': tags
