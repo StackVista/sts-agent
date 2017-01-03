@@ -84,8 +84,6 @@ class Check(object):
         #               None: [(ts, value), (ts, value)]}
         #                 untagged values are indexed by None
         self._sample_store = {}
-        self._topology_components_store = []
-        self._topology_relations_store = []
         self._counters = {}  # metric_name: bool
         self.logger = logger
 
@@ -290,13 +288,6 @@ class Check(object):
                 pass
         return metrics
 
-    def announce_component(self, id, display_name, type, collection_timestamp, description=None, tags = None):
-        """Save component value"""
-
-    def announce_relation(self, from_id, to_id, type):
-        """Save relation value"""
-
-
 class AgentCheck(object):
     OK, WARNING, CRITICAL, UNKNOWN = (0, 1, 2, 3)
 
@@ -350,6 +341,10 @@ class AgentCheck(object):
 
         self.events = []
         self.service_checks = []
+        self.topology_components = []
+        self.topology_relations = []
+        self.removed_topology_components = []
+        self.removed_topology_relations = []
         self.instances = instances or []
         self.warnings = []
         self.library_versions = None
@@ -591,6 +586,36 @@ class AgentCheck(object):
                                  hostname, check_run_id, message)
         )
 
+    def announce_component(self, id, display_name, type, collection_timestamp, description=None, tags = None):
+        """
+        Accounce a component to StackState.
+
+        :param id: string, identifier of the component
+        :param display_name: string, name of component to display in Stackstate
+        :param description: string, description of the component, if any.
+        :param type:
+        :param collection_timestamp: float, unix timestamp for when the component was retrieved
+        :param tags: (optional) list of strings, a list of tags for this component
+        :return: TODO
+        """
+
+        self._topology_components_store = []
+
+
+
+
+    def announce_relation(self, from_id, to_id, type):
+        """
+        Announce a relation between two components to StackState.
+
+        :param from_id: string, id of component
+        :param to_id: string, id of component
+        :param type:
+        :return:
+        """
+
+        self._topology_relations_store = []
+
     def service_metadata(self, meta_name, value):
         """
         Save metadata.
@@ -643,6 +668,26 @@ class AgentCheck(object):
         service_checks = self.service_checks
         self.service_checks = []
         return service_checks
+
+    def get_topology_components(self):
+        components = self.topology_components
+        self.topology_components = []
+        return components
+
+    def get_topology_relations(self):
+        relations = self.topology_relations
+        self.topology_relations = []
+        return relations
+
+    def get_removed_topology_components(self):
+        components = self.removed_topology_components
+        self.removed_topology_components = []
+        return components
+
+    def get_removed_topology_relations(self):
+        relations = self.removed_topology_relations
+        self.removed_topology_relations = []
+        return relations
 
     def _roll_up_instance_metadata(self):
         """
