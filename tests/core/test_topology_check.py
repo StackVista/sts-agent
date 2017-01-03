@@ -12,8 +12,8 @@ class DummyTopologyCheck(AgentCheck):
             same as returned by methods 'expected_components' and 'expected_relations'
             since it is used in tests
         """
-        self.announce_component("test-component1", "test-component1", "container", "desc", ['tag1', 'tag2'])
-        self.announce_component("test-component2", "test-component2", "container", "desc", ['tag3', 'tag4'])
+        self.announce_component("test-component1", "test-component1", "container", {}, "desc", ['tag1', 'tag2'])
+        self.announce_component("test-component2", "test-component2", "container", {}, "desc", ['tag3', 'tag4'])
         self.announce_relation("test-component1", "test-component2", "dependsOn")
         self.remove_component("test-component1")
         self.remove_relation("test-component1", "test-component2", "dependsOn")
@@ -24,12 +24,14 @@ class DummyTopologyCheck(AgentCheck):
             'description': u'desc',
             'tags': ['tag1', 'tag2'],
             'type': 'container',
+            'payload': {},
             'id': 'test-component1'}
         expected_component2 = {
             'display_name': u'test-component2',
             'description': u'desc',
             'tags': ['tag3', 'tag4'],
             'type': 'container',
+            'payload': {},
             'id': 'test-component2'}
         return [expected_component1, expected_component2]
 

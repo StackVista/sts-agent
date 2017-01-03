@@ -55,7 +55,9 @@ class TestMesosMasterTopology(AgentCheckTest):
                                                  "protocol": "tcp"
                                              }
                                          ]
-                                         }
+                                         },
+                              "slave_id": "fc998b77-e2d1-4be5-b15c-1af7cddabfed-S0",
+                              "framework_id": "fc998b77-e2d1-4be5-b15c-1af7cddabfed-0000"
                               })
 
 
