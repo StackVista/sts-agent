@@ -586,23 +586,26 @@ class AgentCheck(object):
                                  hostname, check_run_id, message)
         )
 
-    def announce_component(self, id, display_name, type, collection_timestamp, description=None, tags = None):
+    def announce_component(self, id, display_name, type, collection_timestamp, description=None, tags=None):
         """
         Accounce a component to StackState.
 
         :param id: string, identifier of the component
         :param display_name: string, name of component to display in Stackstate
         :param description: string, description of the component, if any.
-        :param type:
+        :param type: string, type of component, for example: 'docker'
         :param collection_timestamp: float, unix timestamp for when the component was retrieved
         :param tags: (optional) list of strings, a list of tags for this component
-        :return: TODO
         """
 
-        self._topology_components_store = []
-
-
-
+        self._topology_components_store.append({
+            'id': id,
+            'display_name': display_name,
+            'description': description,
+            'type': type,
+            'collection_timestamp': collection_timestamp,
+            'tags': tags
+        })
 
     def announce_relation(self, from_id, to_id, type):
         """
@@ -610,11 +613,41 @@ class AgentCheck(object):
 
         :param from_id: string, id of component
         :param to_id: string, id of component
-        :param type:
-        :return:
+        :param type: string, type of relation, for example: app1 'is hosted on' srv1
         """
 
-        self._topology_relations_store = []
+        self._topology_relations_store.append({
+            'from_id': from_id,
+            'to_id': to_id,
+            'type': type
+        })
+
+    def remove_component(self, id):
+        """
+        Remove component.
+
+        :param id: string, identifier of the component
+        """
+
+        self.removed_topology_components.append({
+            'id': id
+        })
+
+    def remove_relation(self, from_id, to_id, type):
+        """
+        Remove a relation between two components
+
+        :param from_id: string, id of component
+        :param to_id: string, id of component
+        :param type: string, type of relation to remove between the two components,
+                    for example: app1 'is hosted on' srv1 removes only the 'is hosted on' relation between the two components
+        """
+
+        self.removed_topology_relations.append({
+            'from_id': from_id,
+            'to_id': to_id,
+            'type': type
+        })
 
     def service_metadata(self, meta_name, value):
         """
