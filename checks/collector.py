@@ -287,6 +287,8 @@ class Collector(object):
         metrics = payload['metrics']
         events = payload['events']
         service_checks = payload['service_checks']
+        topology_components = payload['topology']['components']
+        topology_relations = payload['topology']['relations']
 
         # Run the system checks. Checks will depend on the OS
         if Platform.is_windows():
@@ -413,7 +415,12 @@ class Collector(object):
                 # Collect the metrics and events.
                 current_check_metrics = check.get_metrics()
                 current_check_events = check.get_events()
+                current_check_components = check.get_topology_components()
+                current_check_relations = check.get_topology_relations()
                 check_stats = check._get_internal_profiling_stats()
+
+                topology_components = topology_components.extend(current_check_components)
+                topology_relations = topology_relations.extend(current_check_relations)
 
                 # Collect metadata
                 current_check_metadata = check.get_service_metadata()
@@ -485,6 +492,8 @@ class Collector(object):
         payload['metrics'] = metrics
         payload['events'] = events
         payload['service_checks'] = service_checks
+        payload['topology']['components'] = topology_components
+        payload['topology']['relations'] = topology_relations
 
         # Populate metadata
         self._populate_payload_metadata(payload, check_statuses, start_event)
@@ -612,7 +621,7 @@ class Collector(object):
         payload['events'] = {}
         payload['metrics'] = []
         payload['service_checks'] = []
-        payload['topology_data'] = {}
+        payload['topology'] = {'components': [], 'relations': []}
         payload['resources'] = {}
         payload['internalHostname'] = self.hostname
         payload['uuid'] = get_uuid()
