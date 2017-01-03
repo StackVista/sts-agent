@@ -3,6 +3,7 @@ import logging
 import os
 import time
 import unittest
+import json
 
 # project
 from aggregator import MetricsAggregator
@@ -13,7 +14,9 @@ from checks import (
     Infinity,
     UnknownValue,
 )
+from tests.core.test_topology_check import DummyTopologyCheck
 from checks.collector import Collector
+from checks.collector import AgentPayload
 from tests.checks.common import load_check
 from utils.hostname import get_hostname
 from utils.ntp import NTPUtil
@@ -216,6 +219,51 @@ class TestCore(unittest.TestCase):
         self.assertEquals(len(self.ac.removed_topology_relations), 1)
         expected_relation = {"from_id": "test-component1", "to_id":"test-component2", "type": "dependsOn"}
         self.assertEquals(self.ac.removed_topology_relations[0], expected_relation)
+
+    def test_topology_collection(self):
+        agentConfig = {
+            'api_key': 'test_apikey',
+            'check_timings': True,
+            'collect_ec2_tags': True,
+            'collect_instance_metadata': False,
+            'create_dd_check_tags': False,
+            'version': 'test',
+            'tags': '',
+        }
+
+        # Run a single checks.d check as part of the collector.
+        dummy_topology_check_config = {
+            "init_config": {},
+            "instances": [{"dummy_instance": "dummy_instance"}]
+        }
+
+        check1 = DummyTopologyCheck('dummy_topology_check', dummy_topology_check_config.get('init_config'), agentConfig, instances=dummy_topology_check_config.get('instances'))
+        check2 = DummyTopologyCheck('dummy_topology_check', dummy_topology_check_config.get('init_config'), agentConfig, instances=dummy_topology_check_config.get('instances'))
+
+        emitted_components = []
+        emitted_relations = []
+
+        def mock_emitter(message, log, agentConfig, endpoint):
+            emitted_components.extend(message['topology']['components'])
+            emitted_relations.extend(message['topology']['relations'])
+
+        c = Collector(agentConfig, [mock_emitter], {}, get_hostname(agentConfig))
+        payload = c.run({
+            'initialized_checks': [check1, check2],
+            'init_failed_checks': {}
+        })
+        components = payload['topology']['components']
+        relations = payload['topology']['relations']
+
+        self.assertEquals(len(components), 4)
+        self.assertEquals(len(relations), 2)
+        self.assertEquals(check1.expected_components() + check2.expected_components(), components)
+        self.assertEquals(check1.expected_relations() + check2.expected_relations(), relations)
+
+        self.assertEquals(len(emitted_components), 4)
+        self.assertEquals(len(emitted_relations), 2)
+        self.assertEquals(check1.expected_components() + check2.expected_components(), emitted_components)
+        self.assertEquals(check1.expected_relations() + check2.expected_relations(), emitted_relations)
 
     def test_apptags(self):
         '''

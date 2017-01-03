@@ -419,8 +419,8 @@ class Collector(object):
                 current_check_relations = check.get_topology_relations()
                 check_stats = check._get_internal_profiling_stats()
 
-                topology_components = topology_components.extend(current_check_components)
-                topology_relations = topology_relations.extend(current_check_relations)
+                topology_components.extend(current_check_components)
+                topology_relations.extend(current_check_relations)
 
                 # Collect metadata
                 current_check_metadata = check.get_service_metadata()
