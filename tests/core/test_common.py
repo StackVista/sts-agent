@@ -3,7 +3,6 @@ import logging
 import os
 import time
 import unittest
-import json
 
 # project
 from aggregator import MetricsAggregator
@@ -16,7 +15,6 @@ from checks import (
 )
 from tests.core.test_topology_check import DummyTopologyCheck
 from checks.collector import Collector
-from checks.collector import AgentPayload
 from tests.checks.common import load_check
 from utils.hostname import get_hostname
 from utils.ntp import NTPUtil
