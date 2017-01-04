@@ -586,25 +586,19 @@ class AgentCheck(object):
                                  hostname, check_run_id, message)
         )
 
-    def announce_component(self, id, display_name, type, payload={}, description=None, tags=None):
+    def announce_component(self, id, type, data={}):
         """
         Accounce a component to StackState.
 
         :param id: string, identifier of the component
-        :param display_name: string, name of component to display in Stackstate
-        :param payload: string, containing type specific json
-        :param description: string, description of the component, if any.
         :param type: string, type of component, for example: 'docker'
-        :param tags: (optional) list of strings, a list of tags for this component
+        :param data: string, containing type specific json
         """
 
         self.topology_components.append({
-            'id': id,
-            'display_name': unicode(display_name),
-            'description': unicode(description),
-            'type': type,
-            'payload': payload,
-            'tags': tags
+            'externalId': id,
+            'typeName': type,
+            'data': data
         })
 
     def announce_relation(self, from_id, to_id, type):
@@ -616,10 +610,13 @@ class AgentCheck(object):
         :param type: string, type of relation, for example: app1 'is hosted on' srv1
         """
 
+        external_identifier = from_id + '-' + type + '-' + to_id
+
         self.topology_relations.append({
-            'from_id': from_id,
-            'to_id': to_id,
-            'type': type
+            'externalId': external_identifier,
+            'typeName': type,
+            'sourceId': from_id,
+            'targetId': to_id
         })
 
     def remove_component(self, id):

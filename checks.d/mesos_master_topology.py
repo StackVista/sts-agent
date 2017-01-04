@@ -38,16 +38,18 @@ class MesosMasterTopology(AgentCheck):
                 container_type = container_obj['type']
 
                 if container_type == 'DOCKER':
-                    payload = self._extract_docker_container_payload(container_obj)
+                    data = self._extract_docker_container_payload(container_obj)
                 else:
-                    payload = dict()
+                    data = dict()
 
-                payload['slave_id'] = slave_id
-                payload['framework_id'] = framework_id
-                payload['labels'] = self._extract_labels(task)
-                payload['ip_addresses'] = self._extract_ip_addresses(task)
+                data['container_name'] = container_name
+                data['slave_id'] = slave_id
+                data['framework_id'] = framework_id
+                data['labels'] = self._extract_labels(task)
+                data['ip_addresses'] = self._extract_ip_addresses(task)
+                data['tags'] = instance_tags
 
-                self.announce_component(task_id, task_id, container_type, payload, container_name, instance_tags)
+                self.announce_component(task_id, container_type, data)
 
 
     def _extract_docker_container_payload(self, container_obj):

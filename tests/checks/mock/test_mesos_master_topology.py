@@ -37,12 +37,8 @@ class TestMesosMasterTopology(AgentCheckTest):
             component = components[0]
 
             self.assertEqual(component["id"], "nginx3.e5dda204-d1b2-11e6-a015-0242ac110005")
-            self.assertEqual(component["display_name"], "nginx3.e5dda204-d1b2-11e6-a015-0242ac110005")
-            self.assertEqual(component["description"], "nginx3")
             self.assertEqual(component["type"], "DOCKER")
-
-            self.assertEqual(component["tags"], ["mytag", "mytag2"])
-            self.assertEqual(component["payload"],
+            self.assertEqual(component["data"],
                              {"ip_addresses": ["172.17.0.8"],
                               "labels": {"key": "label1", "value": "value"},
                               "docker": {"image": "nginx",
@@ -57,7 +53,8 @@ class TestMesosMasterTopology(AgentCheckTest):
                                          ]
                                          },
                               "slave_id": "fc998b77-e2d1-4be5-b15c-1af7cddabfed-S0",
-                              "framework_id": "fc998b77-e2d1-4be5-b15c-1af7cddabfed-0000"
+                              "framework_id": "fc998b77-e2d1-4be5-b15c-1af7cddabfed-0000",
+                              "tags": ["mytag", "mytag2"]
                               })
 
 
@@ -89,11 +86,8 @@ class TestMesosMasterTopologyMinimal(AgentCheckTest):
             component = components[0]
 
             self.assertEqual(component["id"], "nginx3.e5dda204-d1b2-11e6-a015-0242ac110005")
-            self.assertEqual(component["display_name"], "nginx3.e5dda204-d1b2-11e6-a015-0242ac110005")
-            self.assertEqual(component["description"], "nginx3")
             self.assertEqual(component["type"], "SOMETYPE")
-            self.assertEqual(component["tags"], [])
-            self.assertEqual(component["payload"], {})
+            self.assertEqual(component["data"], {})
 
 
 def _mocked_get_topology_incomplete_state(*args, **kwargs):
