@@ -183,40 +183,38 @@ class TestCore(unittest.TestCase):
     def test_announce_topology_data_presense(self):
         self.setUpAgentCheck()
 
-        #id, display_name, description, type, collection_timestamp, tags
-        self.ac.component("test-component1", "container", {"tags": ['tag1', 'tag2']})
+        self.ac.component("test-component1", {"name": "container"}, {"tags": ['tag1', 'tag2']})
         self.assertEquals(len(self.ac.topology_components), 1)
         self.assertEquals(len(self.ac.topology_relations), 0)
-        expected_component_1 = {"externalId": "test-component1", "typeName": "container", "data": {"tags":['tag1', 'tag2']}}
+        expected_component_1 = {"externalId": "test-component1", "type": {"name": "container"}, "data": {"tags":['tag1', 'tag2']}}
         self.assertEquals(self.ac.topology_components[0], expected_component_1)
 
-        self.ac.component("test-component2", "container", {"tags": ['tag3', 'tag4']}, )
+        self.ac.component("test-component2", {"name": "container"}, {"tags": ['tag3', 'tag4']}, )
         self.assertEquals(len(self.ac.topology_components), 2)
         self.assertEquals(len(self.ac.topology_relations), 0)
-        expected_component_2 = {"externalId": "test-component2", "typeName": "container", "data": {"tags":['tag3', 'tag4']}}
+        expected_component_2 = {"externalId": "test-component2", "type": {"name": "container"}, "data": {"tags":['tag3', 'tag4']}}
         self.assertEquals(self.ac.topology_components[1], expected_component_2)
 
-        self.ac.relation("test-component1", "test-component2", "dependsOn")
+        self.ac.relation("test-component1", "test-component2", {"name": "dependsOn"})
         self.assertEquals(len(self.ac.topology_components), 2)
         self.assertEquals(len(self.ac.topology_relations), 1)
-        expected_relation = {"externalId": "test-component1-dependsOn-test-component2", "sourceId": "test-component1", "targetId": "test-component2", "typeName": "dependsOn"}
+        expected_relation = {"externalId": "test-component1-dependsOn-test-component2", "sourceId": "test-component1", "targetId": "test-component2", "type": {"name": "dependsOn"}}
 
         self.assertEquals(self.ac.topology_relations[0], expected_relation)
 
     def test_announce_topology_data_removed(self):
         self.setUpAgentCheck()
 
-        #id, display_name, description, type, collection_timestamp, tags
         self.ac.remove_component("test-component1")
         self.assertEquals(len(self.ac.removed_topology_components), 1)
         self.assertEquals(len(self.ac.removed_topology_relations), 0)
         expected_component_1 = {"id": "test-component1"}
         self.assertEquals(self.ac.removed_topology_components[0], expected_component_1)
 
-        self.ac.remove_relation("test-component1", "test-component2", "dependsOn")
+        self.ac.remove_relation("test-component1", "test-component2", {"name": "dependsOn"})
         self.assertEquals(len(self.ac.removed_topology_components), 1)
         self.assertEquals(len(self.ac.removed_topology_relations), 1)
-        expected_relation = {"from_id": "test-component1", "to_id":"test-component2", "type": "dependsOn"}
+        expected_relation = {"source_id": "test-component1", "target_id": "test-component2", "type": {"name": "dependsOn"}}
         self.assertEquals(self.ac.removed_topology_relations[0], expected_relation)
 
     def test_topology_collection(self):

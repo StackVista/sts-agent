@@ -35,7 +35,9 @@ class MesosMasterTopology(AgentCheck):
                 framework_id = task['framework_id']
 
                 container_obj = task['container']
-                container_type = container_obj['type']
+                container_type = {
+                    'name': container_obj['type']
+                }
 
                 if container_type == 'DOCKER':
                     data = self._extract_docker_container_payload(container_obj)

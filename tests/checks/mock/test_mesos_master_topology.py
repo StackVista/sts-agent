@@ -37,7 +37,7 @@ class TestMesosMasterTopology(AgentCheckTest):
             component = components[0]
 
             self.assertEqual(component["id"], "nginx3.e5dda204-d1b2-11e6-a015-0242ac110005")
-            self.assertEqual(component["type"], "DOCKER")
+            self.assertEqual(component["type"], {"name": "DOCKER"})
             self.assertEqual(component["data"],
                              {"ip_addresses": ["172.17.0.8"],
                               "labels": {"key": "label1", "value": "value"},

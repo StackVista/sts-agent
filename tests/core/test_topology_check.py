@@ -12,16 +12,18 @@ class DummyTopologyCheck(AgentCheck):
             same as returned by methods 'expected_components' and 'expected_relations'
             since it is used in tests
         """
-        self.component("test-component1", "container", {"tags": ['tag1', 'tag2'], 'container_name': 'test-component1'})
-        self.component("test-component2", "container", {"tags": ['tag3', 'tag4']})
-        self.relation("test-component1", "test-component2", "dependsOn")
+        self.component("test-component1", {"name": "container"}, {"tags": ['tag1', 'tag2'], 'container_name': 'test-component1'})
+        self.component("test-component2", {"name": "container"}, {"tags": ['tag3', 'tag4']})
+        self.relation("test-component1", "test-component2", {"name": "dependsOn"})
         self.remove_component("test-component1")
-        self.remove_relation("test-component1", "test-component2", "dependsOn")
+        self.remove_relation("test-component1", "test-component2", {"name": "dependsOn"})
 
     def expected_components(self):
         expected_component1 = {
             'externalId': 'test-component1',
-            'typeName': 'container',
+            'type': {
+                'name': 'container'
+            },
             'data': {
                 'tags': ['tag1', 'tag2'],
                 'container_name': 'test-component1'
@@ -29,7 +31,9 @@ class DummyTopologyCheck(AgentCheck):
         }
         expected_component2 = {
             'externalId': 'test-component2',
-            'typeName': 'container',
+            'type': {
+                'name': 'container'
+            },
             'data': {'tags': ['tag3', 'tag4']}
         }
         return [expected_component1, expected_component2]
@@ -39,7 +43,9 @@ class DummyTopologyCheck(AgentCheck):
             'externalId': 'test-component1-dependsOn-test-component2',
             'sourceId': 'test-component1',
             'targetId': 'test-component2',
-            'typeName': 'dependsOn'
+            'type': {
+                'name': 'dependsOn'
+            }
         }]
 
 def test_check_status_always_succeeds():

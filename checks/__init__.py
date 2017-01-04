@@ -591,32 +591,32 @@ class AgentCheck(object):
         Accounce a component to StackState.
 
         :param id: string, identifier of the component
-        :param type: string, type of component, for example: 'docker'
-        :param data: string, containing type specific json
+        :param type: json string, type of component, contains at least a name field, for example: {'name': 'docker'}
+        :param data: json string, containing specific type information
         """
 
         self.topology_components.append({
             'externalId': id,
-            'typeName': type,
+            'type': type,
             'data': data
         })
 
-    def relation(self, from_id, to_id, type):
+    def relation(self, source_id, target_id, type):
         """
         Announce a relation between two components to StackState.
 
-        :param from_id: string, id of component
-        :param to_id: string, id of component
-        :param type: string, type of relation, for example: app1 'is hosted on' srv1
+        :param source_id: string, id of component
+        :param target_id: string, id of component
+        :param type: json string, type of relation, contains at least a name field, for example: app1 'is hosted on' srv1 results in {'name': 'is hosted on'}
         """
 
-        external_identifier = from_id + '-' + type + '-' + to_id
+        external_identifier = source_id + '-' + type['name'] + '-' + target_id
 
         self.topology_relations.append({
             'externalId': external_identifier,
-            'typeName': type,
-            'sourceId': from_id,
-            'targetId': to_id
+            'type': type,
+            'sourceId': source_id,
+            'targetId': target_id
         })
 
     def remove_component(self, id):
@@ -630,19 +630,19 @@ class AgentCheck(object):
             'id': id
         })
 
-    def remove_relation(self, from_id, to_id, type):
+    def remove_relation(self, source_id, target_id, type):
         """
         Remove a relation between two components
 
-        :param from_id: string, id of component
-        :param to_id: string, id of component
+        :param source_id: string, id of component
+        :param target_id: string, id of component
         :param type: string, type of relation to remove between the two components,
                     for example: app1 'is hosted on' srv1 removes only the 'is hosted on' relation between the two components
         """
 
         self.removed_topology_relations.append({
-            'from_id': from_id,
-            'to_id': to_id,
+            'source_id': source_id,
+            'target_id': target_id,
             'type': type
         })
 
