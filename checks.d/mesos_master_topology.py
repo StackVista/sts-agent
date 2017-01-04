@@ -28,7 +28,7 @@ class MesosMasterTopology(AgentCheck):
         state = self._get_master_state(url, timeout)
 
         for framework in state['frameworks']:
-           for task in framework['tasks']:
+            for task in framework['tasks']:
                 task_id = task['id']
                 container_name = task['name']
                 slave_id = task['slave_id']
@@ -49,7 +49,7 @@ class MesosMasterTopology(AgentCheck):
                 data['ip_addresses'] = self._extract_ip_addresses(task)
                 data['tags'] = instance_tags
 
-                self.announce_component(task_id, container_type, data)
+                self.component(task_id, container_type, data)
 
 
     def _extract_docker_container_payload(self, container_obj):

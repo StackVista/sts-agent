@@ -586,7 +586,7 @@ class AgentCheck(object):
                                  hostname, check_run_id, message)
         )
 
-    def announce_component(self, id, type, data={}):
+    def component(self, id, type, data={}):
         """
         Accounce a component to StackState.
 
@@ -601,7 +601,7 @@ class AgentCheck(object):
             'data': data
         })
 
-    def announce_relation(self, from_id, to_id, type):
+    def relation(self, from_id, to_id, type):
         """
         Announce a relation between two components to StackState.
 

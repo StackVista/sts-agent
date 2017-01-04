@@ -184,19 +184,19 @@ class TestCore(unittest.TestCase):
         self.setUpAgentCheck()
 
         #id, display_name, description, type, collection_timestamp, tags
-        self.ac.announce_component("test-component1", "container", {"tags": ['tag1', 'tag2']})
+        self.ac.component("test-component1", "container", {"tags": ['tag1', 'tag2']})
         self.assertEquals(len(self.ac.topology_components), 1)
         self.assertEquals(len(self.ac.topology_relations), 0)
         expected_component_1 = {"externalId": "test-component1", "typeName": "container", "data": {"tags":['tag1', 'tag2']}}
         self.assertEquals(self.ac.topology_components[0], expected_component_1)
 
-        self.ac.announce_component("test-component2", "container", {"tags": ['tag3', 'tag4']}, )
+        self.ac.component("test-component2", "container", {"tags": ['tag3', 'tag4']}, )
         self.assertEquals(len(self.ac.topology_components), 2)
         self.assertEquals(len(self.ac.topology_relations), 0)
         expected_component_2 = {"externalId": "test-component2", "typeName": "container", "data": {"tags":['tag3', 'tag4']}}
         self.assertEquals(self.ac.topology_components[1], expected_component_2)
 
-        self.ac.announce_relation("test-component1", "test-component2", "dependsOn")
+        self.ac.relation("test-component1", "test-component2", "dependsOn")
         self.assertEquals(len(self.ac.topology_components), 2)
         self.assertEquals(len(self.ac.topology_relations), 1)
         expected_relation = {"externalId": "test-component1-dependsOn-test-component2", "sourceId": "test-component1", "targetId": "test-component2", "typeName": "dependsOn"}
