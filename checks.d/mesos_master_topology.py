@@ -12,6 +12,7 @@ import requests
 from checks import AgentCheck, CheckException
 
 class MesosMasterTopology(AgentCheck):
+    INSTANCE_TYPE = "mesos"
     SERVICE_CHECK_NAME = "mesos_master.topology_information"
     service_check_needed = True
 
@@ -20,6 +21,12 @@ class MesosMasterTopology(AgentCheck):
             raise Exception('Mesos topology instance missing "url" value.')
 
         url = instance['url']
+
+        instance_key = {
+            "type": self.INSTANCE_TYPE,
+            "url": url
+        }
+
         instance_tags = instance.get('tags', [])
         default_timeout = self.init_config.get('default_timeout', 5)
         timeout = float(instance.get('timeout', default_timeout))
@@ -51,7 +58,7 @@ class MesosMasterTopology(AgentCheck):
                 data['ip_addresses'] = self._extract_ip_addresses(task)
                 data['tags'] = instance_tags
 
-                self.component(task_id, container_type, data)
+                self.component(instance_key, task_id, container_type, data)
 
 
     def _extract_docker_container_payload(self, container_obj):

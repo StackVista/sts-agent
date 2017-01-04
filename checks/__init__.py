@@ -288,6 +288,26 @@ class Check(object):
                 pass
         return metrics
 
+class TopologyInstance:
+    def __init__(self, instance_key):
+        self._instance_key = instance_key
+        self._components = []
+        self._relations = []
+
+    def add_component(self, data):
+        self._components.append(data)
+
+    def add_relation(self, data):
+        self._relations.append(data)
+
+    def get_topology(self):
+        result = {
+            "instance" : self._instance_key,
+            "components": self._components,
+            "relations": self._relations
+        }
+        return result
+
 class AgentCheck(object):
     OK, WARNING, CRITICAL, UNKNOWN = (0, 1, 2, 3)
 
@@ -341,10 +361,7 @@ class AgentCheck(object):
 
         self.events = []
         self.service_checks = []
-        self.topology_components = []
-        self.topology_relations = []
-        self.removed_topology_components = []
-        self.removed_topology_relations = []
+        self.topology_instances = {}
         self.instances = instances or []
         self.warnings = []
         self.library_versions = None
@@ -586,65 +603,54 @@ class AgentCheck(object):
                                  hostname, check_run_id, message)
         )
 
-    def component(self, id, type, data={}):
+    def _add_component(self, instance_key, data):
+        key = tuple(sorted(instance_key.items()))
+        topology_instance = self.topology_instances.setdefault(key, TopologyInstance(instance_key))
+        topology_instance.add_component(data)
+
+
+    def _add_relation(self, instance_key, data):
+        key = tuple(sorted(instance_key))
+        topology_instance = self.topology_instances.setdefault(key, TopologyInstance(instance_key))
+        topology_instance.add_relation(data)
+
+    def component(self, instance_key, id, type, data={}):
         """
         Accounce a component to StackState.
 
+        :param instance_key: dict, identifying the instance; you might be running multiple clusters of mesos
         :param id: string, identifier of the component
-        :param type: json string, type of component, contains at least a name field, for example: {'name': 'docker'}
-        :param data: json string, containing specific type information
+        :param type: dict, type of component, contains at least a name field, for example: {'name': 'docker'}
+        :param data: dict, containing specific type information
         """
-
-        self.topology_components.append({
+        data = {
             'externalId': id,
             'type': type,
             'data': data
-        })
+        }
 
-    def relation(self, source_id, target_id, type):
+        self._add_component(instance_key, data)
+
+    def relation(self, instance_key, source_id, target_id, type):
         """
         Announce a relation between two components to StackState.
 
+        :param instance_key: dict, identifying the instance; you might be running multiple clusters of mesos
         :param source_id: string, id of component
         :param target_id: string, id of component
-        :param type: json string, type of relation, contains at least a name field, for example: app1 'is hosted on' srv1 results in {'name': 'is hosted on'}
+        :param type: dict, type of relation, contains at least a name field, for example: app1 'is hosted on' srv1 results in {'name': 'is hosted on'}
         """
 
         external_identifier = source_id + '-' + type['name'] + '-' + target_id
 
-        self.topology_relations.append({
+        data = {
             'externalId': external_identifier,
             'type': type,
             'sourceId': source_id,
             'targetId': target_id
-        })
+        }
 
-    def remove_component(self, id):
-        """
-        Remove component.
-
-        :param id: string, identifier of the component
-        """
-
-        self.removed_topology_components.append({
-            'id': id
-        })
-
-    def remove_relation(self, source_id, target_id, type):
-        """
-        Remove a relation between two components
-
-        :param source_id: string, id of component
-        :param target_id: string, id of component
-        :param type: string, type of relation to remove between the two components,
-                    for example: app1 'is hosted on' srv1 removes only the 'is hosted on' relation between the two components
-        """
-
-        self.removed_topology_relations.append({
-            'source_id': source_id,
-            'target_id': target_id,
-            'type': type
-        })
+        self._add_relation(instance_key, data)
 
     def service_metadata(self, meta_name, value):
         """
@@ -699,25 +705,8 @@ class AgentCheck(object):
         self.service_checks = []
         return service_checks
 
-    def get_topology_components(self):
-        components = self.topology_components
-        self.topology_components = []
-        return components
-
-    def get_topology_relations(self):
-        relations = self.topology_relations
-        self.topology_relations = []
-        return relations
-
-    def get_removed_topology_components(self):
-        components = self.removed_topology_components
-        self.removed_topology_components = []
-        return components
-
-    def get_removed_topology_relations(self):
-        relations = self.removed_topology_relations
-        self.removed_topology_relations = []
-        return relations
+    def get_topology_instances(self):
+        return [instance.get_topology() for instance in self.topology_instances.values()]
 
     def _roll_up_instance_metadata(self):
         """
