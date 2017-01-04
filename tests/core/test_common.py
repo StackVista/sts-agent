@@ -226,8 +226,8 @@ class TestCore(unittest.TestCase):
             "instances": [{"dummy_instance": "dummy_instance"}]
         }
 
-        check1 = DummyTopologyCheck(1, 'dummy_topology_check', dummy_topology_check_config.get('init_config'), agentConfig, instances=[{"id": {"instance_id": 1 }}, {"id": {"instance_id": 2}}])
-        check2 = DummyTopologyCheck(2, 'dummy_topology_check', dummy_topology_check_config.get('init_config'), agentConfig, instances=[{"id": {"instance_id": 3 }}, {"id": {"instance_id": 4}}])
+        check1 = DummyTopologyCheck(1, 'dummy_topology_check', dummy_topology_check_config.get('init_config'), agentConfig, instances=[{"instance_id": 1, "pass":True}, {"instance_id": 2, "pass":True}])
+        check2 = DummyTopologyCheck(2, 'dummy_topology_check', dummy_topology_check_config.get('init_config'), agentConfig, instances=[{"instance_id": 3, "pass":True}, {"instance_id": 4, "pass":True}])
 
         emitted_topologies = []
 
