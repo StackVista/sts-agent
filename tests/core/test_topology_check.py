@@ -3,6 +3,7 @@
 # project
 from checks import AgentCheck
 from checks.check_status import STATUS_OK
+from checks.check_status import STATUS_ERROR
 
 class DummyTopologyCheck(AgentCheck):
 

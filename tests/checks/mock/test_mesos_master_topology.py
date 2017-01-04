@@ -2,17 +2,16 @@
 import json
 
 # 3p
-from mock import patch
-
+from nose.plugins.attrib import attr
 # project
-from tests.checks.common import AgentCheckTest, Fixtures, get_check_class
+from tests.checks.common import AgentCheckTest, Fixtures
 
 
 def _mocked_get_topology_state(*args, **kwargs):
     state = json.loads(Fixtures.read_file('state.json'))
     return state
 
-
+@attr(requires='mesos_master_topology')
 class TestMesosMasterTopology(AgentCheckTest):
     CHECK_NAME = 'mesos_master_topology'
 
@@ -26,43 +25,31 @@ class TestMesosMasterTopology(AgentCheckTest):
                 }
             ]
         }
+        self.run_check(config, mocks={'_get_master_state': _mocked_get_topology_state})
+        instances = self.check.get_topology_instances()
+        self.assertEqual(len(instances), 1)
+        self.assertEqual(instances[0]['instance'], {"type":"mesos","url":"http://localhost:5050"})
+        self.assertEqual(instances[0]['relations'], [])
 
-        klass = get_check_class('mesos_master_topology')
-        with patch.object(klass, '_get_master_state', _mocked_get_topology_state):
-            check = klass('mesos_master_topology', {}, {})
-            self.run_check_twice(config)
-            self.assertEqual(check.get_topology_relations(), [])
-            components = check.get_topology_components()
-            self.assertEqual(len(components), 1)
-            component = components[0]
-
-            self.assertEqual(component["id"], "nginx3.e5dda204-d1b2-11e6-a015-0242ac110005")
-            self.assertEqual(component["type"], {"name": "DOCKER"})
-            self.assertEqual(component["data"],
-                             {"ip_addresses": ["172.17.0.8"],
-                              "labels": {"key": "label1", "value": "value"},
-                              "docker": {"image": "nginx",
-                                         "network": "BRIDGE",
-                                         "privileged": False,
-                                         "port_mappings": [
-                                             {
-                                                 "host_port": 31945,
-                                                 "container_port": 31945,
-                                                 "protocol": "tcp"
-                                             }
-                                         ]
-                                         },
-                              "slave_id": "fc998b77-e2d1-4be5-b15c-1af7cddabfed-S0",
-                              "framework_id": "fc998b77-e2d1-4be5-b15c-1af7cddabfed-0000",
-                              "tags": ["mytag", "mytag2"]
-                              })
-
+        component = instances[0]['components'][0]
+        self.assertEqual(component["externalId"], "nginx3.e5dda204-d1b2-11e6-a015-0242ac110005")
+        self.assertEqual(component["type"], {"name": 'DOCKER'})
+        print instances[0]['components'][0]
+        self.assertEqual(component["data"],
+                         {"tags": ['mytag', 'mytag2'],
+                          "ip_addresses": ['172.17.0.8'],
+                          "labels": [{'key': 'label1', 'value': 'value'}],
+                          "framework_id": u'fc998b77-e2d1-4be5-b15c-1af7cddabfed-0000',
+                          "container_name": u'nginx3',
+                          "slave_id": u'fc998b77-e2d1-4be5-b15c-1af7cddabfed-S0'
+                          })
 
 def _mocked_get_topology_minimal_state(*args, **kwargs):
     state = json.loads(Fixtures.read_file('minimal_state.json'))
     return state
 
 
+@attr(requires='mesos_master_topology')
 class TestMesosMasterTopologyMinimal(AgentCheckTest):
     CHECK_NAME = 'mesos_master_topology'
 
@@ -76,25 +63,26 @@ class TestMesosMasterTopologyMinimal(AgentCheckTest):
             ]
         }
 
-        klass = get_check_class('mesos_master_topology')
-        with patch.object(klass, '_get_master_state', _mocked_get_topology_minimal_state):
-            check = klass('mesos_master_topology', {}, {})
-            self.run_check_twice(config)
-            self.assertEqual(check.get_topology_relations(), [])
-            components = check.get_topology_components()
-            self.assertEqual(len(components), 1)
-            component = components[0]
+        self.run_check(config, mocks={'_get_master_state': _mocked_get_topology_minimal_state})
+        instances = self.check.get_topology_instances()
+        self.assertEqual(len(instances), 1)
+        self.assertEqual(instances[0]['instance'], {"type":"mesos","url":"http://localhost:5050"})
+        self.assertEqual(instances[0]['relations'], [])
 
-            self.assertEqual(component["id"], "nginx3.e5dda204-d1b2-11e6-a015-0242ac110005")
-            self.assertEqual(component["type"], "SOMETYPE")
-            self.assertEqual(component["data"], {})
+        self.assertEqual(len(instances[0]['relations']), 0)
+        self.assertEqual(len(instances[0]['components']), 1)
+
+        component = instances[0]['components'][0]
+        self.assertEqual(component["externalId"], "nginx3.e5dda204-d1b2-11e6-a015-0242ac110005")
+        self.assertEqual(component["type"], "SOMETYPE")
+        self.assertEqual(component["data"], {})
 
 
 def _mocked_get_topology_incomplete_state(*args, **kwargs):
     state = json.loads(Fixtures.read_file('incomplete_state.json'))
     return state
 
-
+@attr(requires='mesos_master_topology')
 class TestMesosMasterTopologyIncomplete(AgentCheckTest):
     CHECK_NAME = 'mesos_master_topology'
 
@@ -108,10 +96,8 @@ class TestMesosMasterTopologyIncomplete(AgentCheckTest):
             ]
         }
 
-        klass = get_check_class('mesos_master_topology')
-        with patch.object(klass, '_get_master_state', _mocked_get_topology_incomplete_state):
-            check = klass('mesos_master_topology', {}, {})
-            self.run_check_twice(config)
-            self.assertEqual(check.get_topology_relations(), [])
-            components = check.get_topology_components()
-            self.assertEqual(len(components), 0)
+        self.run_check(config, mocks={'_get_master_state': _mocked_get_topology_incomplete_state})
+        instances = self.check.get_topology_instances()
+        self.assertEqual(len(instances), 1)
+        self.assertEqual(instances[0]['instance'], {"type":"mesos","url":"http://localhost:5050"})
+        self.assertEqual(instances[0]['relations'], [])
