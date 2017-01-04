@@ -6,19 +6,28 @@ from checks.check_status import STATUS_OK
 
 class DummyTopologyCheck(AgentCheck):
 
+    def __init__(self, check_id, name, init_config, agentConfig, instances=None):
+        super(DummyTopologyCheck, self).__init__(name, init_config, agentConfig, instances)
+        self._check_id = check_id
+
+    def instance_key(self, instance_id):
+        return {
+            "check_id": self._check_id,
+            "instance_id": instance_id
+        }
+
     def check(self, instance):
         """
             This compoenents and relations generated in this method should be the
             same as returned by methods 'expected_components' and 'expected_relations'
             since it is used in tests
         """
-        self.component("test-component1", {"name": "container"}, {"tags": ['tag1', 'tag2'], 'container_name': 'test-component1'})
-        self.component("test-component2", {"name": "container"}, {"tags": ['tag3', 'tag4']})
-        self.relation("test-component1", "test-component2", {"name": "dependsOn"})
-        self.remove_component("test-component1")
-        self.remove_relation("test-component1", "test-component2", {"name": "dependsOn"})
+        instance_key = self.instance_key(instance['id']['instance_id'])
+        self.component(instance_key, "test-component1", {"name": "container"}, {"tags": ['tag1', 'tag2'], 'container_name': 'test-component1', "instance_id": instance['id']['instance_id'], "check_id" : self._check_id})
+        self.component(instance_key, "test-component2", {"name": "container"}, {"tags": ['tag3', 'tag4'], "instance_id": instance['id']['instance_id'], "check_id" : self._check_id})
+        self.relation(instance_key, "test-component1", "test-component2", {"name": "dependsOn"})
 
-    def expected_components(self):
+    def expected_components(self, instance):
         expected_component1 = {
             'externalId': 'test-component1',
             'type': {
@@ -26,7 +35,9 @@ class DummyTopologyCheck(AgentCheck):
             },
             'data': {
                 'tags': ['tag1', 'tag2'],
-                'container_name': 'test-component1'
+                'container_name': 'test-component1',
+                "instance_id": instance,
+                "check_id" : self._check_id
             }
         }
         expected_component2 = {
@@ -34,7 +45,11 @@ class DummyTopologyCheck(AgentCheck):
             'type': {
                 'name': 'container'
             },
-            'data': {'tags': ['tag3', 'tag4']}
+            'data': {
+                'tags': ['tag3', 'tag4'],
+                "instance_id": instance,
+                "check_id" : self._check_id
+            }
         }
         return [expected_component1, expected_component2]
 

@@ -610,7 +610,7 @@ class AgentCheck(object):
 
 
     def _add_relation(self, instance_key, data):
-        key = tuple(sorted(instance_key))
+        key = tuple(sorted(instance_key.items()))
         topology_instance = self.topology_instances.setdefault(key, TopologyInstance(instance_key))
         topology_instance.add_relation(data)
 

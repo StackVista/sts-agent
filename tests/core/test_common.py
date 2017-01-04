@@ -187,41 +187,27 @@ class TestCore(unittest.TestCase):
             "type": "type",
             "url": "http://localhost:5050"
         }
+        hashable_key = tuple(sorted(instance_key.items()))
 
         self.ac.component(instance_key, "test-component1", {"name": "container"}, {"tags": ['tag1', 'tag2']})
-        # self.assertEquals(len(self.ac.topology_components), 1)
-        # self.assertEquals(len(self.ac.topology_relations), 0)
+        self.assertEquals(len(self.ac.topology_instances), 1)
+        self.assertEquals(len(self.ac.topology_instances[hashable_key]._components), 1)
+        self.assertEquals(len(self.ac.topology_instances[hashable_key]._relations), 0)
         expected_component_1 = {"externalId": "test-component1", "type": {"name": "container"}, "data": {"tags":['tag1', 'tag2']}}
-        self.assertIn(instance_key, self.ac.get_topology_instances())
-        # self.assertEquals(self.ac.topology_components[0], expected_component_1)
+        self.assertEquals(self.ac.topology_instances[hashable_key]._components[0], expected_component_1)
 
-        # self.ac.component("test-component2", {"name": "container"}, {"tags": ['tag3', 'tag4']}, )
-        # self.assertEquals(len(self.ac.topology_components), 2)
-        # self.assertEquals(len(self.ac.topology_relations), 0)
-        # expected_component_2 = {"externalId": "test-component2", "type": {"name": "container"}, "data": {"tags":['tag3', 'tag4']}}
-        # self.assertEquals(self.ac.topology_components[1], expected_component_2)
-        #
-        # self.ac.relation("test-component1", "test-component2", {"name": "dependsOn"})
-        # self.assertEquals(len(self.ac.topology_components), 2)
-        # self.assertEquals(len(self.ac.topology_relations), 1)
-        # expected_relation = {"externalId": "test-component1-dependsOn-test-component2", "sourceId": "test-component1", "targetId": "test-component2", "type": {"name": "dependsOn"}}
-        #
-        # self.assertEquals(self.ac.topology_relations[0], expected_relation)
+        self.ac.component(instance_key, "test-component2", {"name": "container"}, {"tags": ['tag3', 'tag4']}, )
+        self.assertEquals(len(self.ac.topology_instances[hashable_key]._components), 2)
+        self.assertEquals(len(self.ac.topology_instances[hashable_key]._relations), 0)
+        expected_component_2 = {"externalId": "test-component2", "type": {"name": "container"}, "data": {"tags":['tag3', 'tag4']}}
+        self.assertEquals(self.ac.topology_instances[hashable_key]._components[1], expected_component_2)
 
-    def test_announce_topology_data_removed(self):
-        self.setUpAgentCheck()
+        self.ac.relation(instance_key, "test-component1", "test-component2", {"name": "dependsOn"})
+        self.assertEquals(len(self.ac.topology_instances[hashable_key]._components), 2)
+        self.assertEquals(len(self.ac.topology_instances[hashable_key]._relations), 1)
+        expected_relation = {"externalId": "test-component1-dependsOn-test-component2", "sourceId": "test-component1", "targetId": "test-component2", "type": {"name": "dependsOn"}}
 
-        self.ac.remove_component("test-component1")
-        self.assertEquals(len(self.ac.removed_topology_components), 1)
-        self.assertEquals(len(self.ac.removed_topology_relations), 0)
-        expected_component_1 = {"id": "test-component1"}
-        self.assertEquals(self.ac.removed_topology_components[0], expected_component_1)
-
-        self.ac.remove_relation("test-component1", "test-component2", {"name": "dependsOn"})
-        self.assertEquals(len(self.ac.removed_topology_components), 1)
-        self.assertEquals(len(self.ac.removed_topology_relations), 1)
-        expected_relation = {"source_id": "test-component1", "target_id": "test-component2", "type": {"name": "dependsOn"}}
-        self.assertEquals(self.ac.removed_topology_relations[0], expected_relation)
+        self.assertEquals(self.ac.topology_instances[hashable_key]._relations[0], expected_relation)
 
     def test_topology_collection(self):
         agentConfig = {
@@ -240,33 +226,37 @@ class TestCore(unittest.TestCase):
             "instances": [{"dummy_instance": "dummy_instance"}]
         }
 
-        check1 = DummyTopologyCheck('dummy_topology_check', dummy_topology_check_config.get('init_config'), agentConfig, instances=dummy_topology_check_config.get('instances'))
-        check2 = DummyTopologyCheck('dummy_topology_check', dummy_topology_check_config.get('init_config'), agentConfig, instances=dummy_topology_check_config.get('instances'))
+        check1 = DummyTopologyCheck(1, 'dummy_topology_check', dummy_topology_check_config.get('init_config'), agentConfig, instances=[{"id": {"instance_id": 1 }}, {"id": {"instance_id": 2}}])
+        check2 = DummyTopologyCheck(2, 'dummy_topology_check', dummy_topology_check_config.get('init_config'), agentConfig, instances=[{"id": {"instance_id": 3 }}, {"id": {"instance_id": 4}}])
 
-        emitted_components = []
-        emitted_relations = []
+        emitted_topologies = []
 
         def mock_emitter(message, log, agentConfig, endpoint):
-            emitted_components.extend(message['topology']['components'])
-            emitted_relations.extend(message['topology']['relations'])
+            emitted_topologies.extend(message['topologies'])
 
         c = Collector(agentConfig, [mock_emitter], {}, get_hostname(agentConfig))
         payload = c.run({
             'initialized_checks': [check1, check2],
             'init_failed_checks': {}
         })
-        components = payload['topology']['components']
-        relations = payload['topology']['relations']
+        topologies = payload['topologies']
 
-        self.assertEquals(len(components), 4)
-        self.assertEquals(len(relations), 2)
-        self.assertEquals(check1.expected_components() + check2.expected_components(), components)
-        self.assertEquals(check1.expected_relations() + check2.expected_relations(), relations)
+        def assertTopology(topology, check, instance_id):
+            self.assertEquals(topology['instance'], check.instance_key(instance_id))
+            self.assertEquals(len(topology['components']), 2)
+            self.assertEquals(len(topology['relations']), 1)
+            self.assertEquals(check.expected_components(instance_id), topology['components'])
+            self.assertEquals(check.expected_relations(), topology['relations'])
 
-        self.assertEquals(len(emitted_components), 4)
-        self.assertEquals(len(emitted_relations), 2)
-        self.assertEquals(check1.expected_components() + check2.expected_components(), emitted_components)
-        self.assertEquals(check1.expected_relations() + check2.expected_relations(), emitted_relations)
+        assertTopology(topologies[0], check1, 1)
+        assertTopology(topologies[1], check1, 2)
+        assertTopology(topologies[2], check2, 4)
+        assertTopology(topologies[3], check2, 3)
+
+        assertTopology(emitted_topologies[0], check1, 1)
+        assertTopology(emitted_topologies[1], check1, 2)
+        assertTopology(emitted_topologies[2], check2, 4)
+        assertTopology(emitted_topologies[3], check2, 3)
 
     def test_apptags(self):
         '''
