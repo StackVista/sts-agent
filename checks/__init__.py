@@ -708,7 +708,9 @@ class AgentCheck(object):
         return service_checks
 
     def get_topology_instances(self):
-        return [instance.get_topology() for instance in self.topology_instances.values()]
+        result = [instance.get_topology() for instance in self.topology_instances.values()]
+        self.topology_instances = {}
+        return result
 
     def _roll_up_instance_metadata(self):
         """
