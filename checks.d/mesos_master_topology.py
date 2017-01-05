@@ -11,6 +11,7 @@ import requests
 # project
 from checks import AgentCheck, CheckException
 
+
 class MesosMasterTopology(AgentCheck):
     INSTANCE_TYPE = "mesos"
     SERVICE_CHECK_NAME = "mesos_master.topology_information"
@@ -37,29 +38,35 @@ class MesosMasterTopology(AgentCheck):
         for framework in state['frameworks']:
             for task in framework['tasks']:
                 task_id = task['id']
-                container_name = task['name']
+                task_name = task['name']
                 slave_id = task['slave_id']
                 framework_id = task['framework_id']
 
-                container_obj = task['container']
-                container_type = {
-                    'name': container_obj['type']
-                }
+                data = dict()
 
-                if container_type == 'DOCKER':
-                    data = self._extract_docker_container_payload(container_obj)
+                if 'container' in task:
+                    container_obj = task['container']
+                    task_type = {
+                        'name': container_obj['type']
+                    }
+
+                    if task_type['name'] == 'DOCKER':
+                        docker_payload = self._extract_docker_container_payload(container_obj)
+                        data.update(docker_payload)
                 else:
-                    data = dict()
+                    # no container property in task
+                    task_type = {
+                        'name': 'SCRIPT'
+                    }
 
-                data['container_name'] = container_name
+                data['task_name'] = task_name
                 data['slave_id'] = slave_id
                 data['framework_id'] = framework_id
                 data['labels'] = self._extract_labels(task)
                 data['ip_addresses'] = self._extract_ip_addresses(task)
                 data['tags'] = instance_tags
 
-                self.component(instance_key, task_id, container_type, data)
-
+                self.component(instance_key, task_id, task_type, data)
 
     def _extract_docker_container_payload(self, container_obj):
         """
