@@ -37,10 +37,7 @@ class MesosMasterTopology(AgentCheck):
 
         for framework in state['frameworks']:
             for task in framework['tasks']:
-                task_id = task['id']
-                task_name = task['name']
-                slave_id = task['slave_id']
-                framework_id = task['framework_id']
+                task_id = task['id'] if 'id' in task else "unknown"
 
                 data = dict()
 
@@ -56,15 +53,26 @@ class MesosMasterTopology(AgentCheck):
                 else:
                     # no container property in task
                     task_type = {
-                        'name': 'SCRIPT'
+                        'name': 'unknown'
                     }
 
-                data['task_name'] = task_name
-                data['slave_id'] = slave_id
-                data['framework_id'] = framework_id
-                data['labels'] = self._extract_labels(task)
-                data['ip_addresses'] = self._extract_ip_addresses(task)
-                data['tags'] = instance_tags
+                if 'name' in task:
+                    data['task_name'] = task['name']
+                if 'slave_id' in task:
+                    data['slave_id'] = task['slave_id']
+                if 'framework_id' in task:
+                    data['framework_id'] = task['framework_id']
+
+                labels = self._extract_labels(task)
+                if labels:
+                    data['labels'] = labels
+
+                ip_addresses = self._extract_ip_addresses(task)
+                if ip_addresses:
+                    data['ip_addresses'] = ip_addresses
+
+                if instance_tags:
+                    data['tags'] = instance_tags
 
                 self.component(instance_key, task_id, task_type, data)
 
@@ -92,7 +100,6 @@ class MesosMasterTopology(AgentCheck):
                     'port_mappings': port_mappings
                 }
             }
-
 
     def _extract_ip_addresses(self, task):
         """
