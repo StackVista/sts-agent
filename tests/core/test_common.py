@@ -180,7 +180,8 @@ class TestCore(unittest.TestCase):
             tag = "check:%s" % check.name
             assert tag in all_tags, all_tags
 
-    def test_announce_topology_data_presense(self):
+# Checks whether topology data announced to a check is properly stored for retrieval.
+    def test_announce_topology_data_presence(self):
         self.setUpAgentCheck()
 
         instance_key = {
@@ -189,6 +190,7 @@ class TestCore(unittest.TestCase):
         }
         hashable_key = tuple(sorted(instance_key.items()))
 
+        # Create a component and check whether it is picked up by the collector
         self.ac.component(instance_key, "test-component1", {"name": "container"}, {"tags": ['tag1', 'tag2']})
         self.assertEquals(len(self.ac.topology_instances), 1)
         self.assertEquals(len(self.ac.topology_instances[hashable_key]._components), 1)
@@ -196,12 +198,14 @@ class TestCore(unittest.TestCase):
         expected_component_1 = {"externalId": "test-component1", "type": {"name": "container"}, "data": {"tags":['tag1', 'tag2']}}
         self.assertEquals(self.ac.topology_instances[hashable_key]._components[0], expected_component_1)
 
+        # Create a 2nd component and check whether it is picked up by the collector
         self.ac.component(instance_key, "test-component2", {"name": "container"}, {"tags": ['tag3', 'tag4']}, )
         self.assertEquals(len(self.ac.topology_instances[hashable_key]._components), 2)
         self.assertEquals(len(self.ac.topology_instances[hashable_key]._relations), 0)
         expected_component_2 = {"externalId": "test-component2", "type": {"name": "container"}, "data": {"tags":['tag3', 'tag4']}}
         self.assertEquals(self.ac.topology_instances[hashable_key]._components[1], expected_component_2)
 
+        # Create a relation and check whether it is picked up by the collector
         self.ac.relation(instance_key, "test-component1", "test-component2", {"name": "dependsOn"}, {"key":"value"})
         self.assertEquals(len(self.ac.topology_instances[hashable_key]._components), 2)
         self.assertEquals(len(self.ac.topology_instances[hashable_key]._relations), 1)
@@ -209,6 +213,7 @@ class TestCore(unittest.TestCase):
 
         self.assertEquals(self.ac.topology_instances[hashable_key]._relations[0], expected_relation)
 
+# Test whether the collector collects topology information from checks
     def test_topology_collection(self):
         agentConfig = {
             'api_key': 'test_apikey',
@@ -226,11 +231,13 @@ class TestCore(unittest.TestCase):
             "instances": [{"dummy_instance": "dummy_instance"}]
         }
 
+# create dummy checks, creating two component and 1 relation
         check1 = DummyTopologyCheck(1, 'dummy_topology_check', dummy_topology_check_config.get('init_config'), agentConfig, instances=[{"instance_id": 1, "pass":True}, {"instance_id": 2, "pass":True}])
         check2 = DummyTopologyCheck(2, 'dummy_topology_check', dummy_topology_check_config.get('init_config'), agentConfig, instances=[{"instance_id": 3, "pass":True}, {"instance_id": 4, "pass":True}])
 
         emitted_topologies = []
 
+# mock emitter to pick up data emitted by the collector
         def mock_emitter(message, log, agentConfig, endpoint):
             emitted_topologies.extend(message['topologies'])
 
@@ -248,6 +255,7 @@ class TestCore(unittest.TestCase):
             self.assertEquals(check.expected_components(instance_id), topology['components'])
             self.assertEquals(check.expected_relations(), topology['relations'])
 
+# Make sure the emissions of the collector are observed
         assertTopology(topologies[0], check1, 1)
         assertTopology(topologies[1], check1, 2)
         assertTopology(topologies[2], check2, 4)

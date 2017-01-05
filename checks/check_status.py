@@ -71,7 +71,7 @@ class Stylizer(object):
         """ stylize the text. """
         if not cls.ENABLED:
             return text
-        # don't bother about escaping, not thatplicated.
+        # don't bother about escaping, not that complicated.
         fmt = '\033[%dm%s'
 
         for style in styles or []:

@@ -10,6 +10,7 @@ def _mocked_get_topology_state(*args, **kwargs):
     state = json.loads(Fixtures.read_file('state.json'))
     return state
 
+# Test all data we recognize from mesos
 class TestMesosMasterTopology(AgentCheckTest):
     CHECK_NAME = 'mesos_master_topology'
 
@@ -55,6 +56,7 @@ def _mocked_get_topology_minimal_state(*args, **kwargs):
     return state
 
 
+# Test whether we create a sane response for the minimal amount of mesos data available
 class TestMesosMasterTopologyMinimal(AgentCheckTest):
     CHECK_NAME = 'mesos_master_topology'
 
@@ -87,6 +89,7 @@ def _mocked_get_topology_incomplete_state(*args, **kwargs):
     state = json.loads(Fixtures.read_file('incomplete_state.json'))
     return state
 
+# Make sure that when data is incomplete, we create 'unknown' fields instead of crashing
 class TestMesosMasterTopologyIncomplete(AgentCheckTest):
     CHECK_NAME = 'mesos_master_topology'
 
