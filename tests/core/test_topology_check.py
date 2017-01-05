@@ -28,7 +28,7 @@ class DummyTopologyCheck(AgentCheck):
         instance_key = self.instance_key(instance['instance_id'])
         self.component(instance_key, "test-component1", {"name": "container"}, {"tags": ['tag1', 'tag2'], 'container_name': 'test-component1', "instance_id": instance['instance_id'], "check_id" : self._check_id})
         self.component(instance_key, "test-component2", {"name": "container"}, {"tags": ['tag3', 'tag4'], "instance_id": instance['instance_id'], "check_id" : self._check_id})
-        self.relation(instance_key, "test-component1", "test-component2", {"name": "dependsOn"})
+        self.relation(instance_key, "test-component1", "test-component2", {"name": "dependsOn"}, {"key":"value"})
 
     def expected_components(self, instance):
         expected_component1 = {
@@ -63,7 +63,8 @@ class DummyTopologyCheck(AgentCheck):
             'targetId': 'test-component2',
             'type': {
                 'name': 'dependsOn'
-            }
+            },
+            'data': {"key":"value"}
         }]
 
 def test_check_status_always_succeeds():

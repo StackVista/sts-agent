@@ -2,7 +2,6 @@
 import json
 
 # 3p
-from nose.plugins.attrib import attr
 # project
 from tests.checks.common import AgentCheckTest, Fixtures
 
@@ -114,4 +113,3 @@ class TestMesosMasterTopologyIncomplete(AgentCheckTest):
         self.assertEqual(component["externalId"], "unknown")
         self.assertEqual(component["type"], {"name": "unknown"})
         self.assertEqual(component["data"], {})
-

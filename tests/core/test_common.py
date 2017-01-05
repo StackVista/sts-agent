@@ -202,10 +202,10 @@ class TestCore(unittest.TestCase):
         expected_component_2 = {"externalId": "test-component2", "type": {"name": "container"}, "data": {"tags":['tag3', 'tag4']}}
         self.assertEquals(self.ac.topology_instances[hashable_key]._components[1], expected_component_2)
 
-        self.ac.relation(instance_key, "test-component1", "test-component2", {"name": "dependsOn"})
+        self.ac.relation(instance_key, "test-component1", "test-component2", {"name": "dependsOn"}, {"key":"value"})
         self.assertEquals(len(self.ac.topology_instances[hashable_key]._components), 2)
         self.assertEquals(len(self.ac.topology_instances[hashable_key]._relations), 1)
-        expected_relation = {"externalId": "test-component1-dependsOn-test-component2", "sourceId": "test-component1", "targetId": "test-component2", "type": {"name": "dependsOn"}}
+        expected_relation = {"externalId": "test-component1-dependsOn-test-component2", "sourceId": "test-component1", "targetId": "test-component2", "type": {"name": "dependsOn"}, "data": {"key": "value"}}
 
         self.assertEquals(self.ac.topology_instances[hashable_key]._relations[0], expected_relation)
 

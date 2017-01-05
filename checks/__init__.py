@@ -623,15 +623,15 @@ class AgentCheck(object):
         :param type: dict, type of component, contains at least a name field, for example: {'name': 'docker'}
         :param data: dict, containing specific type information
         """
-        data = {
+        data_obj = {
             'externalId': id,
             'type': type,
             'data': data
         }
 
-        self._add_component(instance_key, data)
+        self._add_component(instance_key, data_obj)
 
-    def relation(self, instance_key, source_id, target_id, type):
+    def relation(self, instance_key, source_id, target_id, type, data={}):
         """
         Announce a relation between two components to StackState.
 
@@ -643,14 +643,15 @@ class AgentCheck(object):
 
         external_identifier = source_id + '-' + type['name'] + '-' + target_id
 
-        data = {
+        data_obj = {
             'externalId': external_identifier,
             'type': type,
             'sourceId': source_id,
-            'targetId': target_id
+            'targetId': target_id,
+            'data': data
         }
 
-        self._add_relation(instance_key, data)
+        self._add_relation(instance_key, data_obj)
 
     def service_metadata(self, meta_name, value):
         """
