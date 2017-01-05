@@ -639,6 +639,7 @@ class AgentCheck(object):
         :param source_id: string, id of component
         :param target_id: string, id of component
         :param type: dict, type of relation, contains at least a name field, for example: app1 'is hosted on' srv1 results in {'name': 'is hosted on'}
+        :param data: dict, containing specific type information
         """
 
         external_identifier = source_id + '-' + type['name'] + '-' + target_id
