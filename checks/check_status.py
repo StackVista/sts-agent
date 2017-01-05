@@ -318,7 +318,9 @@ class InstanceStatus(object):
 class CheckStatus(object):
 
     def __init__(self, check_name, instance_statuses, metric_count=None,
-                 event_count=None, service_check_count=None, service_metadata=[],
+                 event_count=None, service_check_count=None,
+                 topology_count=None,
+                 service_metadata=[],
                  init_failed_error=None, init_failed_traceback=None,
                  library_versions=None, source_type_name=None,
                  check_stats=None):
@@ -328,6 +330,7 @@ class CheckStatus(object):
         self.metric_count = metric_count or 0
         self.event_count = event_count or 0
         self.service_check_count = service_check_count or 0
+        self.topology_count = topology_count or 0
         self.init_failed_error = init_failed_error
         self.init_failed_traceback = init_failed_traceback
         self.library_versions = library_versions
@@ -431,10 +434,12 @@ class CollectorStatus(AgentStatus):
                                        s.traceback.split('\n'))
 
             check_lines += [
-                "    - Collected %s metric%s, %s event%s & %s service check%s" % (
+                "    - Collected %s metric%s, %s event%s, %s service check%s, %s topologies" % (
                     cs.metric_count, plural(cs.metric_count),
                     cs.event_count, plural(cs.event_count),
-                    cs.service_check_count, plural(cs.service_check_count)),
+                    cs.service_check_count, plural(cs.service_check_count),
+                    cs.topology_count
+                ),
             ]
 
             if cs.check_stats is not None:

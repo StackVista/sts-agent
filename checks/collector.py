@@ -287,6 +287,7 @@ class Collector(object):
         metrics = payload['metrics']
         events = payload['events']
         service_checks = payload['service_checks']
+        topologies = payload['topologies']
 
         # Run the system checks. Checks will depend on the OS
         if Platform.is_windows():
@@ -413,7 +414,10 @@ class Collector(object):
                 # Collect the metrics and events.
                 current_check_metrics = check.get_metrics()
                 current_check_events = check.get_events()
+                current_check_topology_instances = check.get_topology_instances()
                 check_stats = check._get_internal_profiling_stats()
+
+                topologies += current_check_topology_instances
 
                 # Collect metadata
                 current_check_metadata = check.get_service_metadata()
@@ -485,6 +489,7 @@ class Collector(object):
         payload['metrics'] = metrics
         payload['events'] = events
         payload['service_checks'] = service_checks
+        payload['topologies'] = topologies
 
         # Populate metadata
         self._populate_payload_metadata(payload, check_statuses, start_event)
@@ -540,6 +545,7 @@ class Collector(object):
         instance_statuses = []
         metric_count = 0
         event_count = 0
+        topology_count = 0
         service_check_count = 0
         check_stats = None
 
@@ -552,6 +558,7 @@ class Collector(object):
             current_check_events = check.get_events()
             current_service_checks = check.get_service_checks()
             current_service_metadata = check.get_service_metadata()
+            current_topology_instances = check.get_topology_instances()
 
             check_stats = check._get_internal_profiling_stats()
 
@@ -559,9 +566,11 @@ class Collector(object):
             metric_count = len(current_check_metrics)
             event_count = len(current_check_events)
             service_check_count = len(current_service_checks)
+            topology_count = len(current_topology_instances)
 
             print "Metrics: \n{0}".format(pprint.pformat(current_check_metrics))
             print "Events: \n{0}".format(pprint.pformat(current_check_events))
+            print "Topology Instances: \n{0}".format(pprint.pformat(current_topology_instances))
             print "Service Checks: \n{0}".format(pprint.pformat(current_service_checks))
             print "Service Metadata: \n{0}".format(pprint.pformat(current_service_metadata))
 
@@ -570,7 +579,7 @@ class Collector(object):
 
         check_status = CheckStatus(
             check.name, instance_statuses, metric_count,
-            event_count, service_check_count,
+            event_count, service_check_count, topology_count,
             library_versions=check.get_library_info(),
             source_type_name=check.SOURCE_TYPE_NAME or check.name,
             check_stats=check_stats
@@ -612,6 +621,7 @@ class Collector(object):
         payload['events'] = {}
         payload['metrics'] = []
         payload['service_checks'] = []
+        payload['topologies'] = []
         payload['resources'] = {}
         payload['internalHostname'] = self.hostname
         payload['uuid'] = get_uuid()

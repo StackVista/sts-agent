@@ -1,0 +1,14 @@
+{
+  "frameworks": [
+    {
+      "tasks": [
+        {
+          "id": "nginx3.e5dda204-d1b2-11e6-a015-0242ac110005",
+          "container": {
+            "type": "SOMETYPE"
+          }
+        }
+      ]
+    }
+  ]
+}
