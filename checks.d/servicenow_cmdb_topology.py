@@ -24,11 +24,17 @@ class ServiceNowCMDBTopology(AgentCheck):
     def check(self, instance):
         if 'url' not in instance:
             raise Exception('ServiceNow CMDB topology instance missing "url" value.')
-        # TODO check that other mandatory config fields exist
+        if 'basic_auth' not in instance:
+            raise Exception('ServiceNow CMDB topology instance missing "basic_auth" value.')
+
+        basic_auth = instance['basic_auth']
+        if 'user' not in basic_auth:
+            raise Exception('ServiceNow CMDB topology instance missing "basic_auth.user" value.')
+        if 'password' not in basic_auth:
+            raise Exception('ServiceNow CMDB topology instance missing "basic_auth.password" value.')
 
         self.relation_types = {}
 
-        basic_auth = instance['basic_auth']
         basic_auth_user = basic_auth['user']
         basic_auth_password = basic_auth['password']
         self.auth = (basic_auth_user, basic_auth_password)
