@@ -14,7 +14,10 @@ class ServiceNowCMDBTopology(AgentCheck):
     INSTANCE_TYPE = "servicenow_cmdb"
     SERVICE_CHECK_NAME = "servicenow.cmdb.topology_information"
     service_check_needed = True
-    # TODO move base_url, auth, timeout to global val
+    auth = None
+    timeout = None
+    instance_key = None
+    base_url = None
 
     def check(self, instance):
         if 'url' not in instance:
@@ -24,29 +27,25 @@ class ServiceNowCMDBTopology(AgentCheck):
         basic_auth = instance['basic_auth']
         basic_auth_user = basic_auth['user']
         basic_auth_password = basic_auth['password']
-        auth = (basic_auth_user, basic_auth_password)
-        # print auth
-        # exit(0)
+        self.auth = (basic_auth_user, basic_auth_password)
 
-        # url = instance['url']
-        # url = instance['url'] + '/api/now/table/cmdb_ci'
-        base_url = instance['url']
+        self.base_url = instance['url']
 
-        instance_key = {
+        self.instance_key = {
             "type": self.INSTANCE_TYPE,
-            "url": base_url
+            "url": self.base_url
         }
 
         instance_tags = instance.get('tags', []) # TODO use tags
 
         default_timeout = self.init_config.get('default_timeout', 5)
-        timeout = float(instance.get('timeout', default_timeout))
+        self.timeout = float(instance.get('timeout', default_timeout))
 
-        # self._collect_components(instance_key, base_url, timeout, auth)
+        self._collect_components()
 
-        self._collect_component_relations(instance_key, base_url, timeout, auth)
+        self._collect_component_relations()
 
-    def _collect_components(self, instance_key, base_url, timeout, auth):
+    def _collect_components(self):
         """
         collect components from ServiceNow CMDB's cmdb_ci table
         :param instance_key: dict, key to be used to make multiple instances of this check unique
@@ -55,9 +54,9 @@ class ServiceNowCMDBTopology(AgentCheck):
         :param timeout: connection timeout
         :param auth: basic http authentication
         """
-        url = base_url + '/api/now/table/cmdb_ci?sysparm_fields=name,sys_id,sys_class_name,sys_created_on'
+        url = self.base_url + '/api/now/table/cmdb_ci?sysparm_fields=name,sys_id,sys_class_name,sys_created_on'
 
-        state = self._get_state(url, timeout, auth)
+        state = self._get_state(url, self.timeout, self.auth)
 
         for component in state['result']:
             id = component['sys_id']
@@ -68,12 +67,12 @@ class ServiceNowCMDBTopology(AgentCheck):
                 "name": component['name']
             }
 
-            self.component(instance_key, id, type, data)
+            self.component(self.instance_key, id, type, data)
 
     # TODO store relations as state for a check.
-    def _collect_relation(self, sys_id, base_url, timeout, auth):
-        url = base_url + '/api/now/table/cmdb_rel_type?sys_id='+sys_id+'&sysparm_fields=sys_id,parent_descriptor'
-        state = self._get_json(url, timeout, auth)
+    def _collect_relation(self, sys_id):
+        url = self.base_url + '/api/now/table/cmdb_rel_type?sys_id='+sys_id+'&sysparm_fields=sys_id,parent_descriptor'
+        state = self._get_json(url, self.timeout, self.auth)
         return state['result'][0]['parent_descriptor']
 
     # def _collect_relations(self, base_url, timeout, auth):
@@ -87,10 +86,10 @@ class ServiceNowCMDBTopology(AgentCheck):
     #         parent_descriptor = relation['parent_descriptor']
     #         relations[id] = parent_descriptor
 
-    def _collect_component_relations(self, instance_key, base_url, timeout, auth):
-        url = base_url + '/api/now/table/cmdb_rel_ci?sysparm_fields=parent,type,child'
+    def _collect_component_relations(self):
+        url = self.base_url + '/api/now/table/cmdb_rel_ci?sysparm_fields=parent,type,child'
 
-        state = self._get_json(url, timeout, auth)
+        state = self._get_json(url, self.timeout, self.auth)
 
         for relation in state['result']:
             parent_sys_id = relation['parent']['value']
@@ -98,10 +97,10 @@ class ServiceNowCMDBTopology(AgentCheck):
             type_sys_id = relation['type']['value']
 
             relation_type = {
-                "name": self._collect_relation(type_sys_id, base_url, timeout, auth)
+                "name": self._collect_relation(type_sys_id)
             }
 
-            self.relation(instance_key, parent_sys_id, child_sys_id, relation_type)
+            self.relation(self.instance_key, parent_sys_id, child_sys_id, relation_type)
 
 
     def jsonPrint(self, js): # TODO remove
