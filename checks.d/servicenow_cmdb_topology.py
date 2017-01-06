@@ -39,7 +39,7 @@ class ServiceNowCMDBTopology(AgentCheck):
             "url": self.base_url
         }
 
-        instance_tags = instance.get('tags', []) # TODO use tags
+        # instance_tags = instance.get('tags', []) # TODO use tags
 
         default_timeout = self.init_config.get('default_timeout', 5)
         self.timeout = float(instance.get('timeout', default_timeout))
@@ -139,7 +139,6 @@ class ServiceNowCMDBTopology(AgentCheck):
             r.encoding = 'UTF8'
 
         return r.json()
-
 
     def _get_state(self, url, timeout, auth=None, verify=False):
         return self._get_json(url, timeout, auth, verify)
