@@ -14,11 +14,12 @@ class ServiceNowCMDBTopology(AgentCheck):
     INSTANCE_TYPE = "servicenow_cmdb"
     SERVICE_CHECK_NAME = "servicenow.cmdb.topology_information"
     service_check_needed = True
-    auth = None
-    timeout = None
-    instance_key = None
-    base_url = None
-    relation_types = {}
+    auth = None  # http basic authentication
+    timeout = None  # connection timeout
+    instance_key = None  # unique key to identify this check from its instances.
+    # The same check might be run on multiple clusters
+    base_url = None  # base url of where CMDB instance can be found, for example: https://dev12406.service-now.com
+    relation_types = {}  # relation types that are available in table cmdb_rel_type
     instance_tags = []
 
     def check(self, instance):
@@ -96,24 +97,38 @@ class ServiceNowCMDBTopology(AgentCheck):
 
         state = self._get_json(url, self.timeout, self.auth)
 
-        for relation in state['result']:
-            parent_sys_id = relation['parent']['value']
-            child_sys_id = relation['child']['value']
-            type_sys_id = relation['type']['value']
+        BATCH_SIZE = 25
+        offset = 0
 
-            relation_type = {
-                "name": self.relation_types[type_sys_id]
-            }
-            data = {
-                "tags": self.instance_tags
-            }
+        completed = False
+        while not completed:
+            state = self._get_json_in_batches(url, offset, BATCH_SIZE)['result']
 
-            self.relation(self.instance_key, parent_sys_id, child_sys_id, relation_type, data)
+            for relation in state:
+                parent_sys_id = relation['parent']['value']
+                child_sys_id = relation['child']['value']
+                type_sys_id = relation['type']['value']
 
+                relation_type = {
+                    "name": self.relation_types[type_sys_id]
+                }
+                data = {
+                    "tags": self.instance_tags
+                }
+
+                self.relation(self.instance_key, parent_sys_id, child_sys_id, relation_type, data)
+
+            completed = len(state) < BATCH_SIZE
+            offset += BATCH_SIZE
 
     def jsonPrint(self, js): # TODO remove
         import json
         print json.dumps(js, sort_keys=False, indent=2, separators=(',', ': '))
+
+    def _get_json_in_batches(self, url, offset, batch_size):
+        limit_args = "&sysparm_query=ORDERBYsys_created_on&sysparm_offset=%i&sysparm_limit=%i" % (offset, batch_size)
+        limited_url = url + limit_args
+        return self._get_json(limited_url, self.timeout, self.auth)
 
     # TODO fix https warning
     # TODO split off the service check to be generic, now it is invoked for every request.
