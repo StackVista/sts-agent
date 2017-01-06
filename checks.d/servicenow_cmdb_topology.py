@@ -29,11 +29,11 @@ class ServiceNowCMDBTopology(AgentCheck):
 
         # url = instance['url']
         # url = instance['url'] + '/api/now/table/cmdb_ci'
-        url = instance['url'] + '/api/now/table/cmdb_ci?sysparm_fields=name,sys_id,sys_class_name,sys_created_on'
+        base_url = instance['url']
 
         instance_key = {
             "type": self.INSTANCE_TYPE,
-            "url": url
+            "url": base_url
         }
 
         instance_tags = instance.get('tags', []) # TODO use tags
@@ -41,16 +41,38 @@ class ServiceNowCMDBTopology(AgentCheck):
         default_timeout = self.init_config.get('default_timeout', 5)
         timeout = float(instance.get('timeout', default_timeout))
 
-        # fetch state from ServiceNow CMDB
+        self.collect_components(instance_key, base_url, timeout, auth)
+
+    def collect_components(self, instance_key, base_url, timeout, auth):
+        """
+        collect components from ServiceNow CMDB's cmdb_ci table
+        :param instance_key: dict, key to be used to make multiple instances of this check unique
+        (the same check can be used for different clusters)
+        :param base_url: string, ServiceNow CMDB server to connect to
+        :param timeout: connection timeout
+        :param auth: basic http authentication
+        """
+        url = base_url + '/api/now/table/cmdb_ci?sysparm_fields=name,sys_id,sys_class_name,sys_created_on'
+
         state = self._get_state(url, timeout, auth)
 
-        self.jsonPrint(state)
-        exit(0)
+        for component in state['result']:
+            id = component['sys_id']
+            type = {
+                "name": component['sys_class_name']
+            }
+            data = {
+                "name": component['name']
+            }
+
+            self.component(instance_key, id, type, data)
+
 
     def jsonPrint(self, js): # TODO remove
         import json
         print json.dumps(js, sort_keys=False, indent=2, separators=(',', ': '))
 
+    # TODO fix https warning
     def _get_json(self, url, timeout, auth=None, verify=True):
         tags = ["url:%s" % url]
         msg = None
