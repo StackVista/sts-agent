@@ -11,28 +11,38 @@ from checks import AgentCheck, CheckException
 
 
 class ServiceNowCMDBTopology(AgentCheck):
-    INSTANCE_TYPE = "cmdb"
+    INSTANCE_TYPE = "servicenow_cmdb"
     SERVICE_CHECK_NAME = "servicenow.cmdb.topology_information"
     service_check_needed = True
 
     def check(self, instance):
         if 'url' not in instance:
             raise Exception('ServiceNow CMDB topology instance missing "url" value.')
+        # TODO check that other mandatory config fields exist
+
+        basic_auth = instance['basic_auth']
+        basic_auth_user = basic_auth['user']
+        basic_auth_password = basic_auth['password']
+        auth = (basic_auth_user, basic_auth_password)
+        # print auth
+        # exit(0)
 
         # url = instance['url']
-        url = instance['url'] + '/api/now/table/cmdb_ci'
+        # url = instance['url'] + '/api/now/table/cmdb_ci'
+        url = instance['url'] + '/api/now/table/cmdb_ci?sysparm_fields=name,sys_id,sys_class_name,sys_created_on'
 
         instance_key = {
             "type": self.INSTANCE_TYPE,
             "url": url
         }
 
-        instance_tags = instance.get('tags', [])
+        instance_tags = instance.get('tags', []) # TODO use tags
+
         default_timeout = self.init_config.get('default_timeout', 5)
         timeout = float(instance.get('timeout', default_timeout))
 
         # fetch state from ServiceNow CMDB
-        state = self._get_state(url, timeout)
+        state = self._get_state(url, timeout, auth)
 
         self.jsonPrint(state)
         exit(0)
@@ -41,13 +51,12 @@ class ServiceNowCMDBTopology(AgentCheck):
         import json
         print json.dumps(js, sort_keys=False, indent=2, separators=(',', ': '))
 
-
-    def _get_json(self, url, timeout, verify=True):
+    def _get_json(self, url, timeout, auth=None, verify=True):
         tags = ["url:%s" % url]
         msg = None
         status = None
         try:
-            r = requests.get(url, timeout=timeout, auth=('stackstate','STACKSTATE!'), verify=verify)
+            r = requests.get(url, timeout=timeout, auth=auth, verify=verify)
             if r.status_code != 200:
                 status = AgentCheck.CRITICAL
                 msg = "Got %s when hitting %s" % (r.status_code, url)
@@ -77,5 +86,5 @@ class ServiceNowCMDBTopology(AgentCheck):
         return r.json()
 
 
-    def _get_state(self, url, timeout, verify=False):
-        return self._get_json(url, timeout, verify)
+    def _get_state(self, url, timeout, auth=None, verify=False):
+        return self._get_json(url, timeout, auth, verify)
