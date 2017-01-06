@@ -19,6 +19,7 @@ class ServiceNowCMDBTopology(AgentCheck):
     instance_key = None
     base_url = None
     relation_types = {}
+    instance_tags = []
 
     def check(self, instance):
         if 'url' not in instance:
@@ -39,7 +40,7 @@ class ServiceNowCMDBTopology(AgentCheck):
             "url": self.base_url
         }
 
-        # instance_tags = instance.get('tags', []) # TODO use tags
+        self.instance_tags = instance.get('tags', [])
 
         default_timeout = self.init_config.get('default_timeout', 5)
         self.timeout = float(instance.get('timeout', default_timeout))
@@ -62,7 +63,8 @@ class ServiceNowCMDBTopology(AgentCheck):
                 "name": component['sys_class_name']
             }
             data = {
-                "name": component['name']
+                "name": component['name'],
+                "tags": self.instance_tags
             }
 
             self.component(self.instance_key, id, type, data)
@@ -96,8 +98,11 @@ class ServiceNowCMDBTopology(AgentCheck):
             relation_type = {
                 "name": self.relation_types[type_sys_id]
             }
+            data = {
+                "tags": self.instance_tags
+            }
 
-            self.relation(self.instance_key, parent_sys_id, child_sys_id, relation_type)
+            self.relation(self.instance_key, parent_sys_id, child_sys_id, relation_type, data)
 
 
     def jsonPrint(self, js): # TODO remove
