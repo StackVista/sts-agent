@@ -18,11 +18,14 @@ class ServiceNowCMDBTopology(AgentCheck):
     timeout = None
     instance_key = None
     base_url = None
+    relation_types = {}
 
     def check(self, instance):
         if 'url' not in instance:
             raise Exception('ServiceNow CMDB topology instance missing "url" value.')
         # TODO check that other mandatory config fields exist
+
+        self.relation_types = {}
 
         basic_auth = instance['basic_auth']
         basic_auth_user = basic_auth['user']
@@ -41,18 +44,13 @@ class ServiceNowCMDBTopology(AgentCheck):
         default_timeout = self.init_config.get('default_timeout', 5)
         self.timeout = float(instance.get('timeout', default_timeout))
 
+        self._collect_and_cache_relations()
         self._collect_components()
-
         self._collect_component_relations()
 
     def _collect_components(self):
         """
         collect components from ServiceNow CMDB's cmdb_ci table
-        :param instance_key: dict, key to be used to make multiple instances of this check unique
-        (the same check can be used for different clusters)
-        :param base_url: string, ServiceNow CMDB server to connect to
-        :param timeout: connection timeout
-        :param auth: basic http authentication
         """
         url = self.base_url + '/api/now/table/cmdb_ci?sysparm_fields=name,sys_id,sys_class_name,sys_created_on'
 
@@ -69,24 +67,23 @@ class ServiceNowCMDBTopology(AgentCheck):
 
             self.component(self.instance_key, id, type, data)
 
-    # TODO store relations as state for a check.
-    def _collect_relation(self, sys_id):
-        url = self.base_url + '/api/now/table/cmdb_rel_type?sys_id='+sys_id+'&sysparm_fields=sys_id,parent_descriptor'
-        state = self._get_json(url, self.timeout, self.auth)
-        return state['result'][0]['parent_descriptor']
+    def _collect_and_cache_relations(self):
+        """
+        collect available relations from cmdb_rel_ci and cache them in self.relation_types dict.
+        """
+        url = self.base_url + '/api/now/table/cmdb_rel_type?sysparm_fields=sys_id,parent_descriptor'
 
-    # def _collect_relations(self, base_url, timeout, auth):
-    #     url = base_url + '/api/now/table/cmdb_rel_type?sysparm_fields=sys_id,parent_descriptor'
-    #
-    #     state = self._get_json(url, timeout, auth)
-    #
-    #     relations = {}
-    #     for relation in state['result']:
-    #         id = relation['sys_id']
-    #         parent_descriptor = relation['parent_descriptor']
-    #         relations[id] = parent_descriptor
+        state = self._get_json(url, self.timeout, self.auth)
+
+        for relation in state['result']:
+            id = relation['sys_id']
+            parent_descriptor = relation['parent_descriptor']
+            self.relation_types[id] = parent_descriptor
 
     def _collect_component_relations(self):
+        """
+        collect relations between components from cmdb_rel_ci and publish these.
+        """
         url = self.base_url + '/api/now/table/cmdb_rel_ci?sysparm_fields=parent,type,child'
 
         state = self._get_json(url, self.timeout, self.auth)
@@ -97,7 +94,7 @@ class ServiceNowCMDBTopology(AgentCheck):
             type_sys_id = relation['type']['value']
 
             relation_type = {
-                "name": self._collect_relation(type_sys_id)
+                "name": self.relation_types[type_sys_id]
             }
 
             self.relation(self.instance_key, parent_sys_id, child_sys_id, relation_type)
@@ -108,6 +105,7 @@ class ServiceNowCMDBTopology(AgentCheck):
         print json.dumps(js, sort_keys=False, indent=2, separators=(',', ': '))
 
     # TODO fix https warning
+    # TODO split off the service check to be generic, now it is invoked for every request.
     def _get_json(self, url, timeout, auth=None, verify=True):
         tags = ["url:%s" % url]
         msg = None
