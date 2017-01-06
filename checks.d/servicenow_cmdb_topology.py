@@ -14,6 +14,7 @@ class ServiceNowCMDBTopology(AgentCheck):
     INSTANCE_TYPE = "servicenow_cmdb"
     SERVICE_CHECK_NAME = "servicenow.cmdb.topology_information"
     service_check_needed = True
+    # TODO move base_url, auth, timeout to global val
 
     def check(self, instance):
         if 'url' not in instance:
@@ -41,9 +42,11 @@ class ServiceNowCMDBTopology(AgentCheck):
         default_timeout = self.init_config.get('default_timeout', 5)
         timeout = float(instance.get('timeout', default_timeout))
 
-        self.collect_components(instance_key, base_url, timeout, auth)
+        # self._collect_components(instance_key, base_url, timeout, auth)
 
-    def collect_components(self, instance_key, base_url, timeout, auth):
+        self._collect_component_relations(instance_key, base_url, timeout, auth)
+
+    def _collect_components(self, instance_key, base_url, timeout, auth):
         """
         collect components from ServiceNow CMDB's cmdb_ci table
         :param instance_key: dict, key to be used to make multiple instances of this check unique
@@ -66,6 +69,39 @@ class ServiceNowCMDBTopology(AgentCheck):
             }
 
             self.component(instance_key, id, type, data)
+
+    # TODO store relations as state for a check.
+    def _collect_relation(self, sys_id, base_url, timeout, auth):
+        url = base_url + '/api/now/table/cmdb_rel_type?sys_id='+sys_id+'&sysparm_fields=sys_id,parent_descriptor'
+        state = self._get_json(url, timeout, auth)
+        return state['result'][0]['parent_descriptor']
+
+    # def _collect_relations(self, base_url, timeout, auth):
+    #     url = base_url + '/api/now/table/cmdb_rel_type?sysparm_fields=sys_id,parent_descriptor'
+    #
+    #     state = self._get_json(url, timeout, auth)
+    #
+    #     relations = {}
+    #     for relation in state['result']:
+    #         id = relation['sys_id']
+    #         parent_descriptor = relation['parent_descriptor']
+    #         relations[id] = parent_descriptor
+
+    def _collect_component_relations(self, instance_key, base_url, timeout, auth):
+        url = base_url + '/api/now/table/cmdb_rel_ci?sysparm_fields=parent,type,child'
+
+        state = self._get_json(url, timeout, auth)
+
+        for relation in state['result']:
+            parent_sys_id = relation['parent']['value']
+            child_sys_id = relation['child']['value']
+            type_sys_id = relation['type']['value']
+
+            relation_type = {
+                "name": self._collect_relation(type_sys_id, base_url, timeout, auth)
+            }
+
+            self.relation(instance_key, parent_sys_id, child_sys_id, relation_type)
 
 
     def jsonPrint(self, js): # TODO remove
