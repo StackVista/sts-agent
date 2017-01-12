@@ -39,8 +39,8 @@ More about how to write tests and run them [here](tests/README.md)
 # How to configure the Agent
 
 If you are using packages on linux, the main configuration file lives
-in `/etc/dd-agent/datadog.conf`. Per-check configuration files are in
-`/etc/dd-agent/conf.d`. We provide an example in the same directory
+in `/etc/sts-agent/datadog.conf`. Per-check configuration files are in
+`/etc/sts-agent/conf.d`. We provide an example in the same directory
 that you can use as a template.
 
 # How to write your own checks
