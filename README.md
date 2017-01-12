@@ -14,10 +14,10 @@ Required:
 
 ```
 # Clone the repository
-git clone git@github.com:DataDog/dd-agent.git
+git clone git@github.com:StackVista/sts-agent.git
 
 # Create a virtual environment and install the dependencies:
-cd dd-agent
+cd sts-agent
 bundle install
 rake setup_env
 # NOTE: on mac osx python2 might be missing as an exectuable, failing the setup_env. Add this as a symlink
@@ -46,4 +46,4 @@ that you can use as a template.
 # How to write your own checks
 
 Writing your own checks is easy using our checks.d interface. Read more about
-how to use it on our [Guide to Agent Checks](http://docs.datadoghq.com/guides/agent_checks/).
+how to use it on our [Guide to Agent Checks](http://docs.stackstate.com/guides/agent_checks/).
