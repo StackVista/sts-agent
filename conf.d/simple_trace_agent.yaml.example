@@ -1,0 +1,6 @@
+init_config:
+    min_collection_interval: 5
+
+instances:
+
+  - port: 15555
