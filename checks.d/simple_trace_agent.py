@@ -40,25 +40,46 @@ class SimpleTraceHandler(RequestHandler):
         # 4 '0.0\n']  cpu seconds
         tags = []
         if (parts[0] == 'M'):
-            methodParts = parts[2].split(',')
-            # 0 full calss: java.lang.ref.ReferenceQueue
-            # 1 function: remove
-            # 2 line: 143
-            identifierParts = methodParts[0].split('.')
-            tags.append("identifier" + ":" + methodParts[0])
+            identificationParts = self.getIdentificationPartsFromIdentification(parts[2])
 
-            clazz = identifierParts[identifierParts.__len__() - 1]
-            tags.append("class" + ":" + clazz)
-
-            package = '.'.join(identifierParts[0:(identifierParts.__len__() - 1)])
-            tags.append("package" + ":" + package)
-
-            tags.append("line" + ":" + methodParts[2])
+            tags.append("identifier" + ":" + identificationParts["identifier"])
+            tags.append("class" + ":" + identificationParts["clazz"])
+            tags.append("package" + ":" + identificationParts["package"])
+            tags.append("line" + ":" + identificationParts["line"])
 
             self.agentCheck.gauge(parts[1] + "_count", parts[3], tags)
             self.agentCheck.gauge(parts[1] + "_value", parts[4], tags)
-            #    elif (parts[0] == 'C'):
-            #        print("C")
+        elif (parts[0] == 'C'):
+            #C|sun.nio.ch.KQueueArrayWrapper,poll,198
+            identificationParts = self.getIdentificationPartsFromIdentification(parts[1])
+            self.agentCheck.component({ "type": "traceAgent", "url": "http://localhost/" }, identificationParts["identifier"], "methodCall", identificationParts)
+        elif (parts[0] == 'R'):
+            # R|sun.nio.ch.KQueueArrayWrapper,poll,198|isCalledBy|sun.nio.ch.KQueueSelectorImpl,doSelect,103
+            # 1 sun.nio.ch.KQueueArrayWrapper,poll,198
+            # 2 isCalledBy
+            # 3 sun.nio.ch.KQueueSelectorImpl,doSelect,103
+            self.agentCheck.relation({ "type": "traceAgent", "url": "http://localhost/" }, parts[1], parts[3], parts[2], {})
+
+    def getIdentificationPartsFromIdentification(self,identification):
+        # Example: 'java.lang.ref.ReferenceQueue,remove,143',
+
+        identifier = identification
+
+        methodParts = identification.split(',')
+        # 0 full class: java.lang.ref.ReferenceQueue
+        # 1 function: remove
+        # 2 line: 143
+        identifierParts =  methodParts[0].split('.')
+
+        clazz = identifierParts[identifierParts.__len__() - 1]
+        package = '.'.join(identifierParts[0:(identifierParts.__len__() - 1)])
+        line = methodParts[2]
+        return {
+            "identifier": identifier,
+            "clazz": clazz,
+            "line": line,
+            "package": package
+        };
 
 class SimpleTraceServer(AgentCheck):
 
@@ -78,9 +99,8 @@ class SimpleTraceServer(AgentCheck):
         ])
         log.info("Starting simple trace server on port %d" % self.port)
         application.listen(self.port)
-        log.info("Starting Torando")
-        tornado.ioloop.IOLoop.instance().start()
-        log.info("Tornado finished")
+        tornado.ioloop.IOLoop.instance().start() #This Thread will block here till the stop is called!
+        log.info("Simple trace server on port %s stopped" % self.port)
 
     def stop(self):
         ioloop = tornado.ioloop.IOLoop.instance()
