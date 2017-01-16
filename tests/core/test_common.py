@@ -251,11 +251,11 @@ class TestCore(unittest.TestCase):
         self.assertFalse(instance._stop_snapshot)
         self.assertEquals(len(instance._components), 1)
 
-        # Do not throw away openened transaction
+        # Do not throw away openened snapshot
         self.assertEquals(len(self.ac.get_topology_instances()), 1)
         self.assertEquals(len(self.ac.get_topology_instances()), 1)
 
-        # Another get_topology should leave the transaction, but ditch the start message
+        # Another get_topology should leave the snapshot, but ditch the start message
         instance = self.ac.topology_instances[hashable_key]
         self.assertTrue(instance._in_snapshot)
         self.assertFalse(instance._start_snapshot)
