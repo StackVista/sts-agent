@@ -35,6 +35,8 @@ class MesosMasterTopology(AgentCheck):
         # fetch state from mesos master
         state = self._get_master_state(url, timeout)
 
+        self.start_snapshot(instance_key)
+
         for framework in state['frameworks']:
             for task in framework['tasks']:
                 task_id = task['id'] if 'id' in task else "unknown"
@@ -75,6 +77,8 @@ class MesosMasterTopology(AgentCheck):
                     data['tags'] = instance_tags
 
                 self.component(instance_key, task_id, task_type, data)
+
+        self.stop_snapshot(instance_key)
 
     def _extract_docker_container_payload(self, container_obj):
         """
