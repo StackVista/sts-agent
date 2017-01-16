@@ -213,7 +213,122 @@ class TestCore(unittest.TestCase):
 
         self.assertEquals(self.ac.topology_instances[hashable_key]._relations[0], expected_relation)
 
-# Test whether the collector collects topology information from checks
+    def test_topology_no_start_stop(self):
+        self.setUpAgentCheck()
+
+        instance_key = {
+            "type": "type",
+            "url": "http://localhost:5050"
+        }
+        hashable_key = tuple(sorted(instance_key.items()))
+        self.ac.component(instance_key, "test-component1", {"name": "container"}, {"tags": ['tag1', 'tag2']})
+
+        instance = self.ac.topology_instances[hashable_key]
+        self.assertFalse(instance._in_snapshot)
+        self.assertFalse(instance._start_snapshot)
+        self.assertFalse(instance._stop_snapshot)
+
+        # A 2nd call to get_topology_instance should have ditched the data
+        self.assertEquals(len(self.ac.get_topology_instances()), 1)
+        self.assertEquals(len(self.ac.get_topology_instances()), 0)
+
+    def test_topology_start_stop(self):
+        self.setUpAgentCheck()
+
+        instance_key = {
+            "type": "type",
+            "url": "http://localhost:5050"
+        }
+        hashable_key = tuple(sorted(instance_key.items()))
+
+        self.ac.start_snapshot(instance_key)
+        self.ac.component(instance_key, "test-component1", {"name": "container"}, {"tags": ['tag1', 'tag2']})
+
+        # Check whether starting is reflected in returned data
+        instance = self.ac.topology_instances[hashable_key]
+        self.assertTrue(instance._in_snapshot)
+        self.assertTrue(instance._start_snapshot)
+        self.assertFalse(instance._stop_snapshot)
+        self.assertEquals(len(instance._components), 1)
+
+        # Do not throw away openened snapshot
+        self.assertEquals(len(self.ac.get_topology_instances()), 1)
+        self.assertEquals(len(self.ac.get_topology_instances()), 1)
+
+        # Another get_topology should leave the snapshot, but ditch the start message
+        instance = self.ac.topology_instances[hashable_key]
+        self.assertTrue(instance._in_snapshot)
+        self.assertFalse(instance._start_snapshot)
+        self.assertFalse(instance._stop_snapshot)
+        self.assertEquals(len(instance._components), 0)
+
+        self.ac.stop_snapshot(instance_key)
+
+        # Make sure stopping gives the proper data
+        instance = self.ac.topology_instances[hashable_key]
+        self.assertFalse(instance._in_snapshot)
+        self.assertFalse(instance._start_snapshot)
+        self.assertTrue(instance._stop_snapshot)
+        self.assertEquals(len(instance._components), 0)
+
+        # Make sure the instance is thrown away
+        self.assertEquals(len(self.ac.get_topology_instances()), 1)
+        self.assertEquals(len(self.ac.get_topology_instances()), 0)
+
+        # Make sure we can start again after the stop
+        self.ac.start_snapshot(instance_key)
+
+    def test_topology_start_twice(self):
+        self.setUpAgentCheck()
+
+        instance_key = {
+            "type": "type",
+            "url": "http://localhost:5050"
+        }
+
+        self.ac.start_snapshot(instance_key)
+
+        thrown = False
+        try:
+            self.ac.start_snapshot(instance_key)
+        except Exception:
+            thrown = True
+        self.assertTrue(thrown)
+
+    def test_topology_stop_no_start(self):
+        self.setUpAgentCheck()
+
+        instance_key = {
+            "type": "type",
+            "url": "http://localhost:5050"
+        }
+
+        thrown = False
+        try:
+            self.ac.stop_snapshot(instance_key)
+        except Exception:
+            thrown = True
+        self.assertTrue(thrown)
+
+    def test_topology_start_twice_in_run(self):
+        self.setUpAgentCheck()
+
+        instance_key = {
+            "type": "type",
+            "url": "http://localhost:5050"
+        }
+
+        self.ac.start_snapshot(instance_key)
+        self.ac.stop_snapshot(instance_key)
+
+        thrown = False
+        try:
+            self.ac.start_snapshot(instance_key)
+        except Exception:
+            thrown = True
+        self.assertTrue(thrown)
+
+    # Test whether the collector collects topology information from checks
     def test_topology_collection(self):
         agentConfig = {
             'api_key': 'test_apikey',
@@ -233,7 +348,7 @@ class TestCore(unittest.TestCase):
 
 # create dummy checks, creating two component and 1 relation
         check1 = DummyTopologyCheck(1, 'dummy_topology_check', dummy_topology_check_config.get('init_config'), agentConfig, instances=[{"instance_id": 1, "pass":True}, {"instance_id": 2, "pass":True}])
-        check2 = DummyTopologyCheck(2, 'dummy_topology_check', dummy_topology_check_config.get('init_config'), agentConfig, instances=[{"instance_id": 3, "pass":True}, {"instance_id": 4, "pass":True}])
+        check2 = DummyTopologyCheck(2, 'dummy_topology_check', dummy_topology_check_config.get('init_config'), agentConfig, instances=[{"instance_id": 3, "pass":True}, {"instance_id": 4, "pass":True}], snapshot=True)
 
         emitted_topologies = []
 
@@ -254,6 +369,12 @@ class TestCore(unittest.TestCase):
             self.assertEquals(len(topology['relations']), 1)
             self.assertEquals(check.expected_components(instance_id), topology['components'])
             self.assertEquals(check.expected_relations(), topology['relations'])
+            if check.snapshot:
+                self.assertTrue(topology["start_snapshot"])
+                self.assertTrue(topology["stop_snapshot"])
+            else:
+                self.assertTrue("start_snapshot" not in topology)
+                self.assertTrue("stop_snapshot" not in topology)
 
 # Make sure the emissions of the collector are observed
         assertTopology(topologies[0], check1, 1)
