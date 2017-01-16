@@ -291,7 +291,7 @@ class TestCore(unittest.TestCase):
         thrown = False
         try:
             self.ac.start_snapshot(instance_key)
-        except Exception as e:
+        except Exception:
             thrown = True
         self.assertTrue(thrown)
 
@@ -306,7 +306,7 @@ class TestCore(unittest.TestCase):
         thrown = False
         try:
             self.ac.stop_snapshot(instance_key)
-        except Exception as e:
+        except Exception:
             thrown = True
         self.assertTrue(thrown)
 
@@ -324,7 +324,7 @@ class TestCore(unittest.TestCase):
         thrown = False
         try:
             self.ac.start_snapshot(instance_key)
-        except Exception as e:
+        except Exception:
             thrown = True
         self.assertTrue(thrown)
 
