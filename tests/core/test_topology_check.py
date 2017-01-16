@@ -7,9 +7,10 @@ from checks.check_status import STATUS_ERROR
 
 class DummyTopologyCheck(AgentCheck):
 
-    def __init__(self, check_id, name, init_config, agentConfig, instances=None):
+    def __init__(self, check_id, name, init_config, agentConfig, instances=None, snapshot=False):
         super(DummyTopologyCheck, self).__init__(name, init_config, agentConfig, instances)
         self._check_id = check_id
+        self.snapshot = snapshot
 
     def instance_key(self, instance_id):
         return {
@@ -26,9 +27,16 @@ class DummyTopologyCheck(AgentCheck):
         if not instance['pass']:
             raise Exception("failure")
         instance_key = self.instance_key(instance['instance_id'])
+
+        if self.snapshot:
+            self.start_snapshot(instance_key)
+
         self.component(instance_key, "test-component1", {"name": "container"}, {"tags": ['tag1', 'tag2'], 'container_name': 'test-component1', "instance_id": instance['instance_id'], "check_id" : self._check_id})
         self.component(instance_key, "test-component2", {"name": "container"}, {"tags": ['tag3', 'tag4'], "instance_id": instance['instance_id'], "check_id" : self._check_id})
         self.relation(instance_key, "test-component1", "test-component2", {"name": "dependsOn"}, {"key":"value"})
+
+        if self.snapshot:
+            self.stop_snapshot(instance_key)
 
     def expected_components(self, instance):
         expected_component1 = {

@@ -291,14 +291,43 @@ class Check(object):
 class TopologyInstance:
     def __init__(self, instance_key):
         self._instance_key = instance_key
+        self._in_snapshot = False
         self._components = []
         self._relations = []
+        self._start_snapshot = False
+        self._stop_snapshot = False
 
     def add_component(self, data):
+        if self._stop_snapshot:
+            raise Exception("Cannot add component to %s after stopping snapshot in a check run" % self._instance_key)
+
         self._components.append(data)
 
     def add_relation(self, data):
+        if self._stop_snapshot:
+            raise Exception("Cannot add relation to %s after stopping snapshot in a check run" % self._instance_key)
+
         self._relations.append(data)
+
+    def start_snapshot(self):
+        if self._stop_snapshot:
+            raise Exception("Cannot start snapshot for instance %s in the same check run when stopping a snapshot" % self._instance_key)
+
+        if self._in_snapshot:
+            raise Exception("Cannot start snapshot for instance %s while it is already started" % self._instance_key)
+
+        self._in_snapshot = True
+        self._start_snapshot = True
+
+    def stop_snapshot(self):
+        if not self._in_snapshot:
+            raise Exception("Cannot stop snapshot on instance %s which is not started" % self._instance_key)
+
+        self._in_snapshot = False
+        self._stop_snapshot = True
+
+    def is_in_snapshot(self):
+        return self._in_snapshot
 
     def get_topology(self):
         result = {
@@ -306,6 +335,18 @@ class TopologyInstance:
             "components": self._components,
             "relations": self._relations
         }
+
+        if self._in_snapshot or self._start_snapshot:
+            result["start_snapshot"] = self._start_snapshot
+
+        if self._in_snapshot or self._stop_snapshot:
+            result["stop_snapshot"] = self._stop_snapshot
+
+        self._components = []
+        self._relations = []
+        self._start_snapshot = False
+        self._stop_snapshot = False
+
         return result
 
 class AgentCheck(object):
@@ -603,16 +644,25 @@ class AgentCheck(object):
                                  hostname, check_run_id, message)
         )
 
-    def _add_component(self, instance_key, data):
+    def _assure_instance(self, instance_key):
         key = tuple(sorted(instance_key.items()))
-        topology_instance = self.topology_instances.setdefault(key, TopologyInstance(instance_key))
+        return self.topology_instances.setdefault(key, TopologyInstance(instance_key))
+
+    def _add_component(self, instance_key, data):
+        topology_instance = self._assure_instance(instance_key)
         topology_instance.add_component(data)
 
-
     def _add_relation(self, instance_key, data):
-        key = tuple(sorted(instance_key.items()))
-        topology_instance = self.topology_instances.setdefault(key, TopologyInstance(instance_key))
+        topology_instance = self._assure_instance(instance_key)
         topology_instance.add_relation(data)
+
+    def _start_snapshot(self, instance_key):
+        topology_instance = self._assure_instance(instance_key)
+        topology_instance.start_snapshot()
+
+    def _stop_snapshot(self, instance_key):
+        topology_instance = self._assure_instance(instance_key)
+        topology_instance.stop_snapshot()
 
     def component(self, instance_key, id, type, data={}):
         """
@@ -653,6 +703,20 @@ class AgentCheck(object):
         }
 
         self._add_relation(instance_key, data_obj)
+
+    def start_snapshot(self, instance_key):
+        """
+        Start a topology snapshot for a specific topology instance source
+        :param instance_key: dict, identifying the instance
+        """
+        self._start_snapshot(instance_key)
+
+    def stop_snapshot(self, instance_key):
+        """
+        Stop the topology snapshot for a specific topology instance source
+        :param instance_key: dict, identifying the instance
+        """
+        self._stop_snapshot(instance_key)
 
     def service_metadata(self, meta_name, value):
         """
@@ -708,8 +772,12 @@ class AgentCheck(object):
         return service_checks
 
     def get_topology_instances(self):
+        """
+        Return a list of created topology instances, clears the data
+        :return: object with topology changes
+        """
         result = [instance.get_topology() for instance in self.topology_instances.values()]
-        self.topology_instances = {}
+        self.topology_instances = dict((key, value) for key, value in self.topology_instances.iteritems() if value.is_in_snapshot())
         return result
 
     def _roll_up_instance_metadata(self):
