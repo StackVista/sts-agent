@@ -76,7 +76,7 @@ class Mesos(AgentCheck):
         return self.get_json(url + "/master/stats.json", timeout)
 
     def get_master_state(self, url, timeout):
-        return self.get_json(url + "/master/state.json", timeout)
+        return self.get_json(url + "/master/task_state.json", timeout)
 
     def get_json(self, url, timeout):
         # Use a hash of the URL as an aggregation key
