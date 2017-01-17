@@ -59,7 +59,7 @@ class MesosMasterTopology(AgentCheck):
             if instance_tags:
                 data['tags'] = instance_tags
 
-            self.component(instance_key, slave_id, { "name": "MESOS_AGENT" }, data)
+            self.component(instance_key, slave_id, {"name": "MESOS_AGENT"}, data)
 
         return []
 
@@ -99,7 +99,7 @@ class MesosMasterTopology(AgentCheck):
                     if instance_tags:
                         relation_data["tags"] = instance_tags
 
-                    self.relation(instance_key, task_id, task['slave_id'], { "name": "MANAGED_BY" }, relation_data)
+                    self.relation(instance_key, task_id, task['slave_id'], {"name": "MANAGED_BY"}, relation_data)
 
                 if 'framework_id' in task:
                     data['framework_id'] = task['framework_id']
