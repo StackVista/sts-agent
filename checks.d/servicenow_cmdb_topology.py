@@ -61,13 +61,14 @@ class ServiceNowCMDBTopology(AgentCheck):
         collect components from ServiceNow CMDB's cmdb_ci table
         """
         url = self.base_url + '/api/now/table/cmdb_ci?sysparm_fields=name,sys_id,sys_class_name,sys_created_on'
+        # url = self.base_url + '/api/now/table/cmdb_ci?sysparm_fields=name,sys_id,sys_class_name,sys_created_on&sysparm_query=ORDERBYsys_created_on^sys_idIN1743cde17f701200bee45f19befa917b,6fa301257f701200bee45f19befa9164'
 
         state = self._get_state(url, self.timeout, self.auth)
 
         for component in state['result']:
             id = component['sys_id']
             type = {
-                "name": component['sys_class_name']
+                "name": "application" #component['sys_class_name']
             }
             data = {
                 "name": component['name'],
@@ -94,6 +95,7 @@ class ServiceNowCMDBTopology(AgentCheck):
         collect relations between components from cmdb_rel_ci and publish these.
         """
         url = self.base_url + '/api/now/table/cmdb_rel_ci?sysparm_fields=parent,type,child'
+        # url = self.base_url + '/api/now/table/cmdb_rel_ci?sysparm_fields=parent,type,child&sysparm_query=ORDERBYsys_created_on^sys_idINe68a11297f701200bee45f19befa91c7'
 
         state = self._get_json(url, self.timeout, self.auth)
 
