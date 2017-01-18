@@ -168,7 +168,7 @@ class MesosMaster(AgentCheck):
         return r.json()
 
     def _get_master_state(self, url, timeout, verify):
-        return self._get_json(url + '/task_state.json', timeout, verify)
+        return self._get_json(url + '/state.json', timeout, verify)
 
     def _get_master_stats(self, url, timeout, verify):
         if self.version >= [0, 22, 0]:
