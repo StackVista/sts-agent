@@ -205,4 +205,4 @@ class MesosMasterTopology(AgentCheck):
         return r.json()
 
     def _get_master_state(self, url, timeout, verify=False):
-        return self._get_json(url + '/task_state.json', timeout, verify)
+        return self._get_json(url + '/state.json', timeout, verify)
