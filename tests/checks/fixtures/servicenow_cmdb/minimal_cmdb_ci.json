@@ -1,0 +1,16 @@
+{
+  "result": [
+    {
+      "sys_id": "01a9ec0d3790200044e0bfc8bcbe5dc3",
+      "sys_created_on": "2012-02-18 08:14:42",
+      "name": "ThinkStation S20",
+      "sys_class_name": "cmdb_ci_computer"
+    },
+    {
+      "sys_id": "27d3f35cc0a8000b001df42d019a418f",
+      "sys_created_on": "2007-11-10 04:31:50",
+      "name": "Blackberry",
+      "sys_class_name": "cmdb_ci_service"
+    }
+  ]
+}

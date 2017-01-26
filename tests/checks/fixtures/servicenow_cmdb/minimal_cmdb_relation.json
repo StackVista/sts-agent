@@ -1,0 +1,18 @@
+{
+  "result": [
+    {
+      "parent": {
+        "link": "https://dev14393.service-now.com/api/now/table/cmdb_ci/01a9ec0d3790200044e0bfc8bcbe5dc3",
+        "value": "01a9ec0d3790200044e0bfc8bcbe5dc3"
+      },
+      "type": {
+        "link": "https://dev14393.service-now.com/api/now/table/cmdb_rel_type/85d98503ff100200d699ffffffffff8c",
+        "value": "85d98503ff100200d699ffffffffff8c"
+      },
+      "child": {
+        "link": "https://dev14393.service-now.com/api/now/table/cmdb_ci/27d3f35cc0a8000b001df42d019a418f",
+        "value": "27d3f35cc0a8000b001df42d019a418f"
+      }
+    }
+  ]
+}

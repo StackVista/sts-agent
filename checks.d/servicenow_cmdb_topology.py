@@ -52,23 +52,31 @@ class ServiceNowCMDBTopology(AgentCheck):
         default_timeout = self.init_config.get('default_timeout', 5)
         self.timeout = float(instance.get('timeout', default_timeout))
 
-        self._collect_and_cache_relations()
-        self._collect_components()
-        self._collect_component_relations()
+        self._process_and_cache_relation_types()
+        self._process_components()
+        self._process_component_relations()
 
     def _collect_components(self):
         """
         collect components from ServiceNow CMDB's cmdb_ci table
+        :return: dict, raw response from CMDB
         """
         url = self.base_url + '/api/now/table/cmdb_ci?sysparm_fields=name,sys_id,sys_class_name,sys_created_on'
         # url = self.base_url + '/api/now/table/cmdb_ci?sysparm_fields=name,sys_id,sys_class_name,sys_created_on&sysparm_query=ORDERBYsys_created_on^sys_idIN1743cde17f701200bee45f19befa917b,6fa301257f701200bee45f19befa9164'
 
-        state = self._get_state(url, self.timeout, self.auth)
+        return self._get_state(url, self.timeout, self.auth)
+
+    def _process_components(self):
+        """
+        process components fetched from CMDB
+        :return: nothing
+        """
+        state = self._collect_components()
 
         for component in state['result']:
             id = component['sys_id']
             type = {
-                "name": "application" #component['sys_class_name']
+                "name": component['sys_class_name']
             }
             data = {
                 "name": component['name'],
@@ -77,36 +85,46 @@ class ServiceNowCMDBTopology(AgentCheck):
 
             self.component(self.instance_key, id, type, data)
 
-    def _collect_and_cache_relations(self):
+    def _collect_relation_types(self):
         """
-        collect available relations from cmdb_rel_ci and cache them in self.relation_types dict.
+        collects relations from CMDB
+        :return: dict, raw response from CMDB
         """
         url = self.base_url + '/api/now/table/cmdb_rel_type?sysparm_fields=sys_id,parent_descriptor'
 
-        state = self._get_json(url, self.timeout, self.auth)
+        return self._get_json(url, self.timeout, self.auth)
+
+    def _process_and_cache_relation_types(self):
+        """
+        collect available relations from cmdb_rel_ci and cache them in self.relation_types dict.
+        :return: nothing
+        """
+        state = self._collect_relation_types()
 
         for relation in state['result']:
             id = relation['sys_id']
             parent_descriptor = relation['parent_descriptor']
             self.relation_types[id] = parent_descriptor
 
-    def _collect_component_relations(self):
+    def _collect_component_relations(self, offset, batch_size):
         """
-        collect relations between components from cmdb_rel_ci and publish these.
+        collect relations between components from cmdb_rel_ci and publish these in batches.
         """
         url = self.base_url + '/api/now/table/cmdb_rel_ci?sysparm_fields=parent,type,child'
         # url = self.base_url + '/api/now/table/cmdb_rel_ci?sysparm_fields=parent,type,child&sysparm_query=ORDERBYsys_created_on^sys_idINe68a11297f701200bee45f19befa91c7'
 
-        state = self._get_json(url, self.timeout, self.auth)
+        return self._get_json_in_batches(url, offset, batch_size)
 
+    def _process_component_relations(self):
         BATCH_SIZE = 25
         offset = 0
 
         completed = False
         while not completed:
-            state = self._get_json_in_batches(url, offset, BATCH_SIZE)['result']
+            state = self._collect_component_relations(offset, BATCH_SIZE)['result']
 
             for relation in state:
+
                 parent_sys_id = relation['parent']['value']
                 child_sys_id = relation['child']['value']
                 type_sys_id = relation['type']['value']
@@ -122,10 +140,6 @@ class ServiceNowCMDBTopology(AgentCheck):
 
             completed = len(state) < BATCH_SIZE
             offset += BATCH_SIZE
-
-    def jsonPrint(self, js): # TODO remove
-        import json
-        print json.dumps(js, sort_keys=False, indent=2, separators=(',', ': '))
 
     def _get_json_in_batches(self, url, offset, batch_size):
         limit_args = "&sysparm_query=ORDERBYsys_created_on&sysparm_offset=%i&sysparm_limit=%i" % (offset, batch_size)
