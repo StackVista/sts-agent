@@ -60,45 +60,7 @@
     "zk": "zk:\/\/zookeeper:2181\/mesos",
     "zk_session_timeout": "10secs"
   },
-  "slaves": [
-    {
-      "id": "fc998b77-e2d1-4be5-b15c-1af7cddabfed-S0",
-      "pid": "slave(1)@172.17.0.4:5051",
-      "hostname": "50cc94f26cea",
-      "registered_time": 1483443128.48679,
-      "resources": {
-        "disk": 55322.0,
-        "mem": 999.0,
-        "gpus": 0.0,
-        "cpus": 4.0,
-        "ports": "[31000-32000]"
-      },
-      "used_resources": {
-        "disk": 0.0,
-        "mem": 128.0,
-        "gpus": 0.0,
-        "cpus": 1.0,
-        "ports": "[31945-31945]"
-      },
-      "offered_resources": {
-        "disk": 0.0,
-        "mem": 0.0,
-        "gpus": 0.0,
-        "cpus": 0.0
-      },
-      "reserved_resources": {},
-      "unreserved_resources": {
-        "disk": 55322.0,
-        "mem": 999.0,
-        "gpus": 0.0,
-        "cpus": 4.0,
-        "ports": "[31000-32000]"
-      },
-      "attributes": {},
-      "active": true,
-      "version": "1.1.0"
-    }
-  ],
+  "slaves": [],
   "frameworks": [
     {
       "id": "fc998b77-e2d1-4be5-b15c-1af7cddabfed-0000",

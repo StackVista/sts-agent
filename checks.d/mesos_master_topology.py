@@ -35,8 +35,41 @@ class MesosMasterTopology(AgentCheck):
         # fetch state from mesos master
         state = self._get_master_state(url, timeout)
 
-        for framework in state['frameworks']:
-            for task in framework['tasks']:
+        self.start_snapshot(instance_key)
+
+        self._extract_slaves(instance_key, instance_tags, state)
+        self._extract_tasks(instance_key, instance_tags, state)
+
+        self.stop_snapshot(instance_key)
+
+    def _extract_slaves(self, instance_key, instance_tags, state):
+        slaves = state['slaves'] if "slaves" in state else []
+
+        for slave in slaves:
+            slave_id = slave['id'] if 'id' in slave else "unknown"
+
+            data = dict()
+
+            if "pid" in slave:
+                data["pid"] = slave["pid"]
+
+            if "hostname" in slave:
+                data["hostname"] = slave["hostname"]
+
+            if instance_tags:
+                data['tags'] = instance_tags
+
+            self.component(instance_key, slave_id, {"name": "MESOS_AGENT"}, data)
+
+        return []
+
+    def _extract_tasks(self, instance_key, instance_tags, state):
+        frameworks = state['frameworks'] if "frameworks" in state else []
+
+        for framework in frameworks:
+            tasks = framework['tasks'] if "tasks" in framework else []
+
+            for task in tasks:
                 task_id = task['id'] if 'id' in task else "unknown"
 
                 data = dict()
@@ -60,6 +93,14 @@ class MesosMasterTopology(AgentCheck):
                     data['task_name'] = task['name']
                 if 'slave_id' in task:
                     data['slave_id'] = task['slave_id']
+
+                    relation_data = dict()
+
+                    if instance_tags:
+                        relation_data["tags"] = instance_tags
+
+                    self.relation(instance_key, task_id, task['slave_id'], {"name": "MANAGED_BY"}, relation_data)
+
                 if 'framework_id' in task:
                     data['framework_id'] = task['framework_id']
 
@@ -75,6 +116,7 @@ class MesosMasterTopology(AgentCheck):
                     data['tags'] = instance_tags
 
                 self.component(instance_key, task_id, task_type, data)
+
 
     def _extract_docker_container_payload(self, container_obj):
         """

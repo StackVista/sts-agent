@@ -10,7 +10,7 @@ from tests.checks.common import AgentCheckTest, Fixtures, get_check_class
 
 
 def _mocked_get_master_state(*args, **kwargs):
-    state = json.loads(Fixtures.read_file('state.json'))
+    state = json.loads(Fixtures.read_file('task_state.json'))
     return state
 
 

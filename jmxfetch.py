@@ -44,7 +44,7 @@ JAVA_LOGGING_LEVEL = {
 
 _JVM_DEFAULT_MAX_MEMORY_ALLOCATION = " -Xmx200m"
 _JVM_DEFAULT_INITIAL_MEMORY_ALLOCATION = " -Xms50m"
-JMXFETCH_MAIN_CLASS = "org.datadog.jmxfetch.App"
+JMXFETCH_MAIN_CLASS = "com.stackstate.jmxfetch.App"
 JMX_CHECKS = [
     'activemq',
     'activemq_58',

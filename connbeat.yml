@@ -1,10 +1,13 @@
 connbeat:
   expose_process_info: true
   expose_cmdline: true
-  expose_environ: true
+  expose_environ: false
   aggregation: 10s
   poll_interval: 2s
-  enable_tcp_diag: true
+  enable_tcp_diag: false
+  enable_local_connections: true
+  enable_docker: false
+  docker_environment: ["PATH", "MESOS_TASK_ID"]
 
 output:
   http:
@@ -20,5 +23,5 @@ output:
     #  name: "connbeat"
     #  path: "connbeat.template.json"
 
-  console:
-    pretty: false
+  #console:
+  #  pretty: false
