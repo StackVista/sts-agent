@@ -25,7 +25,12 @@ class TestKubernetesTopology(AgentCheckTest):
         instances = self.check.get_topology_instances()
         self.assertEqual(len(instances), 1)
         self.assertEqual(instances[0]['instance'], {'type':'kubernetes'})
-        self.assertEqual(instances[0]['relations'], [])
+        self.assertEqual(len(instances[0]['relations']), 6)
+        relation = instances[0]['relations'][0]
+        self.assertEqual(relation['type'], {'name': 'HOSTED_ON'})
+        self.assertEqual(relation['sourceId'], 'docker://d9854456403ea986cc85935192f251afac2653513753bfe708f12dd125c5b224')
+        self.assertEqual(relation['targetId'], '3930a136-d4cd-11e5-a885-42010af0004f')
+
         self.assertEqual(len(instances[0]['components']), 12)
         pod = instances[0]['components'][1]
         self.assertEqual(pod['type'], {'name': 'KUBERNETES_POD'})

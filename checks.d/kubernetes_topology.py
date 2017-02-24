@@ -51,10 +51,14 @@ class KubernetesTopology(AgentCheck):
 
     def _extract_containers(self, instance_key, pod_uid, pod_ip, host_ip, statuses):
         for containerStatus in statuses:
+            container_id = containerStatus['containerID']
             data = dict()
             data['ip_addresses'] = [pod_ip, host_ip]
             data['docker'] = {
                 'image': containerStatus['image'],
-                'container_id': containerStatus['containerID']
+                'container_id': container_id
             }
-            self.component(instance_key, data['docker']['container_id'], {'name': 'KUBERNETES_CONTAINER'}, data)
+            self.component(instance_key, container_id, {'name': 'KUBERNETES_CONTAINER'}, data)
+
+            relation_data = dict()
+            self.relation(instance_key, container_id, pod_uid, {'name': 'HOSTED_ON'}, relation_data)
