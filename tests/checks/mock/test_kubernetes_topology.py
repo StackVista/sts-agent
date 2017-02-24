@@ -36,6 +36,7 @@ class TestKubernetesTopology(AgentCheckTest):
         container = instances[0]['components'][2]
         self.assertEqual(container['type'], {'name': 'KUBERNETES_CONTAINER'})
         self.assertEqual(container['data'], {
+            'ip_addresses': ['10.184.1.3', u'10.240.0.9'],
             'docker': {
                 'container_id': u'docker://d9854456403ea986cc85935192f251afac2653513753bfe708f12dd125c5b224',
                 'image': u'gcr.io/google_containers/heapster:v0.18.4'
