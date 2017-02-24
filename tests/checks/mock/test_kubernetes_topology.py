@@ -27,23 +27,32 @@ class TestKubernetesTopology(AgentCheckTest):
         instances = self.check.get_topology_instances()
         self.assertEqual(len(instances), 1)
         self.assertEqual(instances[0]['instance'], {'type':'kubernetes'})
-        self.assertEqual(len(instances[0]['relations']), 6)
-        relation = instances[0]['relations'][0]
-        self.assertEqual(relation['type'], {'name': 'HOSTED_ON'})
-        self.assertEqual(relation['sourceId'], 'docker://d9854456403ea986cc85935192f251afac2653513753bfe708f12dd125c5b224')
-        self.assertEqual(relation['targetId'], '3930a136-d4cd-11e5-a885-42010af0004f')
+        self.assertEqual(len(instances[0]['relations']), 12)
+
+        pod_id = '3930a136-d4cd-11e5-a885-42010af0004f'
+        node_name = 'gke-cluster-1-8046fdfa-node-ld35'
+
+        podToNode = instances[0]['relations'][1]
+        self.assertEqual(podToNode['type'], {'name': 'HOSTED_ON'})
+        self.assertEqual(podToNode['sourceId'], pod_id)
+        self.assertEqual(podToNode['targetId'], node_name)
+
+        containerToPod = instances[0]['relations'][2]
+        self.assertEqual(containerToPod['type'], {'name': 'HOSTED_ON'})
+        self.assertEqual(containerToPod['sourceId'], 'docker://d9854456403ea986cc85935192f251afac2653513753bfe708f12dd125c5b224')
+        self.assertEqual(containerToPod['targetId'], pod_id)
 
         self.assertEqual(len(instances[0]['components']), 15)
         first_node = 0
         node = instances[0]['components'][first_node]
         self.assertEqual(node['type'], {'name': 'KUBERNETES_NODE'})
-        
+
         first_pod = 3
         first_pod_with_container = first_pod + 1
         pod = instances[0]['components'][first_pod_with_container]
         self.assertEqual(pod['type'], {'name': 'KUBERNETES_POD'})
         self.assertEqual(pod['data'], {
-            'uid': '3930a136-d4cd-11e5-a885-42010af0004f'
+            'uid': pod_id
         })
 
         container = instances[0]['components'][first_pod_with_container+1]
