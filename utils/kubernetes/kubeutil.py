@@ -26,6 +26,7 @@ class KubeUtil:
     MACHINE_INFO_PATH = '/api/v1.3/machine/'
     METRICS_PATH = '/api/v1.3/subcontainers/'
     PODS_LIST_PATH = '/pods/'
+    NODES_LIST_PATH = '/nodes/'
     DEFAULT_CADVISOR_PORT = 4194
     DEFAULT_KUBELET_PORT = 10255
     DEFAULT_MASTER_PORT = 8080
@@ -66,6 +67,7 @@ class KubeUtil:
 
         self.metrics_url = urljoin(self.cadvisor_url, KubeUtil.METRICS_PATH)
         self.machine_info_url = urljoin(self.cadvisor_url, KubeUtil.MACHINE_INFO_PATH)
+        self.nodes_list_url = urljoin(self.kubelet_api_url, KubeUtil.NODES_LIST_PATH)
         self.pods_list_url = urljoin(self.kubelet_api_url, KubeUtil.PODS_LIST_PATH)
         self.kube_health_url = urljoin(self.kubelet_api_url, 'healthz')
 
@@ -135,6 +137,12 @@ class KubeUtil:
         Retrieve metrics from Cadvisor.
         """
         return retrieve_json(self.metrics_url)
+
+    def retrieve_nodes_list(self):
+        """
+        Retrieve the list of nodes for this cluster qurying the kublet API.
+        """
+        return retrieve_json(self.nodes_list_url)
 
     def filter_pods_list(self, pods_list, host_ip):
         """
