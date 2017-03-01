@@ -22,29 +22,29 @@ class TestKubernetesTopology(AgentCheckTest):
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_services_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("services_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_pods_list',
-                side_effect=lambda: json.loads(Fixtures.read_file("pods_list_1.1.json", string_escape=False)))
+                side_effect=lambda: json.loads(Fixtures.read_file("pods_list.json", string_escape=False)))
     def test_kube_topo(self, *args):
         self.run_check({'instances': [{'host': 'foo'}]})
 
         instances = self.check.get_topology_instances()
         self.assertEqual(len(instances), 1)
         self.assertEqual(instances[0]['instance'], {'type':'kubernetes'})
-        self.assertEqual(len(instances[0]['relations']), 12)
+        self.assertEqual(len(instances[0]['relations']), 51)
 
-        pod_id = '3930a136-d4cd-11e5-a885-42010af0004f'
-        node_name = 'gke-cluster-1-8046fdfa-node-ld35'
+        pod_name = 'client-3129927420-r90fc'
+        node_name = 'ip-10-0-0-198.eu-west-1.compute.internal'
 
-        podToNode = instances[0]['relations'][1]
+        podToNode = instances[0]['relations'][0]
         self.assertEqual(podToNode['type'], {'name': 'HOSTED_ON'})
-        self.assertEqual(podToNode['sourceId'], pod_id)
+        self.assertEqual(podToNode['sourceId'], pod_name)
         self.assertEqual(podToNode['targetId'], node_name)
 
-        containerToPod = instances[0]['relations'][2]
+        containerToPod = instances[0]['relations'][1]
         self.assertEqual(containerToPod['type'], {'name': 'HOSTED_ON'})
-        self.assertEqual(containerToPod['sourceId'], 'docker://d9854456403ea986cc85935192f251afac2653513753bfe708f12dd125c5b224')
-        self.assertEqual(containerToPod['targetId'], pod_id)
+        self.assertEqual(containerToPod['sourceId'], 'docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359')
+        self.assertEqual(containerToPod['targetId'], pod_name)
 
-        self.assertEqual(len(instances[0]['components']), 20)
+        self.assertEqual(len(instances[0]['components']), 59)
         first_service = 0
         service = instances[0]['components'][first_service]
         self.assertEqual(service['type'], {'name': 'KUBERNETES_SERVICE'})
@@ -60,19 +60,19 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(node['data']['hostname'], 'ip-10-0-0-107.eu-west-1.compute.internal')
 
         first_pod = first_node + 3
-        first_pod_with_container = first_pod + 1
+        first_pod_with_container = first_pod
         pod = instances[0]['components'][first_pod_with_container]
         self.assertEqual(pod['type'], {'name': 'KUBERNETES_POD'})
         self.assertEqual(pod['data'], {
-            'uid': pod_id
+            'uid': '6771158d-f826-11e6-ae06-020c94063ecf'
         })
 
         container = instances[0]['components'][first_pod_with_container+1]
         self.assertEqual(container['type'], {'name': 'KUBERNETES_CONTAINER'})
         self.assertEqual(container['data'], {
-            'ip_addresses': ['10.184.1.3', u'10.240.0.9'],
+            'ip_addresses': ['10.2.24.36', u'10.0.0.198'],
             'docker': {
-                'container_id': u'docker://d9854456403ea986cc85935192f251afac2653513753bfe708f12dd125c5b224',
-                'image': u'gcr.io/google_containers/heapster:v0.18.4'
+                'container_id': u'docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359',
+                'image': u'raboof/client:1'
             }
         })

@@ -61,18 +61,18 @@ class KubernetesTopology(AgentCheck):
     def _extract_pods(self, instance_key):
         for pod in self.kubeutil.retrieve_pods_list()['items']:
             data = dict()
-            pod_uid = pod['metadata']['uid']
-            data['uid'] = pod_uid
+            pod_name = pod['metadata']['name']
+            data['uid'] = pod['metadata']['uid']
 
-            self.component(instance_key, pod_uid, {'name': 'KUBERNETES_POD'}, data)
+            self.component(instance_key, pod_name, {'name': 'KUBERNETES_POD'}, data)
 
             relation_data = dict()
-            self.relation(instance_key, pod_uid, pod['spec']['nodeName'], {'name': 'HOSTED_ON'}, relation_data)
+            self.relation(instance_key, pod_name, pod['spec']['nodeName'], {'name': 'HOSTED_ON'}, relation_data)
 
             if 'containerStatuses' in pod['status'].keys():
-                self._extract_containers(instance_key, pod_uid, pod['status']['podIP'], pod['status']['hostIP'], pod['status']['containerStatuses'])
+                self._extract_containers(instance_key, pod_name, pod['status']['podIP'], pod['status']['hostIP'], pod['status']['containerStatuses'])
 
-    def _extract_containers(self, instance_key, pod_uid, pod_ip, host_ip, statuses):
+    def _extract_containers(self, instance_key, pod_name, pod_ip, host_ip, statuses):
         for containerStatus in statuses:
             container_id = containerStatus['containerID']
             data = dict()
@@ -84,4 +84,4 @@ class KubernetesTopology(AgentCheck):
             self.component(instance_key, container_id, {'name': 'KUBERNETES_CONTAINER'}, data)
 
             relation_data = dict()
-            self.relation(instance_key, container_id, pod_uid, {'name': 'HOSTED_ON'}, relation_data)
+            self.relation(instance_key, container_id, pod_name, {'name': 'HOSTED_ON'}, relation_data)
