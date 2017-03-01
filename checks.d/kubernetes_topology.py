@@ -38,6 +38,7 @@ class KubernetesTopology(AgentCheck):
         self._extract_services(instance_key)
         self._extract_nodes(instance_key)
         self._extract_pods(instance_key)
+        self._link_pods_to_services(instance_key)
 
         self.stop_snapshot(instance_key)
 
@@ -86,3 +87,13 @@ class KubernetesTopology(AgentCheck):
 
             relation_data = dict()
             self.relation(instance_key, container_id, pod_name, {'name': 'HOSTED_ON'}, relation_data)
+
+    def _link_pods_to_services(self, instance_key):
+        for endpoint in self.kubeutil.retrieve_endpoints_list()['items']:
+            service_name = endpoint['metadata']['name']
+            for subset in endpoint['subsets']:
+                for address in subset['addresses']:
+                    if 'targetRef' in address.keys() and address['targetRef']['kind'] == 'Pod':
+                        data = dict()
+                        pod_name = address['targetRef']['name']
+                        self.relation(instance_key, pod_name, service_name, {'name': 'BELONGS_TO'}, data)

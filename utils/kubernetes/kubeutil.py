@@ -28,6 +28,7 @@ class KubeUtil:
     PODS_LIST_PATH = '/pods/'
     SERVICES_LIST_PATH = '/services/'
     NODES_LIST_PATH = '/nodes/'
+    ENDPOINTS_LIST_PATH = '/endpoints/'
     DEFAULT_CADVISOR_PORT = 4194
     DEFAULT_KUBELET_PORT = 10255
     DEFAULT_MASTER_PORT = 8080
@@ -71,6 +72,7 @@ class KubeUtil:
         self.nodes_list_url = urljoin(self.kubelet_api_url, KubeUtil.NODES_LIST_PATH)
         self.services_list_url = urljoin(self.kubelet_api_url, KubeUtil.SERVICES_LIST_PATH)
         self.pods_list_url = urljoin(self.kubelet_api_url, KubeUtil.PODS_LIST_PATH)
+        self.endpoints_list_url = urljoin(self.kubelet_api_url, KubeUtil.ENDPOINTS_LIST_PATH)
         self.kube_health_url = urljoin(self.kubelet_api_url, 'healthz')
 
         # keep track of the latest k8s event we collected and posted
@@ -127,6 +129,14 @@ class KubeUtil:
         TODO: the list of pods could be cached with some policy to be decided.
         """
         return retrieve_json(self.pods_list_url)
+
+    def retrieve_endpoints_list(self):
+        """
+        Retrieve the list of endpoints for this cluster querying the kubelet API.
+
+        TODO: the list of endpoints could be cached with some policy to be decided.
+        """
+        return retrieve_json(self.endpoints_list_url)
 
     def retrieve_machine_info(self):
         """

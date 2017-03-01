@@ -23,26 +23,40 @@ class TestKubernetesTopology(AgentCheckTest):
                 side_effect=lambda: json.loads(Fixtures.read_file("services_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_pods_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("pods_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_endpoints_list',
+                side_effect=lambda: json.loads(Fixtures.read_file("endpoints_list.json", string_escape=False)))
     def test_kube_topo(self, *args):
         self.run_check({'instances': [{'host': 'foo'}]})
 
         instances = self.check.get_topology_instances()
         self.assertEqual(len(instances), 1)
         self.assertEqual(instances[0]['instance'], {'type':'kubernetes'})
-        self.assertEqual(len(instances[0]['relations']), 51)
+        self.assertEqual(len(instances[0]['relations']), 56)
 
-        pod_name = 'client-3129927420-r90fc'
+        pod_name_client = 'client-3129927420-r90fc'
+        pod_name_service = 'raboof1-1475403310-kc380'
         node_name = 'ip-10-0-0-198.eu-west-1.compute.internal'
+        service_name = 'raboof1'
 
         podToNode = instances[0]['relations'][0]
         self.assertEqual(podToNode['type'], {'name': 'HOSTED_ON'})
-        self.assertEqual(podToNode['sourceId'], pod_name)
+        self.assertEqual(podToNode['sourceId'], pod_name_client)
         self.assertEqual(podToNode['targetId'], node_name)
 
         containerToPod = instances[0]['relations'][1]
         self.assertEqual(containerToPod['type'], {'name': 'HOSTED_ON'})
         self.assertEqual(containerToPod['sourceId'], 'docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359')
-        self.assertEqual(containerToPod['targetId'], pod_name)
+        self.assertEqual(containerToPod['targetId'], pod_name_client)
+
+        podToNode = instances[0]['relations'][8]
+        self.assertEqual(podToNode['type'], {'name': 'HOSTED_ON'})
+        self.assertEqual(podToNode['sourceId'], pod_name_service)
+        self.assertEqual(podToNode['targetId'], node_name)
+
+        podToService = instances[0]['relations'][51]
+        self.assertEqual(podToService['type'], {'name': 'BELONGS_TO'})
+        self.assertEqual(podToService['sourceId'], pod_name_service)
+        self.assertEqual(podToService['targetId'], service_name)
 
         self.assertEqual(len(instances[0]['components']), 60)
         first_service = 0
