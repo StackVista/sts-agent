@@ -1,0 +1,173 @@
+{
+  "kind": "ServiceList",
+  "apiVersion": "v1",
+  "metadata": {
+    "selfLink": "/api/v1/services",
+    "resourceVersion": "1142559"
+  },
+  "items": [
+    {
+      "metadata": {
+        "name": "heapster-nodeport",
+        "namespace": "default",
+        "selfLink": "/api/v1/namespaces/default/services/heapster-nodeport",
+        "uid": "4d976df4-f453-11e6-ae06-020c94063ecf",
+        "resourceVersion": "182178",
+        "creationTimestamp": "2017-02-16T14:22:10Z"
+      },
+      "spec": {
+        "ports": [
+          {
+            "protocol": "TCP",
+            "port": 8082,
+            "targetPort": 8082,
+            "nodePort": 30285
+          }
+        ],
+        "selector": {
+          "k8s-app": "heapster"
+        },
+        "clusterIP": "10.3.0.149",
+        "type": "NodePort",
+        "sessionAffinity": "None"
+      },
+      "status": {
+        "loadBalancer": {}
+      }
+    },
+    {
+      "metadata": {
+        "name": "kubernetes",
+        "namespace": "default",
+        "selfLink": "/api/v1/namespaces/default/services/kubernetes",
+        "uid": "a8f4c866-f2f7-11e6-ae06-020c94063ecf",
+        "resourceVersion": "28",
+        "creationTimestamp": "2017-02-14T20:53:38Z",
+        "labels": {
+          "component": "apiserver",
+          "provider": "kubernetes"
+        }
+      },
+      "spec": {
+        "ports": [
+          {
+            "name": "https",
+            "protocol": "TCP",
+            "port": 443,
+            "targetPort": 443
+          }
+        ],
+        "clusterIP": "10.3.0.1",
+        "type": "ClusterIP",
+        "sessionAffinity": "ClientIP"
+      },
+      "status": {
+        "loadBalancer": {}
+      }
+    },
+    {
+      "metadata": {
+        "name": "raboof1",
+        "namespace": "default",
+        "selfLink": "/api/v1/namespaces/default/services/raboof1",
+        "uid": "61212753-f81f-11e6-ae06-020c94063ecf",
+        "resourceVersion": "726060",
+        "creationTimestamp": "2017-02-21T10:20:33Z",
+        "labels": {
+          "app": "raboof1"
+        }
+      },
+      "spec": {
+        "ports": [
+          {
+            "name": "tcp-80-80-kf5p1",
+            "protocol": "TCP",
+            "port": 80,
+            "targetPort": 80
+          }
+        ],
+        "selector": {
+          "app": "raboof1"
+        },
+        "clusterIP": "10.3.0.98",
+        "type": "ClusterIP",
+        "sessionAffinity": "None"
+      },
+      "status": {
+        "loadBalancer": {}
+      }
+    },
+    {
+      "metadata": {
+        "name": "kube-dns",
+        "namespace": "kube-system",
+        "selfLink": "/api/v1/namespaces/kube-system/services/kube-dns",
+        "uid": "ac54c8b7-f2f7-11e6-ae06-020c94063ecf",
+        "resourceVersion": "90",
+        "creationTimestamp": "2017-02-14T20:53:44Z",
+        "labels": {
+          "k8s-app": "kube-dns",
+          "kubernetes.io/cluster-service": "true",
+          "kubernetes.io/name": "KubeDNS"
+        }
+      },
+      "spec": {
+        "ports": [
+          {
+            "name": "dns",
+            "protocol": "UDP",
+            "port": 53,
+            "targetPort": 53
+          },
+          {
+            "name": "dns-tcp",
+            "protocol": "TCP",
+            "port": 53,
+            "targetPort": 53
+          }
+        ],
+        "selector": {
+          "k8s-app": "kube-dns"
+        },
+        "clusterIP": "10.3.0.10",
+        "type": "ClusterIP",
+        "sessionAffinity": "None"
+      },
+      "status": {
+        "loadBalancer": {}
+      }
+    },
+    {
+      "metadata": {
+        "name": "kubernetes-dashboard",
+        "namespace": "kube-system",
+        "selfLink": "/api/v1/namespaces/kube-system/services/kubernetes-dashboard",
+        "uid": "ac64c9b6-f2f7-11e6-ae06-020c94063ecf",
+        "resourceVersion": "115",
+        "creationTimestamp": "2017-02-14T20:53:44Z",
+        "labels": {
+          "k8s-app": "kubernetes-dashboard",
+          "kubernetes.io/cluster-service": "true"
+        }
+      },
+      "spec": {
+        "ports": [
+          {
+            "protocol": "TCP",
+            "port": 80,
+            "targetPort": 9090
+          }
+        ],
+        "selector": {
+          "k8s-app": "kubernetes-dashboard"
+        },
+        "clusterIP": "10.3.0.250",
+        "type": "ClusterIP",
+        "sessionAffinity": "None"
+      },
+      "status": {
+        "loadBalancer": {}
+      }
+    }
+  ]
+}

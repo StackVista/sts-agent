@@ -19,6 +19,8 @@ class TestKubernetesTopology(AgentCheckTest):
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_machine_info')
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_nodes_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("nodes_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_services_list',
+                side_effect=lambda: json.loads(Fixtures.read_file("services_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_pods_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("pods_list_1.1.json", string_escape=False)))
     def test_kube_topo(self, *args):
@@ -42,8 +44,14 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(containerToPod['sourceId'], 'docker://d9854456403ea986cc85935192f251afac2653513753bfe708f12dd125c5b224')
         self.assertEqual(containerToPod['targetId'], pod_id)
 
-        self.assertEqual(len(instances[0]['components']), 15)
-        first_node = 0
+        self.assertEqual(len(instances[0]['components']), 20)
+        first_service = 0
+        service = instances[0]['components'][first_service]
+        self.assertEqual(service['type'], {'name': 'KUBERNETES_SERVICE'})
+        self.assertEqual(service['data']['type'], 'NodePort')
+        self.assertEqual(service['data']['cluster_ip'], '10.3.0.149')
+
+        first_node = 5
         node = instances[0]['components'][first_node]
         self.assertEqual(node['type'], {'name': 'KUBERNETES_NODE'})
         self.assertEqual(node['data']['internal_ip'], '10.0.0.107')
@@ -51,7 +59,7 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(node['data']['external_ip'], '54.171.163.96')
         self.assertEqual(node['data']['hostname'], 'ip-10-0-0-107.eu-west-1.compute.internal')
 
-        first_pod = 3
+        first_pod = first_node + 3
         first_pod_with_container = first_pod + 1
         pod = instances[0]['components'][first_pod_with_container]
         self.assertEqual(pod['type'], {'name': 'KUBERNETES_POD'})

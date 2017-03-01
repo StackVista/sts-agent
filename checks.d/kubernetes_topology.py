@@ -35,10 +35,18 @@ class KubernetesTopology(AgentCheck):
 
         self.start_snapshot(instance_key)
 
+        self._extract_services(instance_key)
         self._extract_nodes(instance_key)
         self._extract_pods(instance_key)
 
         self.stop_snapshot(instance_key)
+
+    def _extract_services(self, instance_key):
+        for service in self.kubeutil.retrieve_services_list()['items']:
+            data = dict()
+            data['type'] = service['spec']['type']
+            data['cluster_ip'] = service['spec']['clusterIP']
+            self.component(instance_key, service['metadata']['name'], {'name': 'KUBERNETES_SERVICE'}, data)
 
     def _extract_nodes(self, instance_key):
         for node in self.kubeutil.retrieve_nodes_list()['items']:
