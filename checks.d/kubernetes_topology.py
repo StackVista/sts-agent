@@ -43,6 +43,11 @@ class KubernetesTopology(AgentCheck):
     def _extract_nodes(self, instance_key):
         for node in self.kubeutil.retrieve_nodes_list()['items']:
             data = dict()
+            addresses = { item['type']: item['address'] for item in node['status']['addresses'] }
+            data['internal_ip'] = addresses['InternalIP']
+            data['legacy_host_ip'] = addresses['LegacyHostIP']
+            data['external_ip'] = addresses['ExternalIP']
+            data['hostname'] = addresses['Hostname']
             self.component(instance_key, node['metadata']['name'], {'name': 'KUBERNETES_NODE'}, data)
 
     def _extract_pods(self, instance_key):

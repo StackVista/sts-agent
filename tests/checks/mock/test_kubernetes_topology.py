@@ -46,6 +46,10 @@ class TestKubernetesTopology(AgentCheckTest):
         first_node = 0
         node = instances[0]['components'][first_node]
         self.assertEqual(node['type'], {'name': 'KUBERNETES_NODE'})
+        self.assertEqual(node['data']['internal_ip'], '10.0.0.107')
+        self.assertEqual(node['data']['legacy_host_ip'], '10.0.0.107')
+        self.assertEqual(node['data']['external_ip'], '54.171.163.96')
+        self.assertEqual(node['data']['hostname'], 'ip-10-0-0-107.eu-west-1.compute.internal')
 
         first_pod = 3
         first_pod_with_container = first_pod + 1
