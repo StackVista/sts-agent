@@ -3,7 +3,7 @@
   "apiVersion": "v1",
   "metadata": {
     "selfLink": "/api/v1/services",
-    "resourceVersion": "1142559"
+    "resourceVersion": "1754163"
   },
   "items": [
     {
@@ -60,6 +60,31 @@
         "clusterIP": "10.3.0.1",
         "type": "ClusterIP",
         "sessionAffinity": "ClientIP"
+      },
+      "status": {
+        "loadBalancer": {}
+      }
+    },
+    {
+      "metadata": {
+        "name": "my-externalservice",
+        "namespace": "default",
+        "selfLink": "/api/v1/namespaces/default/services/my-externalservice",
+        "uid": "c66ea74e-fe71-11e6-ae06-020c94063ecf",
+        "resourceVersion": "1753142",
+        "creationTimestamp": "2017-03-01T11:25:29Z"
+      },
+      "spec": {
+        "ports": [
+          {
+            "protocol": "TCP",
+            "port": 80,
+            "targetPort": 80
+          }
+        ],
+        "type": "ExternalName",
+        "sessionAffinity": "None",
+        "externalName": "my.database.example.com"
       },
       "status": {
         "loadBalancer": {}

@@ -44,14 +44,14 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(containerToPod['sourceId'], 'docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359')
         self.assertEqual(containerToPod['targetId'], pod_name)
 
-        self.assertEqual(len(instances[0]['components']), 59)
+        self.assertEqual(len(instances[0]['components']), 60)
         first_service = 0
         service = instances[0]['components'][first_service]
         self.assertEqual(service['type'], {'name': 'KUBERNETES_SERVICE'})
         self.assertEqual(service['data']['type'], 'NodePort')
         self.assertEqual(service['data']['cluster_ip'], '10.3.0.149')
 
-        first_node = 5
+        first_node = 6
         node = instances[0]['components'][first_node]
         self.assertEqual(node['type'], {'name': 'KUBERNETES_NODE'})
         self.assertEqual(node['data']['internal_ip'], '10.0.0.107')

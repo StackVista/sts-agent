@@ -45,7 +45,8 @@ class KubernetesTopology(AgentCheck):
         for service in self.kubeutil.retrieve_services_list()['items']:
             data = dict()
             data['type'] = service['spec']['type']
-            data['cluster_ip'] = service['spec']['clusterIP']
+            if 'clusterIP' in service['spec'].keys():
+                data['cluster_ip'] = service['spec']['clusterIP']
             self.component(instance_key, service['metadata']['name'], {'name': 'KUBERNETES_SERVICE'}, data)
 
     def _extract_nodes(self, instance_key):
