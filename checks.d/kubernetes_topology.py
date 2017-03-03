@@ -8,10 +8,9 @@
 from collections import defaultdict
 
 # 3rd party
-import simplejson as json
 
 # project
-from checks import AgentCheck, CheckException
+from checks import AgentCheck
 from utils.kubernetes import KubeUtil
 
 class KubernetesTopology(AgentCheck):
@@ -55,7 +54,7 @@ class KubernetesTopology(AgentCheck):
     def _extract_nodes(self, instance_key):
         for node in self.kubeutil.retrieve_nodes_list()['items']:
             data = dict()
-            addresses = { item['type']: item['address'] for item in node['status']['addresses'] }
+            addresses = {item['type']: item['address'] for item in node['status']['addresses']}
             data['internal_ip'] = addresses['InternalIP']
             data['legacy_host_ip'] = addresses['LegacyHostIP']
             data['external_ip'] = addresses['ExternalIP']

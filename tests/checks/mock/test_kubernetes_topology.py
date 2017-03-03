@@ -1,15 +1,10 @@
-import unittest
-import os
-
 # 3rd party
 import simplejson as json
 
 # project
 from tests.checks.common import Fixtures, AgentCheckTest
-from utils.kubernetes import NAMESPACE
 
 import mock
-
 
 class TestKubernetesTopology(AgentCheckTest):
 
