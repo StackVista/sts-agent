@@ -31,7 +31,7 @@ class TestKubernetesTopology(AgentCheckTest):
         instances = self.check.get_topology_instances()
         self.assertEqual(len(instances), 1)
         self.assertEqual(instances[0]['instance'], {'type':'kubernetes'})
-        self.assertEqual(len(instances[0]['relations']), 56)
+        self.assertEqual(len(instances[0]['relations']), 66)
 
         pod_name_client = 'client-3129927420-r90fc'
         pod_name_service = 'raboof1-1475403310-kc380'
@@ -53,12 +53,17 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(podToNode['sourceId'], pod_name_service)
         self.assertEqual(podToNode['targetId'], node_name)
 
-        podToService = instances[0]['relations'][51]
+        podToService = instances[0]['relations'][61]
         self.assertEqual(podToService['type'], {'name': 'BELONGS_TO'})
         self.assertEqual(podToService['sourceId'], pod_name_service)
         self.assertEqual(podToService['targetId'], service_name)
 
-        self.assertEqual(len(instances[0]['components']), 60)
+        podToReplicaSet = instances[0]['relations'][55]
+        self.assertEqual(podToReplicaSet['type'], {'name': 'CONTROLLED_BY'})
+        self.assertEqual(podToReplicaSet['sourceId'], pod_name_client)
+        self.assertEqual(podToReplicaSet['targetId'], 'client-3129927420')
+
+        self.assertEqual(len(instances[0]['components']), 68)
         first_service = 0
         service = instances[0]['components'][first_service]
         self.assertEqual(service['type'], {'name': 'KUBERNETES_SERVICE'})
@@ -90,3 +95,7 @@ class TestKubernetesTopology(AgentCheckTest):
                 'image': u'raboof/client:1'
             }
         })
+
+        first_replicaset = first_pod + 51
+        replicaset = instances[0]['components'][first_replicaset]
+        self.assertEqual(replicaset['type'], {'name': 'KUBERNETES_REPLICASET'})

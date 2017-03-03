@@ -5,6 +5,8 @@
     Collects topology from k8s API.
 """
 
+from collections import defaultdict
+
 # 3rd party
 import simplejson as json
 
@@ -61,6 +63,7 @@ class KubernetesTopology(AgentCheck):
             self.component(instance_key, node['metadata']['name'], {'name': 'KUBERNETES_NODE'}, data)
 
     def _extract_pods(self, instance_key):
+        replicasets = defaultdict(list)
         for pod in self.kubeutil.retrieve_pods_list()['items']:
             data = dict()
             pod_name = pod['metadata']['name']
@@ -73,6 +76,18 @@ class KubernetesTopology(AgentCheck):
 
             if 'containerStatuses' in pod['status'].keys():
                 self._extract_containers(instance_key, pod_name, pod['status']['podIP'], pod['status']['hostIP'], pod['status']['containerStatuses'])
+
+            if 'ownerReferences' in pod['metadata'].keys():
+                for reference in pod['metadata']['ownerReferences']:
+                    if reference['kind'] == 'ReplicaSet':
+                        data = dict()
+                        data['name'] = pod_name
+                        replicasets[reference['name']].append(data)
+
+        for replicaset_name in replicasets:
+            self.component(instance_key, replicaset_name, {'name': 'KUBERNETES_REPLICASET'}, dict())
+            for pod in replicasets[replicaset_name]:
+                self.relation(instance_key, pod['name'], replicaset_name, {'name': 'CONTROLLED_BY'}, dict())
 
     def _extract_containers(self, instance_key, pod_name, pod_ip, host_ip, statuses):
         for containerStatus in statuses:
