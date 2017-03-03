@@ -25,13 +25,14 @@ class KubeUtil:
     DEFAULT_METHOD = 'http'
     MACHINE_INFO_PATH = '/api/v1.3/machine/'
     METRICS_PATH = '/api/v1.3/subcontainers/'
-    PODS_LIST_PATH = '/pods/'
-    SERVICES_LIST_PATH = '/services/'
-    NODES_LIST_PATH = '/nodes/'
-    ENDPOINTS_LIST_PATH = '/endpoints/'
+    PODS_LIST_PATH = 'pods/'
+    SERVICES_LIST_PATH = 'services/'
+    NODES_LIST_PATH = 'nodes/'
+    ENDPOINTS_LIST_PATH = 'endpoints/'
     DEFAULT_CADVISOR_PORT = 4194
     DEFAULT_KUBELET_PORT = 10255
-    DEFAULT_MASTER_PORT = 8080
+    DEFAULT_MASTER_METHOD = 'https'
+    DEFAULT_MASTER_PORT = 443
     DEFAULT_MASTER_NAME = 'kubernetes'  # DNS name to reach the master from a pod.
     CA_CRT_PATH = '/run/secrets/kubernetes.io/serviceaccount/ca.crt'
     AUTH_TOKEN_PATH = '/run/secrets/kubernetes.io/serviceaccount/token'
@@ -62,17 +63,21 @@ class KubeUtil:
 
         self.cadvisor_port = instance.get('port', KubeUtil.DEFAULT_CADVISOR_PORT)
         self.kubelet_port = instance.get('kubelet_port', KubeUtil.DEFAULT_KUBELET_PORT)
+        self.master_method = instance.get('master_method', KubeUtil.DEFAULT_MASTER_METHOD)
+        self.master_name = instance.get('master_name', KubeUtil.DEFAULT_MASTER_NAME)
+        self.master_port = instance.get('master_port', KubeUtil.DEFAULT_MASTER_PORT)
 
         self.kubelet_api_url = '%s://%s:%d' % (self.method, self.host, self.kubelet_port)
         self.cadvisor_url = '%s://%s:%d' % (self.method, self.host, self.cadvisor_port)
-        self.kubernetes_api_url = 'https://%s/api/v1' % (os.environ.get('KUBERNETES_SERVICE_HOST') or self.DEFAULT_MASTER_NAME)
+        self.master_host = os.environ.get('KUBERNETES_SERVICE_HOST') or ('%s:%d' % (self.master_name, self.master_port))
+        self.kubernetes_api_url = '%s://%s/api/v1/' % (self.master_method, self.master_host)
 
         self.metrics_url = urljoin(self.cadvisor_url, KubeUtil.METRICS_PATH)
         self.machine_info_url = urljoin(self.cadvisor_url, KubeUtil.MACHINE_INFO_PATH)
-        self.nodes_list_url = urljoin(self.kubelet_api_url, KubeUtil.NODES_LIST_PATH)
-        self.services_list_url = urljoin(self.kubelet_api_url, KubeUtil.SERVICES_LIST_PATH)
-        self.pods_list_url = urljoin(self.kubelet_api_url, KubeUtil.PODS_LIST_PATH)
-        self.endpoints_list_url = urljoin(self.kubelet_api_url, KubeUtil.ENDPOINTS_LIST_PATH)
+        self.nodes_list_url = urljoin(self.kubernetes_api_url, KubeUtil.NODES_LIST_PATH)
+        self.services_list_url = urljoin(self.kubernetes_api_url, KubeUtil.SERVICES_LIST_PATH)
+        self.endpoints_list_url = urljoin(self.kubernetes_api_url, KubeUtil.ENDPOINTS_LIST_PATH)
+        self.pods_list_url = urljoin(self.kubernetes_api_url, KubeUtil.PODS_LIST_PATH)
         self.kube_health_url = urljoin(self.kubelet_api_url, 'healthz')
 
         # keep track of the latest k8s event we collected and posted
