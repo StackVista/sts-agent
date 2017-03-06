@@ -1,0 +1,8 @@
+init_config:
+  default_timeout: 10
+
+instances:
+  - url: "http://localhost:8089"
+    # tags:
+    #      - optional_tag1
+    #      - optional_tag2
