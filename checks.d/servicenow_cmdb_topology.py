@@ -62,7 +62,6 @@ class ServiceNowCMDBTopology(AgentCheck):
         :return: dict, raw response from CMDB
         """
         url = self.base_url + '/api/now/table/cmdb_ci?sysparm_fields=name,sys_id,sys_class_name,sys_created_on'
-        # url = self.base_url + '/api/now/table/cmdb_ci?sysparm_fields=name,sys_id,sys_class_name,sys_created_on&sysparm_query=ORDERBYsys_created_on^sys_idIN1743cde17f701200bee45f19befa917b,6fa301257f701200bee45f19befa9164'
 
         return self._get_state(url, self.timeout, self.auth)
 
@@ -79,7 +78,8 @@ class ServiceNowCMDBTopology(AgentCheck):
                 "name": component['sys_class_name']
             }
             data = {
-                "name": component['name'],
+                # "name": component['sys_id']
+                "name": component['name'].strip(),
                 "tags": self.instance_tags
             }
 
@@ -111,7 +111,6 @@ class ServiceNowCMDBTopology(AgentCheck):
         collect relations between components from cmdb_rel_ci and publish these in batches.
         """
         url = self.base_url + '/api/now/table/cmdb_rel_ci?sysparm_fields=parent,type,child'
-        # url = self.base_url + '/api/now/table/cmdb_rel_ci?sysparm_fields=parent,type,child&sysparm_query=ORDERBYsys_created_on^sys_idINe68a11297f701200bee45f19befa91c7'
 
         return self._get_json_in_batches(url, offset, batch_size)
 
