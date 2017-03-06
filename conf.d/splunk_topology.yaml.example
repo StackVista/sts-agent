@@ -1,8 +1,19 @@
 init_config:
   default_timeout: 10
 
+# Splunk topology intake uses basic authentication
+
 instances:
-  - url: "http://localhost:8089"
+  - url: "http://localhost:13001"
+    username: "admin"
+    password: "admin"
+    saved_searches:
+      - name: "saved_test"
+        element_type: "component"
+        parameters:
+          - force_dispatch: true
+            dispatch.now: true
+
     # tags:
     #      - optional_tag1
     #      - optional_tag2
