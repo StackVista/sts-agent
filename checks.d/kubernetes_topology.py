@@ -30,6 +30,9 @@ class KubernetesTopology(AgentCheck):
             raise Exception('Unable to retrieve Docker hostname and host parameter is not set')
 
     def check(self, instance):
+        # For now we only support monitoring 1 kubernetes at a time, so the instance_key containing
+        # just the 'kubernetes' type is sufficient. Once we start supporting monitoring multiple clusters
+        # simultaneously we need to uniquely identify them in the instance_key
         instance_key = {
             "type": self.INSTANCE_TYPE
         }
