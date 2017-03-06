@@ -42,7 +42,7 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(podToNode['targetId'], node_name)
 
         containerToPod = instances[0]['relations'][1]
-        self.assertEqual(containerToPod['type'], {'name': 'HOSTED_ON'})
+        self.assertEqual(containerToPod['type'], {'name': 'ON_POD'})
         self.assertEqual(containerToPod['sourceId'], 'docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359')
         self.assertEqual(containerToPod['targetId'], pod_name_client)
 

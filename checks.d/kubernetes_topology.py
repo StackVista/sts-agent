@@ -104,7 +104,7 @@ class KubernetesTopology(AgentCheck):
             self.component(instance_key, container_id, {'name': 'KUBERNETES_CONTAINER'}, data)
 
             relation_data = dict()
-            self.relation(instance_key, container_id, pod_name, {'name': 'HOSTED_ON'}, relation_data)
+            self.relation(instance_key, container_id, pod_name, {'name': 'ON_POD'}, relation_data)
 
     def _link_pods_to_services(self, instance_key):
         for endpoint in self.kubeutil.retrieve_endpoints_list()['items']:
