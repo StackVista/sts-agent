@@ -4,6 +4,7 @@ branches:
   only:
     - master
     - serviceDiscoveryTest
+    - k8stopology
     - /^\d+\.\d+\.x$/ # release forked patches branch
 
 language: python
