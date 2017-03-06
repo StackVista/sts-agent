@@ -34,7 +34,8 @@ class KubernetesTopology(AgentCheck):
         # just the 'kubernetes' type is sufficient. Once we start supporting monitoring multiple clusters
         # simultaneously we need to uniquely identify them in the instance_key
         instance_key = {
-            "type": self.INSTANCE_TYPE
+            'type': self.INSTANCE_TYPE,
+            'url': 'http://kubernetes'
         }
 
         self.start_snapshot(instance_key)

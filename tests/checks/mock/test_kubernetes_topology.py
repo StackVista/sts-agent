@@ -25,7 +25,10 @@ class TestKubernetesTopology(AgentCheckTest):
 
         instances = self.check.get_topology_instances()
         self.assertEqual(len(instances), 1)
-        self.assertEqual(instances[0]['instance'], {'type':'kubernetes'})
+        self.assertEqual(instances[0]['instance'], {
+            'type': 'kubernetes',
+            'url': 'http://kubernetes'
+        })
         self.assertEqual(len(instances[0]['relations']), 66)
 
         pod_name_client = 'client-3129927420-r90fc'
