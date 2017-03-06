@@ -10,7 +10,7 @@ import requests
 from checks import AgentCheck, CheckException
 
 
-class MesosMasterTopology(AgentCheck):
+class SplunkTopology(AgentCheck):
     INSTANCE_TYPE = "splunk"
     SERVICE_CHECK_NAME = "splunk.topology_information"
     service_check_needed = True
@@ -48,7 +48,7 @@ class MesosMasterTopology(AgentCheck):
                 msg = "Got %s when hitting %s" % (r.status_code, url)
             else:
                 status = AgentCheck.OK
-                msg = "Mesos master instance detected at %s " % url
+                msg = "Splunk instance detected at %s " % url
         except requests.exceptions.Timeout as e:
             # If there's a timeout
             msg = "%s seconds timeout when hitting %s" % (timeout, url)
@@ -64,7 +64,7 @@ class MesosMasterTopology(AgentCheck):
             if status is AgentCheck.CRITICAL:
                 self.service_check(self.SERVICE_CHECK_NAME, status, tags=tags,
                                    message=msg)
-                raise CheckException("Cannot connect to mesos, please check your configuration.")
+                raise CheckException("Cannot connect to Splunk, please check your configuration.")
 
         if r.encoding is None:
             r.encoding = 'UTF8'
