@@ -133,6 +133,8 @@ class TestSplunkTopology(AgentCheckTest):
             }
         })
 
+        self.assertEquals(self.service_checks[0]['status'], 0, "service check should have status AgentCheck.OK")
+
 
 def _mocked_minimal_search(*args, **kwargs):
     # sid is set to saved search name
@@ -205,6 +207,8 @@ class TestSplunkMinimalTopology(AgentCheckTest):
             }
         })
 
+        self.assertEquals(self.service_checks[0]['status'], 0, "service check should have status AgentCheck.OK")
+
 
 def _mocked_incomplete_search(*args, **kwargs):
     # sid is set to saved search name
@@ -251,6 +255,8 @@ class TestSplunkIncompleteTopology(AgentCheckTest):
         except CheckException:
             thrown = True
         self.assertTrue(thrown, "Retrieving incomplete data from splunk should throw")
+
+        self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
 
 
 class TestSplunkPollingInterval(AgentCheckTest):
@@ -353,6 +359,7 @@ class TestSplunkPollingInterval(AgentCheckTest):
             thrown = True
         self.check.get_topology_instances()
         self.assertTrue(thrown, "Expect thrown to be done from the mocked search")
+        self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
 
         # Updating should happen asap after throw
         test_data["expected_searches"] = ["components_fast", "relations_fast"]
@@ -360,3 +367,5 @@ class TestSplunkPollingInterval(AgentCheckTest):
         test_data["throw"] = False
         self.run_check(config, mocks=test_mocks)
         self.check.get_topology_instances()
+
+        self.assertEquals(self.service_checks[0]['status'], 0, "service check should have status AgentCheck.OK")

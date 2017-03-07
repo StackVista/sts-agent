@@ -56,8 +56,7 @@ class Instance:
 
 
 class SplunkTopology(AgentCheck):
-    # SERVICE_CHECK_NAME = "splunk.topology_information"
-    # service_check_needed = True
+    SERVICE_CHECK_NAME = "splunk.topology_information"
 
     def __init__(self, name, init_config, agentConfig, instances=None):
         super(SplunkTopology, self).__init__(name, init_config, agentConfig, instances)
@@ -78,23 +77,30 @@ class SplunkTopology(AgentCheck):
 
         instance_key = instance.instance_key
 
-        search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
-                      for saved_search in instance.saved_searches]
-
-        self.start_snapshot(instance_key)
-
         try:
-            for (sid, saved_search) in search_ids:
-                response = self._search(instance.instance_config, sid)
-                if saved_search.element_type == "component":
-                    self._extract_components(instance, response)
-                elif saved_search.element_type == "relation":
-                    self._extract_relations(instance, response)
+            search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
+                          for saved_search in instance.saved_searches]
 
-            # If everything was successful, update the timestamp
-            instance.last_successful_poll = current_time
-        finally:
-            self.stop_snapshot(instance_key)
+            self.start_snapshot(instance_key)
+
+            try:
+                for (sid, saved_search) in search_ids:
+                    response = self._search(instance.instance_config, sid)
+                    if saved_search.element_type == "component":
+                        self._extract_components(instance, response)
+                    elif saved_search.element_type == "relation":
+                        self._extract_relations(instance, response)
+
+                # If everything was successful, update the timestamp
+                instance.last_successful_poll = current_time
+            finally:
+                self.stop_snapshot(instance_key)
+
+        except Exception as e:
+            self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=instance.tags, message=str(e))
+            raise CheckException("Cannot connect to Splunk, please check your configuration.")
+        else:
+            self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
 
     def _current_time_seconds(self):
         return int(round(time.time() * 1000))
