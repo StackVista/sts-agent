@@ -106,7 +106,7 @@ class SplunkTopology(AgentCheck):
         :param search_id: perform a search operation on the search id
         :return: raw response from splunk
         """
-        search_url = '%s/services/search/jobs/%s/results?output_mode=json' % (instance_config.base_url, search_id)
+        search_url = '%s/services/search/jobs/%s/results?output_mode=json&count=0' % (instance_config.base_url, search_id)
         auth = instance_config.get_auth_tuple()
 
         response = requests.get(search_url, auth=auth, timeout=instance_config.timeout)
