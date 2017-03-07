@@ -231,7 +231,6 @@ class TestSplunkIncompleteTopology(AgentCheckTest):
         }
 
         thrown = False
-
         try:
             self.run_check(config, mocks={
                 '_dispatch_saved_search': _mocked_dispatch_saved_search,
@@ -239,7 +238,6 @@ class TestSplunkIncompleteTopology(AgentCheckTest):
             })
         except CheckException:
             thrown = True
-
         self.assertTrue(thrown, "Retrieving incomplete data from splunk should throw")
 
 

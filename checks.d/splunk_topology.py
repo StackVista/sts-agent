@@ -52,7 +52,7 @@ class Instance:
         self.last_successful_poll = 0
 
     def should_poll(self, time_seconds):
-        return self.last_successful_poll == 0 or time_seconds > self.last_successful_poll + self.instance_config.polling_interval
+        return self.last_successful_poll == 0 or time_seconds >= self.last_successful_poll + self.instance_config.polling_interval
 
 
 class SplunkTopology(AgentCheck):
