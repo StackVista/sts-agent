@@ -9,70 +9,99 @@ from urllib import quote
 import json
 import httplib as http_client
 import logging
+import time
 
 # project
 from checks import AgentCheck, CheckException
 
 
-class SplunkTopology(AgentCheck):
+class SavedSearch:
+    def __init__(self, saved_search):
+        self.name = saved_search['name']
+        self.element_type = saved_search['element_type']
+        self.parameters = saved_search['parameters']
+
+        print self
+
+
+class InstanceConfig:
+    def __init__(self, instance):
+        self.base_url = instance['url']
+        self.username = instance['username']
+        self.password = instance['password']
+
+    def get_auth_tuple(self):
+        return self.username, self.password
+
+
+class Instance:
     INSTANCE_TYPE = "splunk"
-    SERVICE_CHECK_NAME = "splunk.topology_information"
-    service_check_needed = True
+
+    def __init__(self, instance, default_timeout):
+        self.instance_config = InstanceConfig(instance)
+        self.saved_searches = [SavedSearch(saved_search) for saved_search in instance['saved_searches']]
+        self.instance_key = {
+            "type": self.INSTANCE_TYPE,
+            "url": self.instance_config.base_url
+        }
+        self.timeout = float(instance.get('timeout', default_timeout))
+        self.tags = instance.get('tags', [])
+
+
+class SplunkTopology(AgentCheck):
+    # SERVICE_CHECK_NAME = "splunk.topology_information"
+    # service_check_needed = True
 
     def check(self, instance):
         if 'url' not in instance:
-            raise Exception('Splunk topology instance missing "url" value.')
+            raise CheckException('Splunk topology instance missing "url" value.')
 
-        base_url = instance['url']
-
-        instance_key = {
-            "type": self.INSTANCE_TYPE,
-            "url": base_url
-        }
-
-        instance_tags = instance.get('tags', [])
         default_timeout = self.init_config.get('default_timeout', 5)
-        timeout = float(instance.get('timeout', default_timeout))
 
-        self.start_snapshot(instance_key)
+        instance = Instance(instance, default_timeout)
 
-        sid = self._dispatch_saved_search(base_url, "saved_test")
+        search_ids = [self._dispatch_saved_search(instance.instance_config, saved_search) for saved_search in instance.saved_searches]
 
-        print "using sid: " + sid
+        print search_ids
 
-        import time
-        time.sleep(5)
+        for sid in search_ids:
+            self._search(instance.instance_config, sid)
 
-        self._search(base_url, sid)
+        # self.start_snapshot(instance_key)
+        # self.stop_snapshot(instance_key)
 
-        self.stop_snapshot(instance_key)
 
-    def _search(self, base_url, sid):
-        search_url = '%s/services/search/jobs/%s/results?output_mode=json' % (base_url, sid)
-        timeout = None # TODO fix timeout
+    def _search(self, instance_config, search_id):
+        search_url = '%s/services/search/jobs/%s/results?output_mode=json' % (instance_config.base_url, search_id)
 
-        auth = ("admin", "admin") # TODO
+        auth = instance_config.get_auth_tuple()
 
-        response = requests.get(search_url, auth=auth).json()
-        print response
+        response = requests.get(search_url, auth=auth, timeout=instance_config.timeout).json()
+        print "search yielded response: " + response
+        if response.status_code == 204:
+            time.sleep(2)
+            self._search(instance_config, search_id)
 
-    def _dispatch_saved_search(self, base_url, saved_search_name):
-        "{{baseurl}}/services/saved/searches/{{saved_search_name}}/dispatch"
+    def _dispatch_saved_search(self, instance_config, saved_search):
+        dispatch_url = '%s/services/saved/searches/%s/dispatch' % (instance_config.base_url, quote(saved_search.name))
 
-        dispatch_url = '%s/services/saved/searches/%s/dispatch' % (base_url, quote(saved_search_name))
-        print dispatch_url
+        auth = instance_config.get_auth_tuple()
 
-        auth = ("admin", "admin")
-        payload = {
-            'force_dispatch': True,
-            'output_mode': 'json',
-            'dispatch.now': True
-        }
+        parameters = saved_search.parameters[0]
 
-        response_body = self._do_post(dispatch_url, auth, payload).json()
+        # json output_mode is mandatory for response parsing
+        parameters["output_mode"] = "json"
+
+        # payload = {
+        #     'force_dispatch': True,
+        #     'output_mode': 'json',
+        #     'dispatch.now': True
+        # }
+
+        response_body = self._do_post(dispatch_url, auth, parameters, instance_config.timeout).json()
         return response_body['sid']
 
-    def _do_post(self, url, auth, payload):
+    def _do_post(self, url, auth, payload, timeout):
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
@@ -86,10 +115,8 @@ class SplunkTopology(AgentCheck):
         requests_log.setLevel(logging.DEBUG)
         requests_log.propagate = True
 
-        # TODO add timeout=DEFAULT_API_REQUEST_TIMEOUT
-
         print "json:"+ json.dumps(payload)
 
-        resp = requests.post(url, headers=headers, data=payload, auth=auth)
+        resp = requests.post(url, headers=headers, data=payload, auth=auth, timeout=timeout)
         resp.raise_for_status()
         return resp
