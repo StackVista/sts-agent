@@ -12,8 +12,7 @@
   ],
   "results": [
     {
-      "id": "vm_2_1->HOSTED_ON->server_2",
-      "type": "HOSTED_ON",
+      "type": "HOSTED_ON"
     }
   ],
   "highlighted": {}
