@@ -1,0 +1,24 @@
+{
+  "preview": false,
+  "init_offset": 0,
+  "messages": [],
+  "fields": [
+    {
+      "name": "id"
+    },
+    {
+      "name": "type"
+    }
+  ],
+  "results": [
+    {
+      "id": "vm_2_1",
+      "type": "vm"
+    },
+    {
+      "id": "server_2",
+      "type": "server"
+    }
+  ],
+  "highlighted": {}
+}
