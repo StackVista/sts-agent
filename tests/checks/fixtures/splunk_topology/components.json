@@ -48,12 +48,9 @@
       "_bkt": "main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
       "_cd": "1:66",
       "_indextime": "1488812154",
-      "_raw": "{ \"topo_type\": \"component\", \"id\": \"vm_2_1\", \"type\": \"vm\"}",
+      "_raw": "blaat",
       "_serial": "0",
-      "_si": [
-        "c5ff346549e7",
-        "main"
-      ],
+      "_si": ["c5ff346549e7", "main" ],
       "_sourcetype": "unknown-too_small",
       "_time": "2017-03-06T14:55:54.000+00:00"
     },
@@ -64,7 +61,7 @@
       "_bkt": "main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
       "_cd": "1:56",
       "_indextime": "1488812154",
-      "_raw": "{ \"topo_type\": \"component\", \"id\": \"server_2\", \"type\": \"server\", \"description\": \"My important server 2\" }",
+      "_raw": "blaat2",
       "_serial": "3",
       "_si": [
         "c5ff346549e7",

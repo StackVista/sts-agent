@@ -6,9 +6,6 @@
 # 3rd party
 import requests
 from urllib import quote
-import json
-import httplib as http_client
-import logging
 import time
 
 # project
@@ -62,15 +59,21 @@ class SplunkTopology(AgentCheck):
 
         instance = Instance(instance, self.init_config)
 
-        search_ids = [self._dispatch_saved_search(instance.instance_config, saved_search) for saved_search in instance.saved_searches]
+        instance_key = instance.instance_key
 
-        print search_ids
+        search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search.element_type)
+                      for saved_search in instance.saved_searches]
 
-        for sid in search_ids:
-            self._search(instance.instance_config, sid)
+        self.start_snapshot(instance_key)
 
-        # self.start_snapshot(instance_key)
-        # self.stop_snapshot(instance_key)
+        for (sid, element_type) in search_ids:
+            response = self._search(instance.instance_config, sid)
+            if element_type == "component":
+                self._extract_components(instance, response)
+            elif element_type == "relation":
+                self._extract_relations(instance, response)
+
+        self.stop_snapshot(instance_key)
 
 
     def _search(self, instance_config, search_id):
@@ -111,6 +114,7 @@ class SplunkTopology(AgentCheck):
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
+
         resp = requests.post(url, headers=headers, data=payload, auth=auth, timeout=timeout)
         resp.raise_for_status()
         return resp
@@ -118,14 +122,13 @@ class SplunkTopology(AgentCheck):
     # Get a field from a dictionary. Throw when it does not exist. When it exists, return it and remove from the object
     def _get_required_field(self, field, obj):
         if field not in obj:
-            raise CheckException("Missing ''%s field in component %s" % (field, json.dump(obj)))
+            raise CheckException("Missing '%s' field in result data" % field)
         value = obj[field]
         del obj[field]
         return value
 
-    def _extract_components(self, instance_key, instance_tags, result):
-
-        for data in result["result"]:
+    def _extract_components(self, instance, result):
+        for data in result["results"]:
             # Required fields
             external_id = self._get_required_field("id", data)
             comp_type = self._get_required_field("type", data)
@@ -135,16 +138,14 @@ class SplunkTopology(AgentCheck):
                 del data["_raw"]
 
             # Add tags to data
-            if instance_tags:
-                data['tags'] = instance_tags
+            if instance.tags:
+                data['tags'] = instance.tags
 
-            self.component(instance_key, external_id, comp_type, data)
+            self.component(instance.instance_key, external_id, {"name": comp_type}, data)
 
-    def _extract_relations(self, instance_key, instance_tags, result):
-
-        for data in result["result"]:
+    def _extract_relations(self, instance, result):
+        for data in result["results"]:
             # Required fields
-            external_id = self._get_required_field("id", data)
             rel_type = self._get_required_field("type", data)
             source_id = self._get_required_field("sourceId", data)
             target_id = self._get_required_field("targetId", data)
@@ -154,7 +155,7 @@ class SplunkTopology(AgentCheck):
                 del data["_raw"]
 
             # Add tags to data
-            if instance_tags:
-                data['tags'] = instance_tags
+            if instance.tags:
+                data['tags'] = instance.tags
 
-            self.relation(instance_key, external_id, source_id, target_id, rel_type, data)
+            self.relation(instance.instance_key, source_id, target_id, {"name": rel_type}, data)
