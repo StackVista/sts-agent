@@ -93,3 +93,47 @@ class SplunkTopology(AgentCheck):
         resp = requests.post(url, headers=headers, data=payload, auth=auth)
         resp.raise_for_status()
         return resp
+
+    # Get a field from a dictionary. Throw when it does not exist. When it exists, return it and remove from the object
+    def _get_required_field(self, field, obj):
+        if field not in obj:
+            raise CheckException("Missing ''%s field in component %s" % (field, json.dump(obj)))
+        value = obj[field]
+        del obj[field]
+        return value
+
+    def _extract_components(self, instance_key, instance_tags, result):
+
+        for data in result["result"]:
+            # Required fields
+            external_id = self._get_required_field("id", data)
+            comp_type = self._get_required_field("type", data)
+
+            # We don't want to present the raw field
+            if "_raw" in data:
+                del data["_raw"]
+
+            # Add tags to data
+            if instance_tags:
+                data['tags'] = instance_tags
+
+            self.component(instance_key, external_id, comp_type, data)
+
+    def _extract_relations(self, instance_key, instance_tags, result):
+
+        for data in result["result"]:
+            # Required fields
+            external_id = self._get_required_field("id", data)
+            rel_type = self._get_required_field("type", data)
+            source_id = self._get_required_field("sourceId", data)
+            target_id = self._get_required_field("targetId", data)
+
+            # We don't want to present the raw field
+            if "_raw" in data:
+                del data["_raw"]
+
+            # Add tags to data
+            if instance_tags:
+                data['tags'] = instance_tags
+
+            self.relation(instance_key, external_id, source_id, target_id, rel_type, data)
