@@ -4,6 +4,8 @@ init_config:
   default_timeout: 10
   max_retry_count: 5
   seconds_between_retries: 1
+
+  # Polling interval between calls to splunk
   polling_interval: 15
 
 instances:
@@ -14,6 +16,7 @@ instances:
     saved_searches:
       - name: "components"
         element_type: "component"
+        # Additional parameters for the splunk saved search query
         parameters:
           - force_dispatch: true
             dispatch.now: true
