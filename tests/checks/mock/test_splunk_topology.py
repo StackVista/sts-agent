@@ -241,3 +241,112 @@ class TestSplunkIncompleteTopology(AgentCheckTest):
             thrown = True
 
         self.assertTrue(thrown, "Retrieving incomplete data from splunk should throw")
+
+
+class TestSplunkPollingInterval(AgentCheckTest):
+    """
+    Test whether the splunk check properly implements the polling intervals
+    """
+    CHECK_NAME = 'splunk_topology'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:8089',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches': [{
+                        "name": "components_fast",
+                        "element_type": "component",
+                        "parameters": {}
+                    }, {
+                        "name": "relations_fast",
+                        "element_type": "relation",
+                        "parameters": {}
+                    }],
+                    'tags': ['mytag', 'mytag2']
+                },
+                {
+                    'url': 'http://remotehost:8089',
+                    'username': "admin",
+                    'password': "admin",
+                    'polling_interval': 30,
+                    'saved_searches': [{
+                        "name": "components_slow",
+                        "element_type": "component",
+                        "parameters": {}
+                    }, {
+                        "name": "relations_slow",
+                        "element_type": "relation",
+                        "parameters": {}
+                    }],
+                    'tags': ['mytag', 'mytag2']
+                }
+            ]
+        }
+
+        # Used to validate which searches have been executed
+        test_data = {
+            "expected_searches": [],
+            "time": 0,
+            "throw": False
+        }
+
+        def _mocked_current_time_seconds():
+            return test_data["time"]
+
+        def _mocked_interval_search(*args, **kwargs):
+            if test_data["throw"]:
+                raise CheckException("Is broke it")
+
+            sid = args[1]
+            self.assertTrue(sid in test_data["expected_searches"])
+            return json.loads(Fixtures.read_file("empty.json"))
+
+        test_mocks = {
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_interval_search,
+            '_current_time_seconds': _mocked_current_time_seconds
+        }
+
+        # Inital run
+        test_data["expected_searches"] = ["components_fast", "relations_fast", "components_slow", "relations_slow"]
+        test_data["time"] = 1
+        self.run_check(config, mocks=test_mocks)
+        self.check.get_topology_instances()
+
+        # Only fast ones after 15 seconds
+        test_data["expected_searches"] = ["components_fast", "relations_fast"]
+        test_data["time"] = 20
+        self.run_check(config, mocks=test_mocks)
+        self.check.get_topology_instances()
+
+        # Slow ones after 40 seconds aswell
+        test_data["expected_searches"] = ["components_fast", "relations_fast", "components_slow", "relations_slow"]
+        test_data["time"] = 40
+        self.run_check(config, mocks=test_mocks)
+        self.check.get_topology_instances()
+
+        # Nothing should happen when throwing
+        test_data["expected_searches"] = []
+        test_data["time"] = 60
+        test_data["throw"] = True
+
+        thrown = False
+        try:
+            self.run_check(config, mocks=test_mocks)
+        except CheckException:
+            thrown = True
+        self.check.get_topology_instances()
+        self.assertTrue(thrown, "Expect thrown to be done from the mocked search")
+
+        # Updating should happen asap after throw
+        test_data["expected_searches"] = ["components_fast", "relations_fast"]
+        test_data["time"] = 61
+        test_data["throw"] = False
+        self.run_check(config, mocks=test_mocks)
+        self.check.get_topology_instances()

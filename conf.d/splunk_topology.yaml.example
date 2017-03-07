@@ -4,11 +4,13 @@ init_config:
   default_timeout: 10
   max_retry_count: 5
   seconds_between_retries: 1
+  polling_interval: 15
 
 instances:
   - url: "http://localhost:13001"
     username: "admin"
     password: "admin"
+    polling_interval: 15
     saved_searches:
       - name: "components"
         element_type: "component"

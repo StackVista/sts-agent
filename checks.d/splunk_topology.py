@@ -24,6 +24,7 @@ class InstanceConfig:
         default_timeout = init_config.get('default_timeout', 5)
         max_retry_count = init_config.get('max_retry_count', 3)
         seconds_between_retries = init_config.get('seconds_between_retries', 1)
+        polling_interval = init_config.get('polling_interval', 15)
 
         self.base_url = instance['url']
         self.username = instance['username']
@@ -31,6 +32,7 @@ class InstanceConfig:
         self.timeout = float(instance.get('timeout', default_timeout))
         self.max_retry_count = int(instance.get('max_retry_count', max_retry_count))
         self.seconds_between_retries = int(instance.get('seconds_between_retries', seconds_between_retries))
+        self.polling_interval = int(instance.get('polling_interval', polling_interval))
 
     def get_auth_tuple(self):
         return self.username, self.password
@@ -47,34 +49,55 @@ class Instance:
             "url": self.instance_config.base_url
         }
         self.tags = instance.get('tags', [])
+        self.last_successful_poll = 0
+
+    def should_poll(self, time_seconds):
+        return self.last_successful_poll == 0 or time_seconds > self.last_successful_poll + self.instance_config.polling_interval
 
 
 class SplunkTopology(AgentCheck):
     # SERVICE_CHECK_NAME = "splunk.topology_information"
     # service_check_needed = True
 
+    def __init__(self, name, init_config, agentConfig, instances=None):
+        super(SplunkTopology, self).__init__(name, init_config, agentConfig, instances)
+        # Data to keep over check runs, keyed by instance url
+        self.instance_data = dict()
+
     def check(self, instance):
         if 'url' not in instance:
             raise CheckException('Splunk topology instance missing "url" value.')
 
-        instance = Instance(instance, self.init_config)
+        if instance["url"] not in self.instance_data:
+            self.instance_data[instance["url"]] = Instance(instance, self.init_config)
+
+        instance = self.instance_data[instance["url"]]
+        current_time = self._current_time_seconds()
+        if not instance.should_poll(current_time):
+            return
 
         instance_key = instance.instance_key
 
-        search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search.element_type)
+        search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
                       for saved_search in instance.saved_searches]
 
         self.start_snapshot(instance_key)
 
-        for (sid, element_type) in search_ids:
-            response = self._search(instance.instance_config, sid)
-            if element_type == "component":
-                self._extract_components(instance, response)
-            elif element_type == "relation":
-                self._extract_relations(instance, response)
+        try:
+            for (sid, saved_search) in search_ids:
+                response = self._search(instance.instance_config, sid)
+                if saved_search.element_type == "component":
+                    self._extract_components(instance, response)
+                elif saved_search.element_type == "relation":
+                    self._extract_relations(instance, response)
 
-        self.stop_snapshot(instance_key)
+            # If everything was successful, update the timestamp
+            instance.last_successful_poll = current_time
+        finally:
+            self.stop_snapshot(instance_key)
 
+    def _current_time_seconds(self):
+        return int(round(time.time() * 1000))
 
     def _search(self, instance_config, search_id):
         """
