@@ -23,11 +23,17 @@ class SavedSearch:
 
 
 class InstanceConfig:
-    def __init__(self, instance, default_timeout):
+    def __init__(self, instance, init_config):
+        default_timeout = init_config.get('default_timeout', 5)
+        max_retry_count = init_config.get('max_retry_count', 3)
+        seconds_between_retries = init_config.get('seconds_between_retries', 1)
+
         self.base_url = instance['url']
         self.username = instance['username']
         self.password = instance['password']
         self.timeout = float(instance.get('timeout', default_timeout))
+        self.max_retry_count = int(instance.get('max_retry_count', max_retry_count))
+        self.seconds_between_retries = int(instance.get('seconds_between_retries', seconds_between_retries))
 
     def get_auth_tuple(self):
         return self.username, self.password
@@ -36,8 +42,8 @@ class InstanceConfig:
 class Instance:
     INSTANCE_TYPE = "splunk"
 
-    def __init__(self, instance, default_timeout):
-        self.instance_config = InstanceConfig(instance, default_timeout)
+    def __init__(self, instance, init_config):
+        self.instance_config = InstanceConfig(instance, init_config)
         self.saved_searches = [SavedSearch(saved_search) for saved_search in instance['saved_searches']]
         self.instance_key = {
             "type": self.INSTANCE_TYPE,
@@ -54,9 +60,7 @@ class SplunkTopology(AgentCheck):
         if 'url' not in instance:
             raise CheckException('Splunk topology instance missing "url" value.')
 
-        default_timeout = self.init_config.get('default_timeout', 5)
-
-        instance = Instance(instance, default_timeout)
+        instance = Instance(instance, self.init_config)
 
         search_ids = [self._dispatch_saved_search(instance.instance_config, saved_search) for saved_search in instance.saved_searches]
 
@@ -78,13 +82,17 @@ class SplunkTopology(AgentCheck):
         """
         search_url = '%s/services/search/jobs/%s/results?output_mode=json' % (instance_config.base_url, search_id)
         auth = instance_config.get_auth_tuple()
+
         response = requests.get(search_url, auth=auth, timeout=instance_config.timeout)
+        retry_count = 0
 
         # retry until information is available.
-        # TODO cap max amount of retries
-        if response.status_code == 204: # HTTP No Content response
-            time.sleep(2) # TODO move to config
-            self._search(instance_config, search_id)
+        while response.status_code == 204: # HTTP No Content response
+            if retry_count == instance_config.max_retry_count:
+                raise CheckException("maximum retries reached for " + instance_config.base_url + " with search id " + search_id)
+            retry_count += 1
+            time.sleep(instance_config.seconds_between_retries)
+            response = requests.get(search_url, auth=auth, timeout=instance_config.timeout)
 
         return response.json()
 
