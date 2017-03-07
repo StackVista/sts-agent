@@ -52,7 +52,7 @@ class Instance:
         self.last_successful_poll = 0
 
     def should_poll(self, time_seconds):
-        return self.last_successful_poll == 0 or time_seconds > self.last_successful_poll + self.instance_config.polling_interval
+        return self.last_successful_poll == 0 or time_seconds >= self.last_successful_poll + self.instance_config.polling_interval
 
 
 class SplunkTopology(AgentCheck):
@@ -123,6 +123,12 @@ class SplunkTopology(AgentCheck):
         return response.json()
 
     def _dispatch_saved_search(self, instance_config, saved_search):
+        """
+        Initiate a saved search, returning the saved id
+        :param instance_config: Configuration of the splunk instance
+        :param saved_search: Configuration of the saved search
+        :return:
+        """
         dispatch_url = '%s/services/saved/searches/%s/dispatch' % (instance_config.base_url, quote(saved_search.name))
         auth = instance_config.get_auth_tuple()
 

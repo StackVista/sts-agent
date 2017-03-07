@@ -6,6 +6,9 @@ from tests.checks.common import AgentCheckTest, Fixtures
 
 
 class TestSplunkNoTopology(AgentCheckTest):
+    """
+    Splunk check should work in absence of topology
+    """
     CHECK_NAME = 'splunk_topology'
 
     def test_checks(self):
@@ -39,6 +42,9 @@ def _mocked_search(*args, **kwargs):
 
 
 class TestSplunkTopology(AgentCheckTest):
+    """
+    Splunk check should work with component and relation data
+    """
     CHECK_NAME = 'splunk_topology'
 
     def test_checks(self):
@@ -135,6 +141,9 @@ def _mocked_minimal_search(*args, **kwargs):
 
 
 class TestSplunkMinimalTopology(AgentCheckTest):
+    """
+    Splunk check should work with minimal component and relation data
+    """
     CHECK_NAME = 'splunk_topology'
 
     def test_checks(self):
@@ -204,6 +213,9 @@ def _mocked_incomplete_search(*args, **kwargs):
 
 
 class TestSplunkIncompleteTopology(AgentCheckTest):
+    """
+    Splunk check should crash on incomplete data
+    """
     CHECK_NAME = 'splunk_topology'
 
     def test_checks(self):
@@ -231,7 +243,6 @@ class TestSplunkIncompleteTopology(AgentCheckTest):
         }
 
         thrown = False
-
         try:
             self.run_check(config, mocks={
                 '_dispatch_saved_search': _mocked_dispatch_saved_search,
@@ -239,7 +250,6 @@ class TestSplunkIncompleteTopology(AgentCheckTest):
             })
         except CheckException:
             thrown = True
-
         self.assertTrue(thrown, "Retrieving incomplete data from splunk should throw")
 
 
