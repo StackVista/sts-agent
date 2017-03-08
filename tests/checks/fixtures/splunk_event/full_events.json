@@ -1,0 +1,428 @@
+{
+	"preview": false,
+	"init_offset": 0,
+	"messages": [],
+	"fields": [{
+		"name": "VMName"
+	}, {
+		"name": "alarm_name"
+	}, {
+		"name": "collection_timestamp"
+	}, {
+		"name": "created-by"
+	}, {
+		"name": "date_hour"
+	}, {
+		"name": "date_mday"
+	}, {
+		"name": "date_minute"
+	}, {
+		"name": "date_month"
+	}, {
+		"name": "date_second"
+	}, {
+		"name": "date_wday"
+	}, {
+		"name": "date_year"
+	}, {
+		"name": "date_zone"
+	}, {
+		"name": "event_type"
+	}, {
+		"name": "eventtype"
+	}, {
+		"name": "from"
+	}, {
+		"name": "full_formatted_message"
+	}, {
+		"name": "host"
+	}, {
+		"name": "index"
+	}, {
+		"name": "key"
+	}, {
+		"name": "linecount"
+	}, {
+		"name": "msg_text"
+	}, {
+		"name": "msg_title"
+	}, {
+		"name": "punct"
+	}, {
+		"name": "reason"
+	}, {
+		"name": "source"
+	}, {
+		"name": "sourcetype"
+	}, {
+		"name": "splunk_server"
+	}, {
+		"name": "splunk_server_group"
+	}, {
+		"name": "timeendpos"
+	}, {
+		"name": "timestamp"
+	}, {
+		"name": "timestartpos"
+	}, {
+		"name": "to"
+	}, {
+		"name": "_bkt"
+	}, {
+		"name": "_cd"
+	}, {
+		"name": "_eventtype_color"
+	}, {
+		"name": "_indextime"
+	}, {
+		"name": "_raw"
+	}, {
+		"name": "_serial"
+	}, {
+		"name": "_si"
+	}, {
+		"name": "_sourcetype"
+	}, {
+		"name": "_subsecond"
+	}, {
+		"name": "_time"
+	}],
+	"results": [{
+		"VMName": "SWNC7R049",
+		"alarm_name": "Virtual machine CPU usage",
+		"from": "grey",
+		"full_formatted_message": "Alarm 'Virtual machine CPU usage' on SWNC7R049 changed from Gray to Green",
+		"host": "172.17.0.1",
+		"index": "main",
+		"key": "19964908",
+		"linecount": "1",
+		"punct": "{_\"\":_\"___\",____\"\":_\"\",_\"\":_\"_'___'_______\",_____\"",
+		"source": "http-simple",
+		"sourcetype": "unknown-too_small",
+		"splunk_server": "c5ff346549e7",
+		"timestamp": ["none", "02/27/2017 10:58:34"],
+		"to": "green",
+		"_bkt": "main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
+		"_cd": "1:49",
+		"_indextime": "1488991690",
+		"_raw": "{ \"alarm_name\": \"Virtual machine CPU usage\",    \"from\": \"grey\", \"full_formatted_message\": \"Alarm 'Virtual machine CPU usage' on SWNC7R049 changed from Gray to Green\",     \"key\":\"19964908\", \"timestamp\":\"02/27/2017 10:58:34\", \"to\": \"green\", \"VMName\": \"SWNC7R049\"}",
+		"_serial": "0",
+		"_si": ["c5ff346549e7", "main"],
+		"_sourcetype": "unknown-too_small",
+		"_time": "2017-03-08T16:48:10.000+00:00"
+	}, {
+		"VMName": "SWNC7R049",
+		"alarm_name": "Virtual machine memory usage",
+		"from": "grey",
+		"full_formatted_message": "Alarm 'Virtual machine memory usage' on SWNC7R049 changed from Gray to Green",
+		"host": "172.17.0.1",
+		"index": "main",
+		"key": "19964909",
+		"linecount": "1",
+		"punct": "{_\"\":_\"___\",_\"\":_\"\",_\"\":_\"_'___'_______\",__\"\":\"\",_",
+		"source": "http-simple",
+		"sourcetype": "unknown-too_small",
+		"splunk_server": "c5ff346549e7",
+		"timestamp": ["none", "02/27/2017 10:58:33"],
+		"to": "green",
+		"_bkt": "main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
+		"_cd": "1:40",
+		"_indextime": "1488991690",
+		"_raw": "{ \"alarm_name\": \"Virtual machine memory usage\", \"from\": \"grey\", \"full_formatted_message\": \"Alarm 'Virtual machine memory usage' on SWNC7R049 changed from Gray to Green\",  \"key\":\"19964909\", \"timestamp\":\"02/27/2017 10:58:33\", \"to\": \"green\", \"VMName\": \"SWNC7R049\"}",
+		"_serial": "1",
+		"_si": ["c5ff346549e7", "main"],
+		"_sourcetype": "unknown-too_small",
+		"_time": "2017-03-08T16:48:10.000+00:00"
+	}, {
+		"VMName": "SWNC7R1161",
+		"alarm_name": "Virtual machine CPU usage",
+		"from": "grey",
+		"full_formatted_message": "Alarm 'Virtual machine CPU usage' on SWNC7R1161 changed from Gray to Green",
+		"host": "172.17.0.1",
+		"index": "main",
+		"key": "19964910",
+		"linecount": "1",
+		"punct": "{_\"\":_\"___\",____\"\":_\"\",_\"\":_\"_'___'_______\",____\"\"",
+		"source": "http-simple",
+		"sourcetype": "unknown-too_small",
+		"splunk_server": "c5ff346549e7",
+		"timestamp": ["none", "02/27/2017 10:58:32"],
+		"to": "green",
+		"_bkt": "main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
+		"_cd": "1:31",
+		"_indextime": "1488991690",
+		"_raw": "{ \"alarm_name\": \"Virtual machine CPU usage\",    \"from\": \"grey\", \"full_formatted_message\": \"Alarm 'Virtual machine CPU usage' on SWNC7R1161 changed from Gray to Green\",    \"key\":\"19964910\", \"timestamp\":\"02/27/2017 10:58:32\", \"to\": \"green\", \"VMName\": \"SWNC7R1161\"}",
+		"_serial": "2",
+		"_si": ["c5ff346549e7", "main"],
+		"_sourcetype": "unknown-too_small",
+		"_time": "2017-03-08T16:48:10.000+00:00"
+	}, {
+		"VMName": "SWNC7R1161",
+		"alarm_name": "Virtual machine memory usage",
+		"from": "grey",
+		"full_formatted_message": "Alarm 'Virtual machine memory usage' on SWNC7R1161 changed from Gray to Green",
+		"host": "172.17.0.1",
+		"index": "main",
+		"key": "19964911",
+		"linecount": "1",
+		"punct": "{_\"\":_\"___\",_\"\":_\"\",_\"\":_\"_'___'_______\",_\"\":\"\",_\"",
+		"source": "http-simple",
+		"sourcetype": "unknown-too_small",
+		"splunk_server": "c5ff346549e7",
+		"timestamp": ["none", "02/27/2017 10:58:31"],
+		"to": "green",
+		"_bkt": "main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
+		"_cd": "1:22",
+		"_indextime": "1488991690",
+		"_raw": "{ \"alarm_name\": \"Virtual machine memory usage\", \"from\": \"grey\", \"full_formatted_message\": \"Alarm 'Virtual machine memory usage' on SWNC7R1161 changed from Gray to Green\", \"key\":\"19964911\", \"timestamp\":\"02/27/2017 10:58:31\", \"to\": \"green\", \"VMName\": \"SWNC7R1161\"}",
+		"_serial": "3",
+		"_si": ["c5ff346549e7", "main"],
+		"_sourcetype": "unknown-too_small",
+		"_time": "2017-03-08T16:48:10.000+00:00"
+	}, {
+		"VMName": "SWNC7R1160",
+		"alarm_name": "Virtual machine CPU usage",
+		"from": "grey",
+		"full_formatted_message": "Alarm 'Virtual machine CPU usage' on SWNC7R1160 changed from Gray to Green",
+		"host": "172.17.0.1",
+		"index": "main",
+		"key": "19964912",
+		"linecount": "1",
+		"punct": "{_\"\":_\"___\",____\"\":_\"\",_\"\":_\"_'___'_______\",____\"\"",
+		"source": "http-simple",
+		"sourcetype": "unknown-too_small",
+		"splunk_server": "c5ff346549e7",
+		"timestamp": ["none", "02/27/2017 10:58:30"],
+		"to": "green",
+		"_bkt": "main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
+		"_cd": "1:13",
+		"_indextime": "1488991690",
+		"_raw": "{ \"alarm_name\": \"Virtual machine CPU usage\",    \"from\": \"grey\", \"full_formatted_message\": \"Alarm 'Virtual machine CPU usage' on SWNC7R1160 changed from Gray to Green\",    \"key\":\"19964912\", \"timestamp\":\"02/27/2017 10:58:30\", \"to\": \"green\", \"VMName\": \"SWNC7R1160\"}",
+		"_serial": "4",
+		"_si": ["c5ff346549e7", "main"],
+		"_sourcetype": "unknown-too_small",
+		"_time": "2017-03-08T16:48:10.000+00:00"
+	}, {
+		"VMName": "SWNC7R1160",
+		"alarm_name": "Virtual machine memory usage",
+		"from": "grey",
+		"full_formatted_message": "Alarm 'Virtual machine memory usage' on SWNC7R1160 changed from Gray to Green",
+		"host": "172.17.0.1",
+		"index": "main",
+		"key": "19964913",
+		"linecount": "1",
+		"punct": "{_\"\":_\"___\",_\"\":_\"\",_\"\":_\"_'___'_______\",_\"\":\"\",_\"",
+		"source": "http-simple",
+		"sourcetype": "unknown-too_small",
+		"splunk_server": "c5ff346549e7",
+		"timestamp": ["none", "02/27/2017 10:58:29"],
+		"to": "green",
+		"_bkt": "main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
+		"_cd": "1:4",
+		"_indextime": "1488991690",
+		"_raw": "{ \"alarm_name\": \"Virtual machine memory usage\", \"from\": \"grey\", \"full_formatted_message\": \"Alarm 'Virtual machine memory usage' on SWNC7R1160 changed from Gray to Green\", \"key\":\"19964913\", \"timestamp\":\"02/27/2017 10:58:29\", \"to\": \"green\", \"VMName\": \"SWNC7R1160\"}",
+		"_serial": "5",
+		"_si": ["c5ff346549e7", "main"],
+		"_sourcetype": "unknown-too_small",
+		"_time": "2017-03-08T16:48:10.000+00:00"
+	}, {
+		"collection_timestamp": "1467037630000",
+		"created-by": "starlord",
+		"date_hour": "14",
+		"date_mday": "27",
+		"date_minute": "27",
+		"date_month": "june",
+		"date_second": "10",
+		"date_wday": "monday",
+		"date_year": "2016",
+		"date_zone": "0",
+		"event_type": "DeleteServer",
+		"host": ["172.17.0.1", "ec2-10.0.0.2"],
+		"index": "main",
+		"linecount": "1",
+		"msg_text": "Message text",
+		"msg_title": "Deleting '10.0.0.2'",
+		"punct": "{_\"\":_,_\"\":_\"\",__\"\":_\"_'...'\",__\"\":_\"_\",_\"\":_\"-...",
+		"reason": "By user request",
+		"source": "http-simple",
+		"sourcetype": "unknown-too_small",
+		"splunk_server": "c5ff346549e7",
+		"timeendpos": "39",
+		"timestartpos": "26",
+		"_bkt": "main~0~60326C78-E9E8-45CD-90C3-CF75DB894977",
+		"_cd": "0:50",
+		"_indextime": "1488922892",
+		"_raw": "{ \"collection_timestamp\": 1467037630000, \"event_type\": \"DeleteServer\",  \"msg_title\": \"Deleting '10.0.0.2'\",  \"msg_text\": \"Message text\", \"host\": \"ec2-10.0.0.2\", \"created-by\": \"starlord\", \"reason\": \"By user request\"}",
+		"_serial": "6",
+		"_si": ["c5ff346549e7", "main"],
+		"_sourcetype": "unknown-too_small",
+		"_subsecond": ".000",
+		"_time": "2016-06-27T14:27:10.000+00:00"
+	}, {
+		"collection_timestamp": "1467037620000",
+		"created-by": "starlord",
+		"date_hour": "14",
+		"date_mday": "27",
+		"date_minute": "27",
+		"date_month": "june",
+		"date_second": "0",
+		"date_wday": "monday",
+		"date_year": "2016",
+		"date_zone": "0",
+		"event_type": "UpgradeServer",
+		"host": ["172.17.0.1", "ec2-10.0.0.2"],
+		"index": "main",
+		"linecount": "1",
+		"msg_text": "Message text",
+		"msg_title": "Upgrading '10.0.0.2'",
+		"punct": "{_\"\":_,_\"\":_\"\",_\"\":_\"_'...'\",_\"\":_\"_\",_\"\":_\"-...\",",
+		"reason": "By user request",
+		"source": "http-simple",
+		"sourcetype": "unknown-too_small",
+		"splunk_server": "c5ff346549e7",
+		"timeendpos": "39",
+		"timestartpos": "26",
+		"_bkt": "main~0~60326C78-E9E8-45CD-90C3-CF75DB894977",
+		"_cd": "0:41",
+		"_indextime": "1488922892",
+		"_raw": "{ \"collection_timestamp\": 1467037620000, \"event_type\": \"UpgradeServer\", \"msg_title\": \"Upgrading '10.0.0.2'\", \"msg_text\": \"Message text\", \"host\": \"ec2-10.0.0.2\", \"created-by\": \"starlord\", \"reason\": \"By user request\"}",
+		"_serial": "7",
+		"_si": ["c5ff346549e7", "main"],
+		"_sourcetype": "unknown-too_small",
+		"_subsecond": ".000",
+		"_time": "2016-06-27T14:27:00.000+00:00"
+	}, {
+		"collection_timestamp": "1467037610000",
+		"created-by": "starlord",
+		"date_hour": "14",
+		"date_mday": "27",
+		"date_minute": "26",
+		"date_month": "june",
+		"date_second": "50",
+		"date_wday": "monday",
+		"date_year": "2016",
+		"date_zone": "0",
+		"event_type": "CreateServer",
+		"host": ["172.17.0.1", "ec2-10.0.0.2"],
+		"index": "main",
+		"linecount": "1",
+		"msg_text": "Message text",
+		"msg_title": "Creating '10.0.0.2'",
+		"punct": "{_\"\":_,_\"\":_\"\",__\"\":_\"_'...'\",__\"\":_\"_\",_\"\":_\"-...",
+		"reason": "By user request",
+		"source": "http-simple",
+		"sourcetype": "unknown-too_small",
+		"splunk_server": "c5ff346549e7",
+		"timeendpos": "39",
+		"timestartpos": "26",
+		"_bkt": "main~0~60326C78-E9E8-45CD-90C3-CF75DB894977",
+		"_cd": "0:32",
+		"_indextime": "1488922892",
+		"_raw": "{ \"collection_timestamp\": 1467037610000, \"event_type\": \"CreateServer\",  \"msg_title\": \"Creating '10.0.0.2'\",  \"msg_text\": \"Message text\", \"host\": \"ec2-10.0.0.2\", \"created-by\": \"starlord\", \"reason\": \"By user request\"}",
+		"_serial": "8",
+		"_si": ["c5ff346549e7", "main"],
+		"_sourcetype": "unknown-too_small",
+		"_subsecond": ".000",
+		"_time": "2016-06-27T14:26:50.000+00:00"
+	}, {
+		"collection_timestamp": "1467037600000",
+		"created-by": "admin",
+		"date_hour": "14",
+		"date_mday": "27",
+		"date_minute": "26",
+		"date_month": "june",
+		"date_second": "40",
+		"date_wday": "monday",
+		"date_year": "2016",
+		"date_zone": "0",
+		"event_type": "DeleteServer",
+		"host": ["172.17.0.1", "ec2-10.0.0.1"],
+		"index": "main",
+		"linecount": "1",
+		"msg_text": "Message text",
+		"msg_title": "Deleting '10.0.0.1'",
+		"punct": "{_\"\":_,_\"\":_\"\",__\"\":_\"_'...'\",__\"\":_\"_\",_\"\":_\"-...",
+		"reason": "automatic",
+		"source": "http-simple",
+		"sourcetype": "unknown-too_small",
+		"splunk_server": "c5ff346549e7",
+		"timeendpos": "39",
+		"timestartpos": "26",
+		"_bkt": "main~0~60326C78-E9E8-45CD-90C3-CF75DB894977",
+		"_cd": "0:24",
+		"_indextime": "1488922892",
+		"_raw": "{ \"collection_timestamp\": 1467037600000, \"event_type\": \"DeleteServer\",  \"msg_title\": \"Deleting '10.0.0.1'\",  \"msg_text\": \"Message text\", \"host\": \"ec2-10.0.0.1\", \"created-by\": \"admin\", \"reason\": \"automatic\"}",
+		"_serial": "9",
+		"_si": ["c5ff346549e7", "main"],
+		"_sourcetype": "unknown-too_small",
+		"_subsecond": ".000",
+		"_time": "2016-06-27T14:26:40.000+00:00"
+	}, {
+		"collection_timestamp": "1467037590000",
+		"created-by": "admin",
+		"date_hour": "14",
+		"date_mday": "27",
+		"date_minute": "26",
+		"date_month": "june",
+		"date_second": "30",
+		"date_wday": "monday",
+		"date_year": "2016",
+		"date_zone": "0",
+		"event_type": "UpgradeServer",
+		"host": ["172.17.0.1", "ec2-10.0.0.1"],
+		"index": "main",
+		"linecount": "1",
+		"msg_text": "Message text",
+		"msg_title": "Upgrading '10.0.0.1'",
+		"punct": "{_\"\":_,_\"\":_\"\",_\"\":_\"_'...'\",_\"\":_\"_\",_\"\":_\"-...\",",
+		"reason": "automatic",
+		"source": "http-simple",
+		"sourcetype": "unknown-too_small",
+		"splunk_server": "c5ff346549e7",
+		"timeendpos": "39",
+		"timestartpos": "26",
+		"_bkt": "main~0~60326C78-E9E8-45CD-90C3-CF75DB894977",
+		"_cd": "0:16",
+		"_indextime": "1488922892",
+		"_raw": "{ \"collection_timestamp\": 1467037590000, \"event_type\": \"UpgradeServer\", \"msg_title\": \"Upgrading '10.0.0.1'\", \"msg_text\": \"Message text\", \"host\": \"ec2-10.0.0.1\", \"created-by\": \"admin\", \"reason\": \"automatic\"}",
+		"_serial": "10",
+		"_si": ["c5ff346549e7", "main"],
+		"_sourcetype": "unknown-too_small",
+		"_subsecond": ".000",
+		"_time": "2016-06-27T14:26:30.000+00:00"
+	}, {
+		"collection_timestamp": "1467037580000",
+		"created-by": "admin",
+		"date_hour": "14",
+		"date_mday": "27",
+		"date_minute": "26",
+		"date_month": "june",
+		"date_second": "20",
+		"date_wday": "monday",
+		"date_year": "2016",
+		"date_zone": "0",
+		"event_type": "CreateServer",
+		"host": ["172.17.0.1", "ec2-10.0.0.1"],
+		"index": "main",
+		"linecount": "1",
+		"msg_text": "Message text",
+		"msg_title": "Creating '10.0.0.1'",
+		"punct": "{_\"\":_,_\"\":_\"\",__\"\":_\"_'...'\",__\"\":_\"_\",_\"\":_\"-...",
+		"reason": "automatic",
+		"source": "http-simple",
+		"sourcetype": "unknown-too_small",
+		"splunk_server": "c5ff346549e7",
+		"timeendpos": "39",
+		"timestartpos": "26",
+		"_bkt": "main~0~60326C78-E9E8-45CD-90C3-CF75DB894977",
+		"_cd": "0:8",
+		"_indextime": "1488922892",
+		"_raw": "{ \"collection_timestamp\": 1467037580000, \"event_type\": \"CreateServer\",  \"msg_title\": \"Creating '10.0.0.1'\",  \"msg_text\": \"Message text\", \"host\": \"ec2-10.0.0.1\", \"created-by\": \"admin\", \"reason\": \"automatic\"}",
+		"_serial": "11",
+		"_si": ["c5ff346549e7", "main"],
+		"_sourcetype": "unknown-too_small",
+		"_subsecond": ".000",
+		"_time": "2016-06-27T14:26:20.000+00:00"
+	}],
+	"highlighted": {}
+}
