@@ -117,10 +117,13 @@ class SplunkTopology(AgentCheck):
 
     def _search(self, instance_config, saved_search, search_id, offset, count):
         """
-        perform a search operation on splunk given a search id (sid)
-        :param instance_config: current check configuration
+        Retrieves the results of an already running splunk search, identified by the given search id.
+        :param instance_config: InstanceConfig, current check configuration
+        :param saved_search: current SavedSearch being processed
         :param search_id: perform a search operation on the search id
-        :return: raw response from splunk
+        :param offset: starting offset, begin is 0, to start retrieving from
+        :param count: the maximum number of elements expecting to be returned by the API call
+        :return: raw json response from splunk
         """
         search_url = '%s/services/search/jobs/%s/results?output_mode=json&offset=%s&count=%s' % (instance_config.base_url, search_id, offset, count)
         auth = instance_config.get_auth_tuple()
@@ -143,9 +146,9 @@ class SplunkTopology(AgentCheck):
     def _dispatch_saved_search(self, instance_config, saved_search):
         """
         Initiate a saved search, returning the saved id
-        :param instance_config: Configuration of the splunk instance
-        :param saved_search: Configuration of the saved search
-        :return:
+        :param instance_config: InstanceConfig of the splunk instance
+        :param saved_search: SavedSearch to dispatch
+        :return: search id
         """
         dispatch_url = '%s/services/saved/searches/%s/dispatch' % (instance_config.base_url, quote(saved_search.name))
         auth = instance_config.get_auth_tuple()
@@ -185,7 +188,9 @@ class SplunkTopology(AgentCheck):
                 del data["_raw"]
 
             # Add tags to data
-            if instance.tags:
+            if 'tags' in data and instance.tags:
+                data['tags'] += instance.tags
+            elif instance.tags:
                 data['tags'] = instance.tags
 
             self.component(instance.instance_key, external_id, {"name": comp_type}, data)
@@ -202,7 +207,9 @@ class SplunkTopology(AgentCheck):
                 del data["_raw"]
 
             # Add tags to data
-            if instance.tags:
+            if 'tags' in data and instance.tags:
+                data['tags'] += instance.tags
+            elif instance.tags:
                 data['tags'] = instance.tags
 
             self.relation(instance.instance_key, source_id, target_id, {"name": rel_type}, data)

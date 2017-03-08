@@ -95,7 +95,7 @@ class TestSplunkTopology(AgentCheckTest):
                 ],
                 u"_sourcetype": u"unknown-too_small",
                 u"_time": u"2017-03-06T14:55:54.000+00:00",
-                "tags": ['mytag', 'mytag2']
+                "tags": ['result_tag1', 'mytag', 'mytag2']
             }
         })
 
@@ -111,7 +111,7 @@ class TestSplunkTopology(AgentCheckTest):
                 u"_si": [u"c5ff346549e7", u"main"],
                 u"_sourcetype": u"unknown-too_small",
                 u"_time": u"2017-03-06T14:55:54.000+00:00",
-                "tags": ['mytag', 'mytag2']
+                "tags": ['result_tag2', 'mytag', 'mytag2']
             }
         })
 

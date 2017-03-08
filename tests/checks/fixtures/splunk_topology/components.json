@@ -45,6 +45,7 @@
       "id": "vm_2_1",
       "type": "vm",
       "running": true,
+      "tags": ["result_tag1"],
       "_bkt": "main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
       "_cd": "1:66",
       "_indextime": "1488812154",
@@ -57,6 +58,7 @@
     {
       "id": "server_2",
       "type": "server",
+      "tags": ["result_tag2"],
       "description": "My important server 2",
       "_bkt": "main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
       "_cd": "1:56",
