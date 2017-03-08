@@ -49,18 +49,18 @@ class Instance:
             "url": self.instance_config.base_url
         }
         self.tags = instance.get('tags', [])
-        self.last_successful_poll = 0
+        self.last_successful_poll_epoch = 0
 
     def should_poll(self, time_seconds):
-        return self.last_successful_poll == 0 or time_seconds >= self.last_successful_poll + self.instance_config.polling_interval_seconds
+        return self.last_successful_poll_epoch == 0 or time_seconds >= self.last_successful_poll_epoch + self.instance_config.polling_interval_seconds
 
 
 class SplunkTopology(AgentCheck):
     SERVICE_CHECK_NAME = "splunk.topology_information"
     BATCH_SIZE = 1000
 
-    def __init__(self, name, init_config, agent_config, instances=None):
-        super(SplunkTopology, self).__init__(name, init_config, agent_config, instances)
+    def __init__(self, name, init_config, agentConfig, instances=None):
+        super(SplunkTopology, self).__init__(name, init_config, agentConfig, instances)
         # Data to keep over check runs, keyed by instance url
         self.instance_data = dict()
 
@@ -72,8 +72,8 @@ class SplunkTopology(AgentCheck):
             self.instance_data[instance["url"]] = Instance(instance, self.init_config)
 
         instance = self.instance_data[instance["url"]]
-        current_time = self._current_time_seconds()
-        if not instance.should_poll(current_time):
+        current_time_epoch = self._current_time_seconds()
+        if not instance.should_poll(current_time_epoch):
             return
 
         instance_key = instance.instance_key
@@ -99,7 +99,7 @@ class SplunkTopology(AgentCheck):
                         offset += nr_of_results
 
                 # If everything was successful, update the timestamp
-                instance.last_successful_poll = current_time
+                instance.last_successful_poll_epoch = current_time_epoch
             finally:
                 self.stop_snapshot(instance_key)
 
