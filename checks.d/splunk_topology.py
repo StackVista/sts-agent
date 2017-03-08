@@ -94,6 +94,14 @@ class SplunkTopology(AgentCheck):
                     nr_of_results = None
                     while nr_of_results is None or nr_of_results == self.BATCH_SIZE:
                         response = self._search(instance.instance_config, saved_search, sid, offset, self.BATCH_SIZE)
+                        # received a message?
+                        for message in response['messages']:
+                            if message['type'] == "FATAL":
+                                raise CheckException("Received FATAL exception from Splunk, got: " + message['text'])
+                            else:
+                                self.log.info("Received unhandled message, got: " + str(message))
+
+                        # process components and relations
                         if saved_search.element_type == "component":
                             self._extract_components(instance, response)
                         elif saved_search.element_type == "relation":
@@ -115,7 +123,8 @@ class SplunkTopology(AgentCheck):
     def _current_time_seconds(self):
         return int(round(time.time() * 1000))
 
-    def _search(self, instance_config, saved_search, search_id, offset, count):
+    @staticmethod
+    def _search(instance_config, saved_search, search_id, offset, count):
         """
         Retrieves the results of an already running splunk search, identified by the given search id.
         :param instance_config: InstanceConfig, current check configuration
@@ -160,7 +169,8 @@ class SplunkTopology(AgentCheck):
         response_body = self._do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds).json()
         return response_body['sid']
 
-    def _do_post(self, url, auth, payload, request_timeout_seconds):
+    @staticmethod
+    def _do_post(url, auth, payload, request_timeout_seconds):
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
@@ -170,7 +180,8 @@ class SplunkTopology(AgentCheck):
         return resp
 
     # Get a field from a dictionary. Throw when it does not exist. When it exists, return it and remove from the object
-    def _get_required_field(self, field, obj):
+    @staticmethod
+    def _get_required_field(field, obj):
         if field not in obj:
             raise CheckException("Missing '%s' field in result data" % field)
         value = obj[field]

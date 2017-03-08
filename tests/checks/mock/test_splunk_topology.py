@@ -370,3 +370,42 @@ class TestSplunkPollingInterval(AgentCheckTest):
         self.check.get_topology_instances()
 
         self.assertEquals(self.service_checks[0]['status'], 0, "service check should have status AgentCheck.OK")
+
+
+class TestSplunkErrorResponse(AgentCheckTest):
+    """
+    Splunk check should handle a FATAL message response
+    """
+    CHECK_NAME = 'splunk_topology'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:8089',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches': [{
+                        "name": "error",
+                        "element_type": "component",
+                        "parameters": {}
+                    }],
+                    'tags': ['mytag', 'mytag2']
+                }
+            ]
+        }
+
+        thrown = False
+        try:
+            self.run_check(config, mocks={
+                '_dispatch_saved_search': _mocked_dispatch_saved_search,
+                '_search': _mocked_search
+            })
+        except CheckException:
+            thrown = True
+        self.assertTrue(thrown, "Retrieving FATAL message from Splunk should throw.")
+
+        self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")

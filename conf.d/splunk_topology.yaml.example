@@ -10,7 +10,7 @@ init_config:
   default_search_max_retry_count: 5
   default_search_seconds_between_retries: 1
 
-  # Polling interval between calls to splunk
+  # Interval at which to dispatch a saved search
   default_polling_interval_seconds: 15
 
 # Currently it is not possible to specify multiple instances with the same url.
