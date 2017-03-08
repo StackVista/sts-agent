@@ -103,7 +103,7 @@ class SplunkTopology(AgentCheck):
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
 
     def _current_time_seconds(self):
-        return int(round(time.time() * 1000))
+        return int(round(time.time()))
 
     def _search(self, instance_config, search_id):
         """
