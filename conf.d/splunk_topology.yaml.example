@@ -1,7 +1,7 @@
 # Splunk topology intake uses basic authentication
 
 init_config:
-  default_timeout: 10
+  default_request_timeout_seconds: 10
   max_retry_count: 5
   seconds_between_retries: 1
 

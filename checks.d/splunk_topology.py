@@ -21,7 +21,7 @@ class SavedSearch:
 
 class InstanceConfig:
     def __init__(self, instance, init_config):
-        default_timeout = init_config.get('default_timeout', 5)
+        default_request_timeout_seconds = init_config.get('default_request_timeout_seconds', 5)
         max_retry_count = init_config.get('max_retry_count', 3)
         seconds_between_retries = init_config.get('seconds_between_retries', 1)
         polling_interval = init_config.get('polling_interval', 15)
@@ -29,7 +29,7 @@ class InstanceConfig:
         self.base_url = instance['url']
         self.username = instance['username']
         self.password = instance['password']
-        self.timeout = float(instance.get('timeout', default_timeout))
+        self.request_timeout_seconds = float(instance.get('request_timeout_seconds', default_request_timeout_seconds))
         self.max_retry_count = int(instance.get('max_retry_count', max_retry_count))
         self.seconds_between_retries = int(instance.get('seconds_between_retries', seconds_between_retries))
         self.polling_interval = int(instance.get('polling_interval', polling_interval))
@@ -122,7 +122,7 @@ class SplunkTopology(AgentCheck):
         search_url = '%s/services/search/jobs/%s/results?output_mode=json&offset=%s&count=%s' % (instance_config.base_url, search_id, offset, count)
         auth = instance_config.get_auth_tuple()
 
-        response = requests.get(search_url, auth=auth, timeout=instance_config.timeout)
+        response = requests.get(search_url, auth=auth, timeout=instance_config.request_timeout_seconds)
         retry_count = 0
 
         # retry until information is available.
@@ -131,7 +131,7 @@ class SplunkTopology(AgentCheck):
                 raise CheckException("maximum retries reached for " + instance_config.base_url + " with search id " + search_id)
             retry_count += 1
             time.sleep(instance_config.seconds_between_retries)
-            response = requests.get(search_url, auth=auth, timeout=instance_config.timeout)
+            response = requests.get(search_url, auth=auth, timeout=instance_config.request_timeout_seconds)
 
         return response.json()
 
@@ -149,15 +149,15 @@ class SplunkTopology(AgentCheck):
         # json output_mode is mandatory for response parsing
         parameters["output_mode"] = "json"
 
-        response_body = self._do_post(dispatch_url, auth, parameters, instance_config.timeout).json()
+        response_body = self._do_post(dispatch_url, auth, parameters, instance_config.request_timeout_seconds).json()
         return response_body['sid']
 
-    def _do_post(self, url, auth, payload, timeout):
+    def _do_post(self, url, auth, payload, request_timeout_seconds):
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
 
-        resp = requests.post(url, headers=headers, data=payload, auth=auth, timeout=timeout)
+        resp = requests.post(url, headers=headers, data=payload, auth=auth, timeout=request_timeout_seconds)
         resp.raise_for_status()
         return resp
 
