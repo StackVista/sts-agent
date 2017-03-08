@@ -29,13 +29,13 @@ instances:
 
         # Additional parameters for the splunk saved search query
         parameters:
-          - force_dispatch: true
-            dispatch.now: true
+          force_dispatch: true
+          dispatch.now: true
       #- name: "relations"
       #  element_type: "relation"
       #  parameters:
-      #    - force_dispatch: true
-      #      dispatch.now: true
+      #    force_dispatch: true
+      #    dispatch.now: true
 
     # tags:
     #      - optional_tag1

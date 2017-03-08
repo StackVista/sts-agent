@@ -149,7 +149,7 @@ class SplunkTopology(AgentCheck):
         dispatch_url = '%s/services/saved/searches/%s/dispatch' % (instance_config.base_url, quote(saved_search.name))
         auth = instance_config.get_auth_tuple()
 
-        parameters = saved_search.parameters[0]
+        parameters = saved_search.parameters
         # json output_mode is mandatory for response parsing
         parameters["output_mode"] = "json"
 
