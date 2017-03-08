@@ -57,6 +57,7 @@ class Instance:
 
 class SplunkTopology(AgentCheck):
     SERVICE_CHECK_NAME = "splunk.topology_information"
+    BATCH_SIZE = 1000
 
     def __init__(self, name, init_config, agentConfig, instances=None):
         super(SplunkTopology, self).__init__(name, init_config, agentConfig, instances)
@@ -85,11 +86,17 @@ class SplunkTopology(AgentCheck):
 
             try:
                 for (sid, saved_search) in search_ids:
-                    response = self._search(instance.instance_config, sid)
-                    if saved_search.element_type == "component":
-                        self._extract_components(instance, response)
-                    elif saved_search.element_type == "relation":
-                        self._extract_relations(instance, response)
+                    # fetch results in batches
+                    offset = 0
+                    nr_of_results = None
+                    while nr_of_results is None or nr_of_results == self.BATCH_SIZE:
+                        response = self._search(instance.instance_config, sid, offset, self.BATCH_SIZE)
+                        if saved_search.element_type == "component":
+                            self._extract_components(instance, response)
+                        elif saved_search.element_type == "relation":
+                            self._extract_relations(instance, response)
+                        nr_of_results = len(response['results'])
+                        offset += nr_of_results
 
                 # If everything was successful, update the timestamp
                 instance.last_successful_poll = current_time
@@ -105,14 +112,14 @@ class SplunkTopology(AgentCheck):
     def _current_time_seconds(self):
         return int(round(time.time() * 1000))
 
-    def _search(self, instance_config, search_id):
+    def _search(self, instance_config, search_id, offset, count):
         """
         perform a search operation on splunk given a search id (sid)
         :param instance_config: current check configuration
         :param search_id: perform a search operation on the search id
         :return: raw response from splunk
         """
-        search_url = '%s/services/search/jobs/%s/results?output_mode=json&count=0' % (instance_config.base_url, search_id)
+        search_url = '%s/services/search/jobs/%s/results?output_mode=json&offset=%s&count=%s' % (instance_config.base_url, search_id, offset, count)
         auth = instance_config.get_auth_tuple()
 
         response = requests.get(search_url, auth=auth, timeout=instance_config.timeout)
