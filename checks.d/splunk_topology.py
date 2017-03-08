@@ -135,7 +135,7 @@ class SplunkTopology(AgentCheck):
         saved_search.last_successful_poll_epoch = current_time_epoch
 
     def _current_time_seconds(self):
-        return int(round(time.time() * 1000))
+        return int(round(time.time()))
 
     @staticmethod
     def _search(instance_config, saved_search, search_id, offset, count):
