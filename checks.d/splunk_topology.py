@@ -75,7 +75,6 @@ class SplunkTopology(AgentCheck):
 
         instance = self.instance_data[instance["url"]]
         current_time_epoch = self._current_time_seconds()
-
         instance_key = instance.instance_key
 
         try:
@@ -83,34 +82,9 @@ class SplunkTopology(AgentCheck):
                           for saved_search in instance.saved_searches]
 
             self.start_snapshot(instance_key)
-
             try:
                 for (sid, saved_search) in search_ids:
-                    if not saved_search.should_poll(current_time_epoch):
-                        return
-
-                    # fetch results in batches
-                    offset = 0
-                    nr_of_results = None
-                    while nr_of_results is None or nr_of_results == self.BATCH_SIZE:
-                        response = self._search(instance.instance_config, saved_search, sid, offset, self.BATCH_SIZE)
-                        # received a message?
-                        for message in response['messages']:
-                            if message['type'] == "FATAL":
-                                raise CheckException("Received FATAL exception from Splunk, got: " + message['text'])
-                            else:
-                                self.log.info("Received unhandled message, got: " + str(message))
-
-                        # process components and relations
-                        if saved_search.element_type == "component":
-                            self._extract_components(instance, response)
-                        elif saved_search.element_type == "relation":
-                            self._extract_relations(instance, response)
-                        nr_of_results = len(response['results'])
-                        offset += nr_of_results
-
-                    # If everything was successful, update the timestamp
-                    saved_search.last_successful_poll_epoch = current_time_epoch
+                    self._process_saved_search(sid, saved_search, current_time_epoch, instance)
             finally:
                 self.stop_snapshot(instance_key)
 
@@ -119,6 +93,33 @@ class SplunkTopology(AgentCheck):
             raise CheckException("Cannot connect to Splunk, please check your configuration. Message: " + str(e))
         else:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
+
+    def _process_saved_search(self, search_id, saved_search, current_time_epoch, instance):
+        if not saved_search.should_poll(current_time_epoch):
+            return
+
+        # fetch results in batches
+        offset = 0
+        nr_of_results = None
+        while nr_of_results is None or nr_of_results == self.BATCH_SIZE:
+            response = self._search(instance.instance_config, saved_search, search_id, offset, self.BATCH_SIZE)
+            # received a message?
+            for message in response['messages']:
+                if message['type'] == "FATAL":
+                    raise CheckException("Received FATAL exception from Splunk, got: " + message['text'])
+                else:
+                    self.log.info("Received unhandled message, got: " + str(message))
+
+            # process components and relations
+            if saved_search.element_type == "component":
+                self._extract_components(instance, response)
+            elif saved_search.element_type == "relation":
+                self._extract_relations(instance, response)
+            nr_of_results = len(response['results'])
+            offset += nr_of_results
+
+        # If everything was successful, update the timestamp
+        saved_search.last_successful_poll_epoch = current_time_epoch
 
     def _current_time_seconds(self):
         return int(round(time.time() * 1000))
