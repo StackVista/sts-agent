@@ -27,11 +27,11 @@ class TestSplunkEmptyEvents(AgentCheckTest):
         current_check_events = self.check.get_events()
         self.assertEqual(len(current_check_events), 0)
 
-    # Sid is equal to search name
-    def _mocked_dispatch_saved_search(*args, **kwargs):
-        return args[1].name
+# Sid is equal to search name
+def _mocked_dispatch_saved_search(*args, **kwargs):
+    return args[1].name
 
-    def _mocked_search(*args, **kwargs):
-        # sid is set to saved search name
-        sid = args[1]
-        return json.loads(Fixtures.read_file("%s.json" % sid))
+def _mocked_search(*args, **kwargs):
+    # sid is set to saved search name
+    sid = args[1]
+    return json.loads(Fixtures.read_file("%s.json" % sid))
