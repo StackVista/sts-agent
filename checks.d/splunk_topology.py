@@ -108,8 +108,7 @@ class SplunkTopology(AgentCheck):
 
         except Exception as e:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=instance.tags, message=str(e))
-            raise e
-            # raise CheckException("Cannot connect to Splunk, please check your configuration.")
+            raise CheckException("Cannot connect to Splunk, please check your configuration. Message: " + str(e))
         else:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
 
@@ -127,6 +126,7 @@ class SplunkTopology(AgentCheck):
         auth = instance_config.get_auth_tuple()
 
         response = requests.get(search_url, auth=auth, timeout=saved_search.request_timeout_seconds)
+        response.raise_for_status()
         retry_count = 0
 
         # retry until information is available.
@@ -136,6 +136,7 @@ class SplunkTopology(AgentCheck):
             retry_count += 1
             time.sleep(saved_search.search_seconds_between_retries)
             response = requests.get(search_url, auth=auth, timeout=saved_search.request_timeout_seconds)
+            response.raise_for_status()
 
         return response.json()
 
