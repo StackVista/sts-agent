@@ -3,54 +3,6 @@
 	"init_offset": 0,
 	"messages": [],
 	"fields": [{
-		"name": "VMName"
-	}, {
-		"name": "alarm_name"
-	}, {
-		"name": "eventtype"
-	}, {
-		"name": "from"
-	}, {
-		"name": "full_formatted_message"
-	}, {
-		"name": "host"
-	}, {
-		"name": "index"
-	}, {
-		"name": "key"
-	}, {
-		"name": "linecount"
-	}, {
-		"name": "punct"
-	}, {
-		"name": "source"
-	}, {
-		"name": "sourcetype"
-	}, {
-		"name": "splunk_server"
-	}, {
-		"name": "splunk_server_group"
-	}, {
-		"name": "timestamp"
-	}, {
-		"name": "to"
-	}, {
-		"name": "_bkt"
-	}, {
-		"name": "_cd"
-	}, {
-		"name": "_eventtype_color"
-	}, {
-		"name": "_indextime"
-	}, {
-		"name": "_raw"
-	}, {
-		"name": "_serial"
-	}, {
-		"name": "_si"
-	}, {
-		"name": "_sourcetype"
-	}, {
 		"name": "_time"
 	}],
 	"results": [{

@@ -8,6 +8,7 @@ from urllib import quote
 import time
 from pytz import timezone
 import datetime
+import iso8601
 
 # project
 from checks import AgentCheck, CheckException
@@ -37,11 +38,12 @@ class SplunkEvent(AgentCheck):
             _time = self._get_required_field("_time", data)
             collection_timestamp = self._time_to_seconds(_time)
 
-            self._clear_default_fields(data)
+            tags_data = self._filter_fields(data)
 
-            event_tags = self._convert_dict_to_tags(data)
-            check_tags = instance.tags
-            event_tags.extend(check_tags)
+            event_tags = self._convert_dict_to_tags(tags_data)
+            if 'tags' in instance:
+                check_tags = instance['tags']
+                event_tags.extend(check_tags)
 
             self.event({
                 "timestamp": collection_timestamp,
@@ -52,11 +54,13 @@ class SplunkEvent(AgentCheck):
                 "tags": event_tags
             })
 
-    def _clear_default_fields(self, data):
+    def _filter_fields(self, data):
         # We remove default basic fields, default date fields and internal fields that start with "_"
+        result = dict()
         for key, value in data.iteritems():
-            if key in self.basic_default_fields or key in self.date_default_fields or self.key.startswith('_'):
-                del data[key]
+            if key not in self.basic_default_fields and key not in self.date_default_fields and not key.startswith('_'):
+                result[key] = value
+        return result
 
     def _current_time_seconds(self):
         return int(round(time.time() * 1000))
@@ -64,7 +68,7 @@ class SplunkEvent(AgentCheck):
     def _convert_dict_to_tags(self, data):
         result = []
         for key, value in data.iteritems():
-            result.extend("%s:%s" % (key, value))
+            result.extend(["%s:%s" % (key, value)])
         return result
 
     # copy pasted from topology check TODO generify into common class
@@ -139,7 +143,8 @@ class SplunkEvent(AgentCheck):
         """
         Converts time in utc format 2016-06-27T14:26:30.000+00:00 to seconds
         """
-        parsed_datetime = datetime.strptime(str_datetime_utc,'%Y-%m-%dT%H:%M:%SZ')
+        parsed_datetime = iso8601.parse_date(str_datetime_utc)
+        # parsed_datetime = datetime.datetime.strptime(str_datetime_utc,'%Y-%m-%dT%H:%M:%S.%f%Z')
         return self._get_time_since_epoch(parsed_datetime)
 
     def _get_time_since_epoch(self, utc_datetime):
