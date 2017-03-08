@@ -1,9 +1,14 @@
 # Splunk topology intake uses basic authentication
 
 init_config:
+  # time before a HTTP request times out
   default_request_timeout_seconds: 10
-  max_retry_count: 5
-  seconds_between_retries: 1
+
+  # a search on a saved search does not immediately return results, one has to retry until data is received,
+  # search_max_retry_count specifies the number of retries in which it expects results to be available.
+  # Between each retry some time is waited before retrying, specified by search_seconds_between_retries.
+  default_search_max_retry_count: 5
+  default_search_seconds_between_retries: 1
 
   # Polling interval between calls to splunk
   default_polling_interval_seconds: 15

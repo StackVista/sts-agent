@@ -22,16 +22,16 @@ class SavedSearch:
 class InstanceConfig:
     def __init__(self, instance, init_config):
         default_request_timeout_seconds = init_config.get('default_request_timeout_seconds', 5)
-        max_retry_count = init_config.get('max_retry_count', 3)
-        seconds_between_retries = init_config.get('seconds_between_retries', 1)
+        default_search_max_retry_count = init_config.get('default_search_max_retry_count', 3)
+        default_search_seconds_between_retries = init_config.get('default_search_seconds_between_retries', 1)
         default_polling_interval_seconds = init_config.get('default_polling_interval_seconds', 15)
 
         self.base_url = instance['url']
         self.username = instance['username']
         self.password = instance['password']
         self.request_timeout_seconds = float(instance.get('request_timeout_seconds', default_request_timeout_seconds))
-        self.max_retry_count = int(instance.get('max_retry_count', max_retry_count))
-        self.seconds_between_retries = int(instance.get('seconds_between_retries', seconds_between_retries))
+        self.search_max_retry_count = int(instance.get('search_max_retry_count', default_search_max_retry_count))
+        self.search_seconds_between_retries = int(instance.get('search_seconds_between_retries', default_search_seconds_between_retries))
         self.polling_interval_seconds = int(instance.get('polling_interval_seconds', default_polling_interval_seconds))
 
     def get_auth_tuple(self):
@@ -59,8 +59,8 @@ class SplunkTopology(AgentCheck):
     SERVICE_CHECK_NAME = "splunk.topology_information"
     BATCH_SIZE = 1000
 
-    def __init__(self, name, init_config, agentConfig, instances=None):
-        super(SplunkTopology, self).__init__(name, init_config, agentConfig, instances)
+    def __init__(self, name, init_config, agent_config, instances=None):
+        super(SplunkTopology, self).__init__(name, init_config, agent_config, instances)
         # Data to keep over check runs, keyed by instance url
         self.instance_data = dict()
 
@@ -127,10 +127,10 @@ class SplunkTopology(AgentCheck):
 
         # retry until information is available.
         while response.status_code == 204: # HTTP No Content response
-            if retry_count == instance_config.max_retry_count:
+            if retry_count == instance_config.search_max_retry_count:
                 raise CheckException("maximum retries reached for " + instance_config.base_url + " with search id " + search_id)
             retry_count += 1
-            time.sleep(instance_config.seconds_between_retries)
+            time.sleep(instance_config.search_seconds_between_retries)
             response = requests.get(search_url, auth=auth, timeout=instance_config.request_timeout_seconds)
 
         return response.json()
