@@ -290,7 +290,7 @@ class TestSplunkPollingInterval(AgentCheckTest):
                     'url': 'http://remotehost:8089',
                     'username': "admin",
                     'password': "admin",
-                    'polling_interval': 30,
+                    'polling_interval_seconds': 30,
                     'saved_searches': [{
                         "name": "components_slow",
                         "element_type": "component",

@@ -24,7 +24,7 @@ class InstanceConfig:
         default_request_timeout_seconds = init_config.get('default_request_timeout_seconds', 5)
         max_retry_count = init_config.get('max_retry_count', 3)
         seconds_between_retries = init_config.get('seconds_between_retries', 1)
-        polling_interval = init_config.get('polling_interval', 15)
+        default_polling_interval_seconds = init_config.get('default_polling_interval_seconds', 15)
 
         self.base_url = instance['url']
         self.username = instance['username']
@@ -32,7 +32,7 @@ class InstanceConfig:
         self.request_timeout_seconds = float(instance.get('request_timeout_seconds', default_request_timeout_seconds))
         self.max_retry_count = int(instance.get('max_retry_count', max_retry_count))
         self.seconds_between_retries = int(instance.get('seconds_between_retries', seconds_between_retries))
-        self.polling_interval = int(instance.get('polling_interval', polling_interval))
+        self.polling_interval_seconds = int(instance.get('polling_interval_seconds', default_polling_interval_seconds))
 
     def get_auth_tuple(self):
         return self.username, self.password
@@ -52,7 +52,7 @@ class Instance:
         self.last_successful_poll = 0
 
     def should_poll(self, time_seconds):
-        return self.last_successful_poll == 0 or time_seconds >= self.last_successful_poll + self.instance_config.polling_interval
+        return self.last_successful_poll == 0 or time_seconds >= self.last_successful_poll + self.instance_config.polling_interval_seconds
 
 
 class SplunkTopology(AgentCheck):
