@@ -21,7 +21,8 @@ class TestSplunkNoTopology(AgentCheckTest):
                     'url': 'http://localhost:8089',
                     'username': "admin",
                     'password': "admin",
-                    'saved_searches': []
+                    'component_saved_searches': [],
+                    'relation_saved_searches': []
                 }
             ]
         }
@@ -57,13 +58,12 @@ class TestSplunkTopology(AgentCheckTest):
                     'url': 'http://localhost:8089',
                     'username': "admin",
                     'password': "admin",
-                    'saved_searches': [{
+                    'component_saved_searches': [{
                         "name": "components",
-                        "element_type": "component",
                         "parameters": {}
-                    }, {
+                    }],
+                    'relation_saved_searches': [{
                         "name": "relations",
-                        "element_type": "relation",
                         "parameters": {}
                     }],
                     'tags': ['mytag', 'mytag2']
@@ -158,11 +158,12 @@ class TestSplunkMinimalTopology(AgentCheckTest):
                     'url': 'http://localhost:8089',
                     'username': "admin",
                     'password': "admin",
-                    'saved_searches': [{
+                    'component_saved_searches': [{
                         "name": "components",
                         "element_type": "component",
                         "parameters": {}
-                    }, {
+                    }],
+                    'relation_saved_searches': [{
                         "name": "relations",
                         "element_type": "relation",
                         "parameters": {}
@@ -232,11 +233,12 @@ class TestSplunkIncompleteTopology(AgentCheckTest):
                     'url': 'http://localhost:8089',
                     'username': "admin",
                     'password': "admin",
-                    'saved_searches': [{
+                    'component_saved_searches': [{
                         "name": "components",
                         "element_type": "component",
                         "parameters": {}
-                    }, {
+                    }],
+                    'relation_saved_searches': [{
                         "name": "relations",
                         "element_type": "relation",
                         "parameters": {}
@@ -275,11 +277,12 @@ class TestSplunkPollingInterval(AgentCheckTest):
                     'url': 'http://localhost:8089',
                     'username': "admin",
                     'password': "admin",
-                    'saved_searches': [{
+                    'component_saved_searches': [{
                         "name": "components_fast",
                         "element_type": "component",
                         "parameters": {}
-                    }, {
+                    }],
+                    'relation_saved_searches': [{
                         "name": "relations_fast",
                         "element_type": "relation",
                         "parameters": {}
@@ -290,12 +293,13 @@ class TestSplunkPollingInterval(AgentCheckTest):
                     'url': 'http://remotehost:8089',
                     'username': "admin",
                     'password': "admin",
-                    'saved_searches': [{
+                    'component_saved_searches': [{
                         "name": "components_slow",
                         "element_type": "component",
                         'polling_interval_seconds': 30,
                         "parameters": {}
-                    }, {
+                    }],
+                    'relation_saved_searches': [{
                         "name": "relations_slow",
                         "element_type": "relation",
                         'polling_interval_seconds': 30,
@@ -388,11 +392,12 @@ class TestSplunkErrorResponse(AgentCheckTest):
                     'url': 'http://localhost:8089',
                     'username': "admin",
                     'password': "admin",
-                    'saved_searches': [{
+                    'component_saved_searches': [{
                         "name": "error",
                         "element_type": "component",
                         "parameters": {}
                     }],
+                    'relation_saved_searches': [],
                     'tags': ['mytag', 'mytag2']
                 }
             ]

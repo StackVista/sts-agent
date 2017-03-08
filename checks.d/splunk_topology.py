@@ -13,9 +13,9 @@ from checks import AgentCheck, CheckException
 
 
 class SavedSearch:
-    def __init__(self, instance_config, saved_search_instance):
+    def __init__(self, element_type, instance_config, saved_search_instance):
         self.name = saved_search_instance['name']
-        self.element_type = saved_search_instance['element_type']
+        self.element_type = element_type
         self.parameters = saved_search_instance['parameters']
 
         self.request_timeout_seconds = int(saved_search_instance.get('request_timeout_seconds', instance_config.default_request_timeout_seconds))
@@ -49,7 +49,20 @@ class Instance:
 
     def __init__(self, instance, init_config):
         self.instance_config = InstanceConfig(instance, init_config)
-        self.saved_searches = [SavedSearch(self.instance_config, saved_search_instance) for saved_search_instance in instance['saved_searches']]
+
+        # no saved searches may be configured
+        if not isinstance(instance['component_saved_searches'], list):
+            instance['component_saved_searches'] = []
+        if not isinstance(instance['relation_saved_searches'], list):
+            instance['relation_saved_searches'] = []
+
+        # transform component and relation saved searches to SavedSearch objects
+        components = [SavedSearch("component", self.instance_config, saved_search_instance)
+                      for saved_search_instance in instance['component_saved_searches']]
+        relations = [SavedSearch("relation", self.instance_config, saved_search_instance)
+                     for saved_search_instance in instance['relation_saved_searches']]
+        self.saved_searches = components + relations
+
         self.instance_key = {
             "type": self.INSTANCE_TYPE,
             "url": self.instance_config.base_url

@@ -19,9 +19,8 @@ instances:
   - url: "http://localhost:13001"
     username: "admin"
     password: "admin"
-    saved_searches:
+    component_saved_searches:
       - name: "components"
-        element_type: "component"
         # request_timeout_seconds: 10
         # search_max_retry_count: 5
         # search_seconds_between_retries: 1
@@ -31,8 +30,12 @@ instances:
         parameters:
           force_dispatch: true
           dispatch.now: true
+    relation_saved_searches:
       #- name: "relations"
-      #  element_type: "relation"
+      #  request_timeout_seconds: 10
+      #  search_max_retry_count: 5
+      #  search_seconds_between_retries: 1
+      #  polling_interval_seconds: 15
       #  parameters:
       #    force_dispatch: true
       #    dispatch.now: true
