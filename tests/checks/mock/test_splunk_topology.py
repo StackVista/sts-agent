@@ -21,7 +21,8 @@ class TestSplunkNoTopology(AgentCheckTest):
                     'url': 'http://localhost:8089',
                     'username': "admin",
                     'password': "admin",
-                    'saved_searches': []
+                    'component_saved_searches': [],
+                    'relation_saved_searches': []
                 }
             ]
         }
@@ -37,7 +38,7 @@ def _mocked_dispatch_saved_search(*args, **kwargs):
 
 def _mocked_search(*args, **kwargs):
     # sid is set to saved search name
-    sid = args[1]
+    sid = args[2]
     return json.loads(Fixtures.read_file("%s.json" % sid))
 
 
@@ -57,13 +58,12 @@ class TestSplunkTopology(AgentCheckTest):
                     'url': 'http://localhost:8089',
                     'username': "admin",
                     'password': "admin",
-                    'saved_searches': [{
+                    'component_saved_searches': [{
                         "name": "components",
-                        "element_type": "component",
                         "parameters": {}
-                    }, {
+                    }],
+                    'relation_saved_searches': [{
                         "name": "relations",
-                        "element_type": "relation",
                         "parameters": {}
                     }],
                     'tags': ['mytag', 'mytag2']
@@ -95,7 +95,7 @@ class TestSplunkTopology(AgentCheckTest):
                 ],
                 u"_sourcetype": u"unknown-too_small",
                 u"_time": u"2017-03-06T14:55:54.000+00:00",
-                "tags": ['mytag', 'mytag2']
+                "tags": ['result_tag1', 'mytag', 'mytag2']
             }
         })
 
@@ -111,7 +111,7 @@ class TestSplunkTopology(AgentCheckTest):
                 u"_si": [u"c5ff346549e7", u"main"],
                 u"_sourcetype": u"unknown-too_small",
                 u"_time": u"2017-03-06T14:55:54.000+00:00",
-                "tags": ['mytag', 'mytag2']
+                "tags": ['result_tag2', 'mytag', 'mytag2']
             }
         })
 
@@ -138,7 +138,7 @@ class TestSplunkTopology(AgentCheckTest):
 
 def _mocked_minimal_search(*args, **kwargs):
     # sid is set to saved search name
-    sid = args[1]
+    sid = args[2]
     return json.loads(Fixtures.read_file("minimal_%s.json" % sid))
 
 
@@ -158,11 +158,12 @@ class TestSplunkMinimalTopology(AgentCheckTest):
                     'url': 'http://localhost:8089',
                     'username': "admin",
                     'password': "admin",
-                    'saved_searches': [{
+                    'component_saved_searches': [{
                         "name": "components",
                         "element_type": "component",
                         "parameters": {}
-                    }, {
+                    }],
+                    'relation_saved_searches': [{
                         "name": "relations",
                         "element_type": "relation",
                         "parameters": {}
@@ -212,7 +213,7 @@ class TestSplunkMinimalTopology(AgentCheckTest):
 
 def _mocked_incomplete_search(*args, **kwargs):
     # sid is set to saved search name
-    sid = args[1]
+    sid = args[2]
     return json.loads(Fixtures.read_file("incomplete_%s.json" % sid))
 
 
@@ -232,11 +233,12 @@ class TestSplunkIncompleteTopology(AgentCheckTest):
                     'url': 'http://localhost:8089',
                     'username': "admin",
                     'password': "admin",
-                    'saved_searches': [{
+                    'component_saved_searches': [{
                         "name": "components",
                         "element_type": "component",
                         "parameters": {}
-                    }, {
+                    }],
+                    'relation_saved_searches': [{
                         "name": "relations",
                         "element_type": "relation",
                         "parameters": {}
@@ -275,11 +277,12 @@ class TestSplunkPollingInterval(AgentCheckTest):
                     'url': 'http://localhost:8089',
                     'username': "admin",
                     'password': "admin",
-                    'saved_searches': [{
+                    'component_saved_searches': [{
                         "name": "components_fast",
                         "element_type": "component",
                         "parameters": {}
-                    }, {
+                    }],
+                    'relation_saved_searches': [{
                         "name": "relations_fast",
                         "element_type": "relation",
                         "parameters": {}
@@ -290,14 +293,16 @@ class TestSplunkPollingInterval(AgentCheckTest):
                     'url': 'http://remotehost:8089',
                     'username': "admin",
                     'password': "admin",
-                    'polling_interval': 30,
-                    'saved_searches': [{
+                    'component_saved_searches': [{
                         "name": "components_slow",
                         "element_type": "component",
+                        'polling_interval_seconds': 30,
                         "parameters": {}
-                    }, {
+                    }],
+                    'relation_saved_searches': [{
                         "name": "relations_slow",
                         "element_type": "relation",
+                        'polling_interval_seconds': 30,
                         "parameters": {}
                     }],
                     'tags': ['mytag', 'mytag2']
@@ -319,7 +324,7 @@ class TestSplunkPollingInterval(AgentCheckTest):
             if test_data["throw"]:
                 raise CheckException("Is broke it")
 
-            sid = args[1]
+            sid = args[2]
             self.assertTrue(sid in test_data["expected_searches"])
             return json.loads(Fixtures.read_file("empty.json"))
 
@@ -369,3 +374,42 @@ class TestSplunkPollingInterval(AgentCheckTest):
         self.check.get_topology_instances()
 
         self.assertEquals(self.service_checks[0]['status'], 0, "service check should have status AgentCheck.OK")
+
+class TestSplunkErrorResponse(AgentCheckTest):
+    """
+    Splunk check should handle a FATAL message response
+    """
+    CHECK_NAME = 'splunk_topology'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:8089',
+                    'username': "admin",
+                    'password': "admin",
+                    'component_saved_searches': [{
+                        "name": "error",
+                        "element_type": "component",
+                        "parameters": {}
+                    }],
+                    'relation_saved_searches': [],
+                    'tags': ['mytag', 'mytag2']
+                }
+            ]
+        }
+
+        thrown = False
+        try:
+            self.run_check(config, mocks={
+                '_dispatch_saved_search': _mocked_dispatch_saved_search,
+                '_search': _mocked_search
+            })
+        except CheckException:
+            thrown = True
+        self.assertTrue(thrown, "Retrieving FATAL message from Splunk should throw.")
+
+        self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")

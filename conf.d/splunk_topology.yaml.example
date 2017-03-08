@@ -1,30 +1,44 @@
 # Splunk topology intake uses basic authentication
 
 init_config:
-  default_timeout: 10
-  max_retry_count: 5
-  seconds_between_retries: 1
+  # time before a HTTP request times out
+  default_request_timeout_seconds: 10
 
-  # Polling interval between calls to splunk
-  polling_interval: 15
+  # a search on a saved search does not immediately return results, one has to retry until data is received,
+  # search_max_retry_count specifies the number of retries in which it expects results to be available.
+  # Between each retry some time is waited before retrying, specified by search_seconds_between_retries.
+  default_search_max_retry_count: 5
+  default_search_seconds_between_retries: 1
 
+  # Interval at which to dispatch a saved search
+  default_polling_interval_seconds: 15
+
+# Currently it is not possible to specify multiple instances with the same url.
+# It is possible to specify multiple saved_searches on a single instance.
 instances:
   - url: "http://localhost:13001"
     username: "admin"
     password: "admin"
-    polling_interval: 15
-    saved_searches:
+    component_saved_searches:
       - name: "components"
-        element_type: "component"
+        # request_timeout_seconds: 10
+        # search_max_retry_count: 5
+        # search_seconds_between_retries: 1
+        # polling_interval_seconds: 15
+
         # Additional parameters for the splunk saved search query
         parameters:
-          - force_dispatch: true
-            dispatch.now: true
+          force_dispatch: true
+          dispatch.now: true
+    relation_saved_searches:
       #- name: "relations"
-      #  element_type: "relation"
+      #  request_timeout_seconds: 10
+      #  search_max_retry_count: 5
+      #  search_seconds_between_retries: 1
+      #  polling_interval_seconds: 15
       #  parameters:
-      #    - force_dispatch: true
-      #      dispatch.now: true
+      #    force_dispatch: true
+      #    dispatch.now: true
 
     # tags:
     #      - optional_tag1
