@@ -11,7 +11,8 @@ init_config:
   default_search_seconds_between_retries: 1
 
   # The amount of time (in seconds) to go in the past for an initial query when the agent starts up.
-  initial_history_time: 300
+  # Warning: can cause events to be reported twice if the agent is start/stopped
+  # initial_history_time: 300
 
 # Currently it is not possible to specify multiple instances with the same url.
 # It is possible to specify multiple saved_searches on a single instance.
@@ -27,6 +28,7 @@ instances:
         # search_seconds_between_retries: 1
 
         # The amount of time (in seconds) to go in the past for an initial query when the agent starts up.
+        # Warning: can cause events to be reported twice if the agent is start/stopped
         # initial_history_time: 300
 
         # Additional parameters for the splunk saved search query

@@ -37,7 +37,7 @@ class InstanceConfig:
         self.default_request_timeout_seconds = init_config.get('default_request_timeout_seconds', 5)
         self.default_search_max_retry_count = init_config.get('default_search_max_retry_count', 3)
         self.default_search_seconds_between_retries = init_config.get('default_search_seconds_between_retries', 1)
-        self.default_initial_history_time = init_config.get('initial_history_time', 60)
+        self.default_initial_history_time = init_config.get('initial_history_time', 0)
 
         self.base_url = instance['url']
         self.username = instance['username']
