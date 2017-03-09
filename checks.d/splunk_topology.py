@@ -30,7 +30,9 @@ class InstanceConfig:
         self.default_search_max_retry_count = init_config.get('default_search_max_retry_count', 3)
         self.default_search_seconds_between_retries = init_config.get('default_search_seconds_between_retries', 1)
         self.default_polling_interval_seconds = init_config.get('default_polling_interval_seconds', 15)
+        self.default_verify_ssl_certificate = init_config.get('default_verify_ssl_certificate', False)
 
+        self.verify_ssl_certificate = bool(instance.get('verify_ssl_certificate', self.default_verify_ssl_certificate))
         self.base_url = instance['url']
         self.username = instance['username']
         self.password = instance['password']
@@ -154,7 +156,7 @@ class SplunkTopology(AgentCheck):
         search_url = '%s/services/search/jobs/%s/results?output_mode=json&offset=%s&count=%s' % (instance_config.base_url, search_id, offset, count)
         auth = instance_config.get_auth_tuple()
 
-        response = requests.get(search_url, auth=auth, timeout=saved_search.request_timeout_seconds, verify=False)
+        response = requests.get(search_url, auth=auth, timeout=saved_search.request_timeout_seconds, verify=instance_config.verify_ssl_certificate)
         response.raise_for_status()
         retry_count = 0
 
@@ -164,7 +166,7 @@ class SplunkTopology(AgentCheck):
                 raise CheckException("maximum retries reached for " + instance_config.base_url + " with search id " + search_id)
             retry_count += 1
             time.sleep(saved_search.search_seconds_between_retries)
-            response = requests.get(search_url, auth=auth, timeout=saved_search.request_timeout_seconds, verify=False)
+            response = requests.get(search_url, auth=auth, timeout=saved_search.request_timeout_seconds, verify=instance_config.verify_ssl_certificate)
             response.raise_for_status()
 
         return response.json()
@@ -183,16 +185,16 @@ class SplunkTopology(AgentCheck):
         # json output_mode is mandatory for response parsing
         parameters["output_mode"] = "json"
 
-        response_body = self._do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds).json()
+        response_body = self._do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
         return response_body['sid']
 
     @staticmethod
-    def _do_post(url, auth, payload, request_timeout_seconds):
+    def _do_post(url, auth, payload, request_timeout_seconds, verify_ssl_certificate):
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
 
-        resp = requests.post(url, headers=headers, data=payload, auth=auth, timeout=request_timeout_seconds, verify=False)
+        resp = requests.post(url, headers=headers, data=payload, auth=auth, timeout=request_timeout_seconds, verify=verify_ssl_certificate)
         resp.raise_for_status()
         return resp
 
