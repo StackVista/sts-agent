@@ -59,7 +59,6 @@ class TestMesosTaskTopology(AgentCheckTest):
         component = instances[0]['components'][0]
         self.assertEqual(component["externalId"], "nginx3.e5dda204-d1b2-11e6-a015-0242ac110005")
         self.assertEqual(component["type"], {"name": 'DOCKER'})
-        print instances[0]['components'][0]
         self.assertEqual(component["data"],
                          {"tags": ['mytag', 'mytag2'],
                           "ip_addresses": [u'172.17.0.8'],
@@ -179,7 +178,6 @@ class TestMesosSlaveTopology(AgentCheckTest):
         component = instances[0]['components'][0]
         self.assertEqual(component["externalId"], "95d590f7-277e-4131-a340-497b0f381847-S0")
         self.assertEqual(component["type"], {"name": 'MESOS_AGENT'})
-        print instances[0]['components'][0]
         self.assertEqual(component["data"],
                          {"tags": ['mytag', 'mytag2'],
                           "pid": u"slave(1)@172.18.0.6:5051",
@@ -215,7 +213,6 @@ class TestMesosSlaveMinimalTopology(AgentCheckTest):
         component = instances[0]['components'][0]
         self.assertEqual(component["externalId"], "95d590f7-277e-4131-a340-497b0f381847-S0")
         self.assertEqual(component["type"], {"name": 'MESOS_AGENT'})
-        print instances[0]['components'][0]
         self.assertEqual(component["data"],
                          {"tags": ['mytag', 'mytag2'],
                           })
@@ -249,7 +246,6 @@ class TestMesosSlaveIncompleteTopology(AgentCheckTest):
         component = instances[0]['components'][0]
         self.assertEqual(component["externalId"], "unknown")
         self.assertEqual(component["type"], {"name": 'MESOS_AGENT'})
-        print instances[0]['components'][0]
         self.assertEqual(component["data"],
                          {"tags": ['mytag', 'mytag2'],
                           })

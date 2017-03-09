@@ -128,24 +128,30 @@ class AgentMetrics(AgentCheck):
 
             self.gauge('stackstate.agent.collector.collection.time', collection_time)
             if collect_time_exceeds_threshold:
-                self.log.info("Collection time (s) is high: %.1f, metrics count: %d, events count: %d",
-                              collection_time, len(payload['metrics']), len(payload['events']))
+                components = sum([len(inst["components"]) for inst in payload["topologies"]])
+                relations = sum([len(inst["relations"]) for inst in payload["topologies"]])
+                self.log.info("Collection time (s) is high: %.1f, metrics count: %d, events count: %d, component count: %d, relation count: %d",
+                              collection_time, len(payload['metrics']), len(payload['events']), components, relations)
 
         emit_time_exceeds_threshold = emit_time > MAX_EMIT_TIME
         if emit_time is not None and \
                 (emit_time_exceeds_threshold or self.in_developer_mode):
             self.gauge('stackstate.agent.emitter.emit.time', emit_time)
             if emit_time_exceeds_threshold:
-                self.log.info("Emit time (s) is high: %.1f, metrics count: %d, events count: %d",
-                              emit_time, len(payload['metrics']), len(payload['events']))
+                components = sum([len(inst["components"]) for inst in payload["topologies"]])
+                relations = sum([len(inst["relations"]) for inst in payload["topologies"]])
+                self.log.info("Emit time (s) is high: %.1f, metrics count: %d, events count: %d, component count: %d, relation count: %d",
+                              emit_time, len(payload['metrics']), len(payload['events']), components, relations)
 
         if cpu_time is not None:
             try:
                 cpu_used_pct = 100.0 * float(cpu_time)/float(collection_time)
                 if cpu_used_pct > MAX_CPU_PCT:
+                    components = sum([len(inst["components"]) for inst in payload["topologies"]])
+                    relations = sum([len(inst["relations"]) for inst in payload["topologies"]])
                     self.gauge('stackstate.agent.collector.cpu.used', cpu_used_pct)
-                    self.log.info("CPU consumed (%%) is high: %.1f, metrics count: %d, events count: %d",
-                                  cpu_used_pct, len(payload['metrics']), len(payload['events']))
+                    self.log.info("CPU consumed (%%) is high: %.1f, metrics count: %d, events count: %d, component count: %d, relation count: %d",
+                                  cpu_used_pct, len(payload['metrics']), len(payload['events']), components, relations)
             except Exception as e:
                 self.log.debug("Couldn't compute cpu used by collector with values %s %s %s",
                                cpu_time, collection_time, str(e))

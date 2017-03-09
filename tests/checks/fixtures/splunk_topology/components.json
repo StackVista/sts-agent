@@ -1,0 +1,77 @@
+{
+  "preview": false,
+  "init_offset": 0,
+  "messages": [],
+  "fields": [
+    {
+      "name": "id"
+    },
+    {
+      "name": "type"
+    },
+    {
+      "name": "description"
+    },
+    {
+      "name": "running"
+    },
+    {
+      "name": "_bkt"
+    },
+    {
+      "name": "_cd"
+    },
+    {
+      "name": "_indextime"
+    },
+    {
+      "name": "_raw"
+    },
+    {
+      "name": "_serial"
+    },
+    {
+      "name": "_si"
+    },
+    {
+      "name": "_sourcetype"
+    },
+    {
+      "name": "_time"
+    }
+  ],
+  "results": [
+    {
+      "id": "vm_2_1",
+      "type": "vm",
+      "running": true,
+      "tags": ["result_tag1"],
+      "_bkt": "main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
+      "_cd": "1:66",
+      "_indextime": "1488812154",
+      "_raw": "blaat",
+      "_serial": "0",
+      "_si": ["c5ff346549e7", "main" ],
+      "_sourcetype": "unknown-too_small",
+      "_time": "2017-03-06T14:55:54.000+00:00"
+    },
+    {
+      "id": "server_2",
+      "type": "server",
+      "tags": ["result_tag2"],
+      "description": "My important server 2",
+      "_bkt": "main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
+      "_cd": "1:56",
+      "_indextime": "1488812154",
+      "_raw": "blaat2",
+      "_serial": "3",
+      "_si": [
+        "c5ff346549e7",
+        "main"
+      ],
+      "_sourcetype": "unknown-too_small",
+      "_time": "2017-03-06T14:55:54.000+00:00"
+    }
+  ],
+  "highlighted": {}
+}
