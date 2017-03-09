@@ -262,7 +262,6 @@ class SplunkEvent(AgentCheck):
         """
         Converts time in utc format 2016-06-27T14:26:30.000+00:00 to seconds
         """
-        print str_datetime_utc
         parsed_datetime = iso8601.parse_date(str_datetime_utc)
         # parsed_datetime = datetime.datetime.strptime(str_datetime_utc,'%Y-%m-%dT%H:%M:%S.%f%Z')
         return self._get_time_since_epoch(parsed_datetime)
