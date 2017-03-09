@@ -274,6 +274,75 @@ class TestSplunkPollingEventBatches(AgentCheckTest):
         self.assertTrue(thrown, "Expect thrown to be done from the mocked search")
         self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
 
+class TestSplunkDeduplicateEventsInTheSameRun(AgentCheckTest):
+    """
+    Splunk event check should deduplicate events
+    """
+    CHECK_NAME = 'splunk_event'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:13001',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches': [{
+                        "name": "dublicates",
+                        "parameters": {},
+                        "default_batch_size": 2
+                    }],
+                    'tags': ["checktag:checktagvalue"]
+                }
+            ]
+        }
+
+        # Used to validate which searches have been executed
+        test_data = {
+            "expected_searches": ["dublicates"],
+            "sid": "",
+            "time": 0,
+            "earliest_time": "",
+            "throw": False
+        }
+
+        def _mocked_current_time_seconds():
+            return test_data["time"]
+
+        def _mocked_dup_search(*args, **kwargs):
+            if test_data["throw"]:
+                raise CheckException("Is broke it")
+
+            sid = args[2]
+            offset = args[3]
+            count = args[4]
+            return json.loads(Fixtures.read_file("batch_%s_%s_seq_%s.json" % (sid, offset, count)))
+
+        def _mocked_dispatch_saved_search_do_post(*args, **kwargs):
+            class MockedResponse():
+                def json(self):
+                    return {"sid": test_data["sid"]}
+            earliest_time = args[2]['dispatch.earliest_time']
+            if test_data["earliest_time"] != "":
+                print earliest_time
+                self.assertTrue(earliest_time == test_data["earliest_time"])
+            return MockedResponse()
+
+        test_mocks = {
+            '_do_post': _mocked_dispatch_saved_search_do_post,
+            '_search': _mocked_dup_search,
+            '_current_time_seconds': _mocked_current_time_seconds
+        }
+
+        # Inital run
+        test_data["sid"] = "no_dup"
+        test_data["time"] = 1
+        self.run_check(config, mocks=test_mocks)
+        self.assertEqual(len(self.events), 2)
+        self.assertEqual([e['event_type'] for e in self.events], ["1", "2"])
 
 # Sid is equal to search name
 def _mocked_dispatch_saved_search(*args, **kwargs):

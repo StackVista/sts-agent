@@ -1,0 +1,12 @@
+{
+	"preview": false,
+	"init_offset": 0,
+	"messages": [],
+	"fields": [{
+		"name": "_time"
+	}, {
+		"name": "event_type"
+	}],
+	"results": [],
+	"highlighted": {}
+}

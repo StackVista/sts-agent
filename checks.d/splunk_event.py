@@ -175,7 +175,7 @@ class SplunkEvent(AgentCheck):
         search_url = '%s/services/search/jobs/%s/results?output_mode=json&offset=%s&count=%s' % (instance_config.base_url, search_id, offset, count)
         auth = instance_config.get_auth_tuple()
 
-        response = requests.get(search_url, auth=auth, timeout=saved_search.request_timeout_seconds)
+        response = requests.get(search_url, auth=auth, timeout=saved_search.request_timeout_seconds, verify=False)
         response.raise_for_status()
         retry_count = 0
 
@@ -185,7 +185,7 @@ class SplunkEvent(AgentCheck):
                 raise CheckException("maximum retries reached for " + instance_config.base_url + " with search id " + search_id)
             retry_count += 1
             time.sleep(saved_search.search_seconds_between_retries)
-            response = requests.get(search_url, auth=auth, timeout=saved_search.request_timeout_seconds)
+            response = requests.get(search_url, auth=auth, timeout=saved_search.request_timeout_seconds, verify=False)
             response.raise_for_status()
 
         return response.json()
@@ -238,7 +238,7 @@ class SplunkEvent(AgentCheck):
             'Content-Type': 'application/x-www-form-urlencoded'
         }
 
-        resp = requests.post(url, headers=headers, data=payload, auth=auth, timeout=timeout)
+        resp = requests.post(url, headers=headers, data=payload, auth=auth, timeout=timeout, verify=False)
         resp.raise_for_status()
         return resp
 
