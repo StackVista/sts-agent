@@ -13,22 +13,82 @@ import iso8601
 # project
 from checks import AgentCheck, CheckException
 
+class SavedSearch:
+    def __init__(self, instance_config, saved_search_instance):
+        self.name = saved_search_instance['name']
+        self.parameters = saved_search_instance['parameters']
+
+        self.request_timeout_seconds = int(saved_search_instance.get('request_timeout_seconds', instance_config.default_request_timeout_seconds))
+        self.search_max_retry_count = int(saved_search_instance.get('search_max_retry_count', instance_config.default_search_max_retry_count))
+        self.search_seconds_between_retries = int(saved_search_instance.get('search_seconds_between_retries', instance_config.default_search_seconds_between_retries))
+        self.initial_history_time_sec = int(saved_search_instance.get('initial_history_time', instance_config.default_initial_history_time))
+
+        self.last_event_time_epoch_sec = 0
+
+
+
+class InstanceConfig:
+    def __init__(self, instance, init_config):
+        self.default_request_timeout_seconds = init_config.get('default_request_timeout_seconds', 5)
+        self.default_search_max_retry_count = init_config.get('default_search_max_retry_count', 3)
+        self.default_search_seconds_between_retries = init_config.get('default_search_seconds_between_retries', 1)
+        self.default_initial_history_time = init_config.get('initial_history_time', 60)
+
+        self.base_url = instance['url']
+        self.username = instance['username']
+        self.password = instance['password']
+
+    def get_auth_tuple(self):
+        return self.username, self.password
+
+
+class Instance:
+    INSTANCE_TYPE = "splunk"
+
+    def __init__(self, instance, init_config):
+        self.instance_config = InstanceConfig(instance, init_config)
+
+        # no saved searches may be configured
+        if not isinstance(instance['saved_searches'], list):
+            instance['saved_searches'] = []
+
+        self.saved_searches = [SavedSearch(self.instance_config, saved_search_instance)
+                               for saved_search_instance in instance['saved_searches']]
+
+        self.tags = instance.get('tags', [])
+
+
 class SplunkEvent(AgentCheck):
     SERVICE_CHECK_NAME = "splunk.event_information"
     basic_default_fields = set(['host', 'index', 'linecount', 'punct', 'source', 'sourcetype', 'splunk_server', 'timestamp'])
     date_default_fields = set(['date_hour', 'date_mday', 'date_minute', 'date_month', 'date_second', 'date_wday', 'date_year', 'date_zone'])
+    TIME_FMT = "%Y-%m-%dT%H:%M:%S.%3N%z"
 
     def __init__(self, name, init_config, agentConfig, instances=None):
         super(SplunkEvent, self).__init__(name, init_config, agentConfig, instances)
         # Data to keep over check runs, keyed by instance url
         self.instance_data = dict()
-        self.instance_data["current_time"] = self._current_time_seconds()
 
     def check(self, instance):
         if 'url' not in instance:
-            raise CheckException('Splunk event instance missing "url" value.')
+            raise CheckException('Splunk topology instance missing "url" value.')
 
-    def _extract_events(self, instance, result):
+        if instance["url"] not in self.instance_data:
+            self.instance_data[instance["url"]] = Instance(instance, self.init_config)
+
+        instance = self.instance_data[instance["url"]]
+
+        search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
+                      for saved_search in instance.saved_searches]
+
+        for (sid, saved_search) in search_ids:
+            self._process_saved_search(sid, saved_search, instance)
+
+    def _process_saved_search(self, sid, saved_search, instance):
+        result = self._search(instance.instance_config, sid)
+        self._extract_events(saved_search, instance, result)
+
+    def _extract_events(self, saved_search, instance, result):
         for data in result["results"]:
             # Required fields
             event_type = self._get_optional_field("event_type", data)
@@ -36,17 +96,18 @@ class SplunkEvent(AgentCheck):
             msg_title = self._get_optional_field("msg_title", data)
             msg_text = self._get_optional_field("msg_text", data)
             _time = self._get_required_field("_time", data)
-            collection_timestamp = self._time_to_seconds(_time)
+            timestamp = self._time_to_seconds(_time)
+
+            if timestamp > saved_search.last_event_time_epoch_sec:
+                saved_search.last_event_time_epoch_sec = timestamp
 
             tags_data = self._filter_fields(data)
 
             event_tags = self._convert_dict_to_tags(tags_data)
-            if 'tags' in instance:
-                check_tags = instance['tags']
-                event_tags.extend(check_tags)
+            event_tags.extend(instance.tags)
 
             self.event({
-                "timestamp": collection_timestamp,
+                "timestamp": timestamp,
                 "event_type": event_type,
                 "source_type_name": source_type,
                 "msg_title": msg_title,
@@ -61,9 +122,6 @@ class SplunkEvent(AgentCheck):
             if key not in self.basic_default_fields and key not in self.date_default_fields and not key.startswith('_'):
                 result[key] = value
         return result
-
-    def _current_time_seconds(self):
-        return int(round(time.time() * 1000))
 
     def _convert_dict_to_tags(self, data):
         result = []
@@ -95,7 +153,6 @@ class SplunkEvent(AgentCheck):
 
         return response.json()
 
-    # copy pasted from topology check TODO generify into common class
     def _dispatch_saved_search(self, instance_config, saved_search):
         """
         Initiate a saved search, returning the saved id
@@ -106,11 +163,19 @@ class SplunkEvent(AgentCheck):
         dispatch_url = '%s/services/saved/searches/%s/dispatch' % (instance_config.base_url, quote(saved_search.name))
         auth = instance_config.get_auth_tuple()
 
-        parameters = saved_search.parameters[0]
+        parameters = saved_search.parameters
         # json output_mode is mandatory for response parsing
         parameters["output_mode"] = "json"
 
-        response_body = self._do_post(dispatch_url, auth, parameters, instance_config.timeout).json()
+        time_epoch = saved_search.last_event_time_epoch_sec
+
+        if time_epoch == 0:
+            time_epoch = int(round(time.time() - saved_search.initial_history_time_sec))
+
+        parameters["dispatch.time_format"] = self.TIME_FMT
+        parameters["dispatch.earliest_time"] = time.strftime(self.TIME_FMT, time.gmtime(time_epoch))
+
+        response_body = self._do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds).json()
         return response_body['sid']
 
     # copy pasted from topology check TODO generify into common class
