@@ -1,7 +1,6 @@
 # stdlib
 import json
 
-from checks import CheckException
 from tests.checks.common import AgentCheckTest, Fixtures
 from checks import CheckException
 
