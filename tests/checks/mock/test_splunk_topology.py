@@ -38,8 +38,8 @@ def _mocked_dispatch_saved_search(*args, **kwargs):
 
 def _mocked_search(*args, **kwargs):
     # sid is set to saved search name
-    sid = args[2]
-    return json.loads(Fixtures.read_file("%s.json" % sid))
+    sid = args[0]
+    return [json.loads(Fixtures.read_file("%s.json" % sid))]
 
 
 class TestSplunkTopology(AgentCheckTest):
@@ -138,8 +138,8 @@ class TestSplunkTopology(AgentCheckTest):
 
 def _mocked_minimal_search(*args, **kwargs):
     # sid is set to saved search name
-    sid = args[2]
-    return json.loads(Fixtures.read_file("minimal_%s.json" % sid))
+    sid = args[0]
+    return [json.loads(Fixtures.read_file("minimal_%s.json" % sid))]
 
 
 class TestSplunkMinimalTopology(AgentCheckTest):
@@ -213,8 +213,8 @@ class TestSplunkMinimalTopology(AgentCheckTest):
 
 def _mocked_incomplete_search(*args, **kwargs):
     # sid is set to saved search name
-    sid = args[2]
-    return json.loads(Fixtures.read_file("incomplete_%s.json" % sid))
+    sid = args[0]
+    return [json.loads(Fixtures.read_file("incomplete_%s.json" % sid))]
 
 
 class TestSplunkIncompleteTopology(AgentCheckTest):
@@ -323,9 +323,9 @@ class TestSplunkPollingInterval(AgentCheckTest):
             if test_data["throw"]:
                 raise CheckException("Is broke it")
 
-            sid = args[2]
+            sid = args[0]
             self.assertTrue(sid in test_data["expected_searches"])
-            return json.loads(Fixtures.read_file("empty.json"))
+            return [json.loads(Fixtures.read_file("empty.json"))]
 
         test_mocks = {
             '_dispatch_saved_search': _mocked_dispatch_saved_search,

@@ -184,7 +184,7 @@ class TestSplunkFullEvents(AgentCheckTest):
             ]
         })
 
-class TestSplunkPollingEventBatches(AgentCheckTest):
+class TestSplunkEarliestTime(AgentCheckTest):
     """
     Splunk event check should poll batches responses
     """
@@ -203,7 +203,7 @@ class TestSplunkPollingEventBatches(AgentCheckTest):
                     'saved_searches': [{
                         "name": "poll",
                         "parameters": {},
-                        "default_batch_size": 2
+                        "batch_size": 2
                     }],
                     'tags': ["checktag:checktagvalue"]
                 }
@@ -223,24 +223,23 @@ class TestSplunkPollingEventBatches(AgentCheckTest):
             return test_data["time"]
 
         def _mocked_polling_search(*args, **kwargs):
+            sid = args[0]
+            count = args[1].batch_size
+            print "expected search %s" % (sid)
+            print "reading json batch_%s_seq_%s.json" % (sid, count)
+            return json.loads(Fixtures.read_file("batch_%s_seq_%s.json" % (sid, count)))
+
+        def _mocked_dispatch_saved_search_do_post(*args, **kwargs):
             if test_data["throw"]:
                 raise CheckException("Is broke it")
 
-            sid = args[2]
-            offset = args[3]
-            count = args[4]
-            print "expected search %s" % (sid)
-            print "reading json batch_%s_%s_seq_%s.json" % (sid, offset, count)
-            return json.loads(Fixtures.read_file("batch_%s_%s_seq_%s.json" % (sid, offset, count)))
-
-        def _mocked_dispatch_saved_search_do_post(*args, **kwargs):
             class MockedResponse():
                 def json(self):
                     return {"sid": test_data["sid"]}
             earliest_time = args[2]['dispatch.earliest_time']
             if test_data["earliest_time"] != "":
                 print earliest_time
-                self.assertTrue(earliest_time == test_data["earliest_time"])
+                self.assertEquals(earliest_time, test_data["earliest_time"])
             return MockedResponse()
 
         test_mocks = {
@@ -284,7 +283,7 @@ class TestSplunkDeduplicateEventsInTheSameRun(AgentCheckTest):
         self.maxDiff = None
 
         config = {
-            'init_config': {},
+            'init_config': {"default_batch_size": 2},
             'instances': [
                 {
                     'url': 'http://localhost:13001',
@@ -292,8 +291,7 @@ class TestSplunkDeduplicateEventsInTheSameRun(AgentCheckTest):
                     'password': "admin",
                     'saved_searches': [{
                         "name": "dublicates",
-                        "parameters": {},
-                        "default_batch_size": 2
+                        "parameters": {}
                     }],
                     'tags': ["checktag:checktagvalue"]
                 }
@@ -305,30 +303,20 @@ class TestSplunkDeduplicateEventsInTheSameRun(AgentCheckTest):
             "expected_searches": ["dublicates"],
             "sid": "",
             "time": 0,
-            "earliest_time": "",
-            "throw": False
         }
 
         def _mocked_current_time_seconds():
             return test_data["time"]
 
         def _mocked_dup_search(*args, **kwargs):
-            if test_data["throw"]:
-                raise CheckException("Is broke it")
-
-            sid = args[2]
-            offset = args[3]
-            count = args[4]
-            return json.loads(Fixtures.read_file("batch_%s_%s_seq_%s.json" % (sid, offset, count)))
+            sid = args[0]
+            count = args[1].batch_size
+            return json.loads(Fixtures.read_file("batch_%s_seq_%s.json" % (sid, count)))
 
         def _mocked_dispatch_saved_search_do_post(*args, **kwargs):
             class MockedResponse():
                 def json(self):
                     return {"sid": test_data["sid"]}
-            earliest_time = args[2]['dispatch.earliest_time']
-            if test_data["earliest_time"] != "":
-                print earliest_time
-                self.assertTrue(earliest_time == test_data["earliest_time"])
             return MockedResponse()
 
         test_mocks = {
@@ -351,15 +339,15 @@ def _mocked_dispatch_saved_search(*args, **kwargs):
 
 def _mocked_search(*args, **kwargs):
     # sid is set to saved search name
-    sid = args[1]
-    return json.loads(Fixtures.read_file("%s.json" % sid))
+    sid = args[0]
+    return [json.loads(Fixtures.read_file("%s.json" % sid))]
 
 def _mocked_minimal_search(*args, **kwargs):
     # sid is set to saved search name
-    sid = args[2]
-    return json.loads(Fixtures.read_file("minimal_%s.json" % sid))
+    sid = args[0]
+    return [json.loads(Fixtures.read_file("minimal_%s.json" % sid))]
 
 def _mocked_full_search(*args, **kwargs):
     # sid is set to saved search name
-    sid = args[2]
-    return json.loads(Fixtures.read_file("full_%s.json" % sid))
+    sid = args[0]
+    return [json.loads(Fixtures.read_file("full_%s.json" % sid))]

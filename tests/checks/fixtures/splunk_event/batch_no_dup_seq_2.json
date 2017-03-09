@@ -1,4 +1,4 @@
-{
+[{
 	"preview": false,
 	"init_offset": 0,
 	"messages": [],
@@ -19,4 +19,17 @@
 		"_cd": "2"
 	}],
 	"highlighted": {}
-}
+},
+{
+  "preview": false,
+  "init_offset": 0,
+  "messages": [],
+  "fields": [{
+    "name": "_time"
+  }, {
+    "name": "event_type"
+  }],
+  "results": [],
+  "highlighted": {}
+}]
+

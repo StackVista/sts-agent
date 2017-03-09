@@ -4,41 +4,30 @@
 """
 
 # 3rd party
-import requests
-from urllib import quote
 import time
+from urllib import quote
 
-# project
 from checks import AgentCheck, CheckException
+from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field
 
 
-class SavedSearch:
+class SavedSearch(SplunkSavedSearch):
     def __init__(self, element_type, instance_config, saved_search_instance):
-        self.name = saved_search_instance['name']
+        super(SavedSearch, self).__init__(instance_config, saved_search_instance)
         self.element_type = element_type
-        self.parameters = saved_search_instance['parameters']
-
-        self.request_timeout_seconds = int(saved_search_instance.get('request_timeout_seconds', instance_config.default_request_timeout_seconds))
-        self.search_max_retry_count = int(saved_search_instance.get('search_max_retry_count', instance_config.default_search_max_retry_count))
-        self.search_seconds_between_retries = int(saved_search_instance.get('search_seconds_between_retries', instance_config.default_search_seconds_between_retries))
 
 
-
-class InstanceConfig:
+class InstanceConfig(SplunkInstanceConfig):
     def __init__(self, instance, init_config):
-        self.default_request_timeout_seconds = init_config.get('default_request_timeout_seconds', 5)
-        self.default_search_max_retry_count = init_config.get('default_search_max_retry_count', 3)
-        self.default_search_seconds_between_retries = init_config.get('default_search_seconds_between_retries', 1)
+        super(InstanceConfig, self).__init__(instance, init_config, {
+            'default_request_timeout_seconds': 5,
+            'default_search_max_retry_count': 3,
+            'default_search_seconds_between_retries': 1,
+            'default_verify_ssl_certificate': False,
+            'default_batch_size': 1000
+        })
+
         self.default_polling_interval_seconds = init_config.get('default_polling_interval_seconds', 15)
-        self.default_verify_ssl_certificate = init_config.get('default_verify_ssl_certificate', False)
-
-        self.verify_ssl_certificate = bool(instance.get('verify_ssl_certificate', self.default_verify_ssl_certificate))
-        self.base_url = instance['url']
-        self.username = instance['username']
-        self.password = instance['password']
-
-    def get_auth_tuple(self):
-        return self.username, self.password
 
 
 class Instance:
@@ -81,6 +70,7 @@ class SplunkTopology(AgentCheck):
         super(SplunkTopology, self).__init__(name, init_config, agentConfig, instances)
         # Data to keep over check runs, keyed by instance url
         self.instance_data = dict()
+        self.splunkHelper = SplunkHelper()
 
     def check(self, instance):
         if 'url' not in instance:
@@ -118,15 +108,9 @@ class SplunkTopology(AgentCheck):
 
     def _process_saved_search(self, search_id, saved_search, instance):
         # fetch results in batches
-        offset = 0
-        nr_of_results = None
-        while nr_of_results is None or nr_of_results == self.BATCH_SIZE:
-            response = self._search(instance.instance_config, saved_search, search_id, offset, self.BATCH_SIZE)
-            # received a message?
+        for response in self._search(search_id, saved_search, instance):
             for message in response['messages']:
-                if message['type'] == "FATAL":
-                    raise CheckException("Received FATAL exception from Splunk, got: " + message['text'])
-                else:
+                if message['type'] != "FATAL":
                     self.log.info("Received unhandled message, got: " + str(message))
 
             # process components and relations
@@ -134,42 +118,13 @@ class SplunkTopology(AgentCheck):
                 self._extract_components(instance, response)
             elif saved_search.element_type == "relation":
                 self._extract_relations(instance, response)
-            nr_of_results = len(response['results'])
-            offset += nr_of_results
-
 
     @staticmethod
     def _current_time_seconds():
         return int(round(time.time()))
 
-    @staticmethod
-    def _search(instance_config, saved_search, search_id, offset, count):
-        """
-        Retrieves the results of an already running splunk search, identified by the given search id.
-        :param instance_config: InstanceConfig, current check configuration
-        :param saved_search: current SavedSearch being processed
-        :param search_id: perform a search operation on the search id
-        :param offset: starting offset, begin is 0, to start retrieving from
-        :param count: the maximum number of elements expecting to be returned by the API call
-        :return: raw json response from splunk
-        """
-        search_url = '%s/services/search/jobs/%s/results?output_mode=json&offset=%s&count=%s' % (instance_config.base_url, search_id, offset, count)
-        auth = instance_config.get_auth_tuple()
-
-        response = requests.get(search_url, auth=auth, timeout=saved_search.request_timeout_seconds, verify=instance_config.verify_ssl_certificate)
-        response.raise_for_status()
-        retry_count = 0
-
-        # retry until information is available.
-        while response.status_code == 204: # HTTP No Content response
-            if retry_count == saved_search.search_max_retry_count:
-                raise CheckException("maximum retries reached for " + instance_config.base_url + " with search id " + search_id)
-            retry_count += 1
-            time.sleep(saved_search.search_seconds_between_retries)
-            response = requests.get(search_url, auth=auth, timeout=saved_search.request_timeout_seconds, verify=instance_config.verify_ssl_certificate)
-            response.raise_for_status()
-
-        return response.json()
+    def _search(self, search_id, saved_search, instance):
+        return self.splunkHelper.saved_search_results(search_id, saved_search, instance.instance_config)
 
     def _dispatch_saved_search(self, instance_config, saved_search):
         """
@@ -185,33 +140,14 @@ class SplunkTopology(AgentCheck):
         # json output_mode is mandatory for response parsing
         parameters["output_mode"] = "json"
 
-        response_body = self._do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
+        response_body = self.splunkHelper.do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
         return response_body['sid']
-
-    @staticmethod
-    def _do_post(url, auth, payload, request_timeout_seconds, verify_ssl_certificate):
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
-
-        resp = requests.post(url, headers=headers, data=payload, auth=auth, timeout=request_timeout_seconds, verify=verify_ssl_certificate)
-        resp.raise_for_status()
-        return resp
-
-    # Get a field from a dictionary. Throw when it does not exist. When it exists, return it and remove from the object
-    @staticmethod
-    def _get_required_field(field, obj):
-        if field not in obj:
-            raise CheckException("Missing '%s' field in result data" % field)
-        value = obj[field]
-        del obj[field]
-        return value
 
     def _extract_components(self, instance, result):
         for data in result["results"]:
             # Required fields
-            external_id = self._get_required_field("id", data)
-            comp_type = self._get_required_field("type", data)
+            external_id = take_required_field("id", data)
+            comp_type = take_required_field("type", data)
 
             # We don't want to present the raw field
             if "_raw" in data:
@@ -228,9 +164,9 @@ class SplunkTopology(AgentCheck):
     def _extract_relations(self, instance, result):
         for data in result["results"]:
             # Required fields
-            rel_type = self._get_required_field("type", data)
-            source_id = self._get_required_field("sourceId", data)
-            target_id = self._get_required_field("targetId", data)
+            rel_type = take_required_field("type", data)
+            source_id = take_required_field("sourceId", data)
+            target_id = take_required_field("targetId", data)
 
             # We don't want to present the raw field
             if "_raw" in data:

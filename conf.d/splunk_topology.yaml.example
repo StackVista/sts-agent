@@ -10,6 +10,9 @@ init_config:
   default_search_max_retry_count: 10
   default_search_seconds_between_retries: 1
 
+  # How many results should we request per request to splunk
+  default_batch_size: 1000
+
   # Interval at which to dispatch a saved search
   default_polling_interval_seconds: 300
 
@@ -29,6 +32,7 @@ instances:
         # request_timeout_seconds: 10
         # search_max_retry_count: 5
         # search_seconds_between_retries: 1
+        # batch_size: 1000
 
         # Additional parameters for the splunk saved search query
         parameters:

@@ -3,48 +3,39 @@
 """
 
 # 3rd party
-
-import requests
-from urllib import quote
-import time
-from pytz import timezone
 import datetime
+import time
+from urllib import quote
+
 import iso8601
+from pytz import timezone
 
-# project
 from checks import AgentCheck, CheckException
+from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field, take_optional_field
 
-class SavedSearch:
+
+class SavedSearch(SplunkSavedSearch):
     def __init__(self, instance_config, saved_search_instance):
-        self.name = saved_search_instance['name']
-        self.parameters = saved_search_instance['parameters']
+        super(SavedSearch, self).__init__(instance_config, saved_search_instance)
 
-        self.request_timeout_seconds = int(saved_search_instance.get('request_timeout_seconds', instance_config.default_request_timeout_seconds))
-        self.search_max_retry_count = int(saved_search_instance.get('search_max_retry_count', instance_config.default_search_max_retry_count))
-        self.search_seconds_between_retries = int(saved_search_instance.get('search_seconds_between_retries', instance_config.default_search_seconds_between_retries))
         self.initial_history_time_sec = int(saved_search_instance.get('initial_history_time', instance_config.default_initial_history_time))
-        self.batch_size = int(saved_search_instance.get('default_batch_size', 1000))
-
         self.last_event_time_epoch_sec = 0
 
         # We keep track of the events that were reported for the last timestamp, to deduplicate them when we get a new query
         self.last_events_at_epoch_time = set()
 
 
-
-class InstanceConfig:
+class InstanceConfig(SplunkInstanceConfig):
     def __init__(self, instance, init_config):
-        self.default_request_timeout_seconds = init_config.get('default_request_timeout_seconds', 5)
-        self.default_search_max_retry_count = init_config.get('default_search_max_retry_count', 3)
-        self.default_search_seconds_between_retries = init_config.get('default_search_seconds_between_retries', 1)
-        self.default_initial_history_time = init_config.get('initial_history_time', 0)
+        super(InstanceConfig, self).__init__(instance, init_config, {
+            'default_request_timeout_seconds': 5,
+            'default_search_max_retry_count': 3,
+            'default_search_seconds_between_retries': 1,
+            'default_verify_ssl_certificate': False,
+            'default_batch_size': 1000
+        })
 
-        self.base_url = instance['url']
-        self.username = instance['username']
-        self.password = instance['password']
-
-    def get_auth_tuple(self):
-        return self.username, self.password
+        self.default_initial_history_time = init_config.get('default_initial_history_time', 60)
 
 
 class Instance:
@@ -73,6 +64,7 @@ class SplunkEvent(AgentCheck):
         super(SplunkEvent, self).__init__(name, init_config, agentConfig, instances)
         # Data to keep over check runs, keyed by instance url
         self.instance_data = dict()
+        self.splunkHelper = SplunkHelper()
 
     def check(self, instance):
         if 'url' not in instance:
@@ -105,7 +97,7 @@ class SplunkEvent(AgentCheck):
             # this can be (server, index, _cd)
             # I use (_bkt, _cd) because we only process data form 1 server in a check, and _bkt contains the index
             event_id = (data["_bkt"], data["_cd"])
-            _time = self._get_required_field("_time", data)
+            _time = take_required_field("_time", data)
             timestamp = self._time_to_seconds(_time)
 
             if timestamp > saved_search.last_event_time_epoch_sec:
@@ -119,10 +111,10 @@ class SplunkEvent(AgentCheck):
                 continue
 
             # Required fields
-            event_type = self._get_optional_field("event_type", data)
-            source_type = self._get_optional_field("_sourcetype", data)
-            msg_title = self._get_optional_field("msg_title", data)
-            msg_text = self._get_optional_field("msg_text", data)
+            event_type = take_optional_field("event_type", data)
+            source_type = take_optional_field("_sourcetype", data)
+            msg_title = take_optional_field("msg_title", data)
+            msg_text = take_optional_field("msg_text", data)
 
             tags_data = self._filter_fields(data)
 
@@ -140,55 +132,20 @@ class SplunkEvent(AgentCheck):
 
     def _process_saved_search(self, search_id, saved_search, instance):
         # fetch results in batches
-        offset = 0
-        nr_of_results = None
-        while nr_of_results is None or nr_of_results == saved_search.batch_size:
-            response = self._search(instance.instance_config, saved_search, search_id, offset, saved_search.batch_size)
-            # received a message?
+        for response in self._search(search_id, saved_search, instance):
             for message in response['messages']:
-                if message['type'] == "FATAL":
-                    raise CheckException("Received FATAL exception from Splunk, got: " + message['text'])
-                else:
+                if message['type'] != "FATAL":
                     self.log.info("Received unhandled message, got: " + str(message))
 
-            # process components and relations
             self._extract_events(saved_search, instance, response)
-            nr_of_results = len(response['results'])
-            offset += nr_of_results
 
 
     @staticmethod
     def _current_time_seconds():
         return int(round(time.time()))
 
-    @staticmethod
-    def _search(instance_config, saved_search, search_id, offset, count):
-        """
-        Retrieves the results of an already running splunk search, identified by the given search id.
-        :param instance_config: InstanceConfig, current check configuration
-        :param saved_search: current SavedSearch being processed
-        :param search_id: perform a search operation on the search id
-        :param offset: starting offset, begin is 0, to start retrieving from
-        :param count: the maximum number of elements expecting to be returned by the API call
-        :return: raw json response from splunk
-        """
-        search_url = '%s/services/search/jobs/%s/results?output_mode=json&offset=%s&count=%s' % (instance_config.base_url, search_id, offset, count)
-        auth = instance_config.get_auth_tuple()
-
-        response = requests.get(search_url, auth=auth, timeout=saved_search.request_timeout_seconds, verify=False)
-        response.raise_for_status()
-        retry_count = 0
-
-        # retry until information is available.
-        while response.status_code == 204: # HTTP No Content response
-            if retry_count == saved_search.search_max_retry_count:
-                raise CheckException("maximum retries reached for " + instance_config.base_url + " with search id " + search_id)
-            retry_count += 1
-            time.sleep(saved_search.search_seconds_between_retries)
-            response = requests.get(search_url, auth=auth, timeout=saved_search.request_timeout_seconds, verify=False)
-            response.raise_for_status()
-
-        return response.json()
+    def _search(self, search_id, saved_search, instance):
+        return self.splunkHelper.saved_search_results(search_id, saved_search, instance.instance_config)
 
     def _filter_fields(self, data):
         # We remove default basic fields, default date fields and internal fields that start with "_"
@@ -229,34 +186,12 @@ class SplunkEvent(AgentCheck):
         parameters["dispatch.time_format"] = self.TIME_FMT
         parameters["dispatch.earliest_time"] = epoch_datetime.strftime(self.TIME_FMT)
 
-        response_body = self._do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds).json()
+        response_body = self._do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
         return response_body['sid']
 
     # copy pasted from topology check TODO generify into common class
-    def _do_post(self, url, auth, payload, timeout):
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
-
-        resp = requests.post(url, headers=headers, data=payload, auth=auth, timeout=timeout, verify=False)
-        resp.raise_for_status()
-        return resp
-
-    # copy pasted from topology check TODO generify into common class
-    # Get a field from a dictionary. Throw when it does not exist. When it exists, return it and remove from the object
-    def _get_required_field(self, field, obj):
-        if field not in obj:
-            raise CheckException("Missing '%s' field in result data" % field)
-        value = obj[field]
-        del obj[field]
-        return value
-
-    def _get_optional_field(self, field, obj):
-        if field not in obj:
-            return None
-        value = obj[field]
-        del obj[field]
-        return value
+    def _do_post(self, url, auth, payload, timeout, verify_ssl):
+        return self.splunkHelper.do_post(url, auth, payload, timeout, verify_ssl)
 
     def _time_to_seconds(self, str_datetime_utc):
         """
