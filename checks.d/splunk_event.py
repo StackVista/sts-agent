@@ -3,6 +3,7 @@
 """
 
 # 3rd party
+
 import requests
 from urllib import quote
 import time
@@ -24,6 +25,9 @@ class SavedSearch:
         self.initial_history_time_sec = int(saved_search_instance.get('initial_history_time', instance_config.default_initial_history_time))
 
         self.last_event_time_epoch_sec = 0
+
+        # We keep track of the events that were reported for the last timestamp, to deduplicate them when we get a new query
+        self.last_events_at_epoch_time = set()
 
 
 
@@ -62,7 +66,7 @@ class SplunkEvent(AgentCheck):
     SERVICE_CHECK_NAME = "splunk.event_information"
     basic_default_fields = set(['host', 'index', 'linecount', 'punct', 'source', 'sourcetype', 'splunk_server', 'timestamp'])
     date_default_fields = set(['date_hour', 'date_mday', 'date_minute', 'date_month', 'date_second', 'date_wday', 'date_year', 'date_zone'])
-    TIME_FMT = "%Y-%m-%dT%H:%M:%S.%3N%z"
+    TIME_FMT = "%Y-%m-%dT%H:%M:%S.%f%z"
     BATCH_SIZE = 1000
 
     def __init__(self, name, init_config, agentConfig, instances=None):
@@ -86,17 +90,33 @@ class SplunkEvent(AgentCheck):
             self._process_saved_search(sid, saved_search, instance)
 
     def _extract_events(self, saved_search, instance, result):
+        sent_events = saved_search.last_events_at_epoch_time
+        saved_search.last_events_at_epoch_time = set()
+
         for data in result["results"]:
+
+            # We need a unique identifier for splunk events, according to https://answers.splunk.com/answers/334613/is-there-a-unique-event-id-for-each-event-in-the-i.html
+            # this can be (server, index, _cd)
+            # I use (_bkt, _cd) because we only process data form 1 server in a check, and _bkt contains the index
+            event_id = (data["_bkt"], data["_cd"])
+            _time = self._get_required_field("_time", data)
+            timestamp = self._time_to_seconds(_time)
+
+            if timestamp > saved_search.last_event_time_epoch_sec:
+                saved_search.last_events_at_epoch_time = set()
+                saved_search.last_event_time_epoch_sec = timestamp
+
+            if timestamp == saved_search.last_event_time_epoch_sec:
+                saved_search.last_events_at_epoch_time.add(event_id)
+
+            if event_id in sent_events:
+                continue
+
             # Required fields
             event_type = self._get_optional_field("event_type", data)
             source_type = self._get_optional_field("_sourcetype", data)
             msg_title = self._get_optional_field("msg_title", data)
             msg_text = self._get_optional_field("msg_text", data)
-            _time = self._get_required_field("_time", data)
-            timestamp = self._time_to_seconds(_time)
-
-            if timestamp > saved_search.last_event_time_epoch_sec:
-                saved_search.last_event_time_epoch_sec = timestamp
 
             tags_data = self._filter_fields(data)
 
@@ -196,10 +216,12 @@ class SplunkEvent(AgentCheck):
         time_epoch = saved_search.last_event_time_epoch_sec
 
         if time_epoch == 0:
-            time_epoch = int(round(time.time() - saved_search.initial_history_time_sec))
+            time_epoch = time.time() - saved_search.initial_history_time_sec
+
+        epoch_datetime = datetime.datetime.utcfromtimestamp(time_epoch).replace(tzinfo=timezone("UTC"))
 
         parameters["dispatch.time_format"] = self.TIME_FMT
-        parameters["dispatch.earliest_time"] = time.strftime(self.TIME_FMT, time.gmtime(time_epoch))
+        parameters["dispatch.earliest_time"] = epoch_datetime.strftime(self.TIME_FMT)
 
         response_body = self._do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds).json()
         return response_body['sid']
