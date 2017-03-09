@@ -23,6 +23,7 @@ class SavedSearch:
         self.search_max_retry_count = int(saved_search_instance.get('search_max_retry_count', instance_config.default_search_max_retry_count))
         self.search_seconds_between_retries = int(saved_search_instance.get('search_seconds_between_retries', instance_config.default_search_seconds_between_retries))
         self.initial_history_time_sec = int(saved_search_instance.get('initial_history_time', instance_config.default_initial_history_time))
+        self.batch_size = int(saved_search_instance.get('default_batch_size', 1000))
 
         self.last_event_time_epoch_sec = 0
 
@@ -67,7 +68,6 @@ class SplunkEvent(AgentCheck):
     basic_default_fields = set(['host', 'index', 'linecount', 'punct', 'source', 'sourcetype', 'splunk_server', 'timestamp'])
     date_default_fields = set(['date_hour', 'date_mday', 'date_minute', 'date_month', 'date_second', 'date_wday', 'date_year', 'date_zone'])
     TIME_FMT = "%Y-%m-%dT%H:%M:%S.%f%z"
-    BATCH_SIZE = 1000
 
     def __init__(self, name, init_config, agentConfig, instances=None):
         super(SplunkEvent, self).__init__(name, init_config, agentConfig, instances)
@@ -136,8 +136,8 @@ class SplunkEvent(AgentCheck):
         # fetch results in batches
         offset = 0
         nr_of_results = None
-        while nr_of_results is None or nr_of_results == self.BATCH_SIZE:
-            response = self._search(instance.instance_config, saved_search, search_id, offset, self.BATCH_SIZE)
+        while nr_of_results is None or nr_of_results == saved_search.batch_size:
+            response = self._search(instance.instance_config, saved_search, search_id, offset, saved_search.batch_size)
             # received a message?
             for message in response['messages']:
                 if message['type'] == "FATAL":
@@ -256,6 +256,7 @@ class SplunkEvent(AgentCheck):
         """
         Converts time in utc format 2016-06-27T14:26:30.000+00:00 to seconds
         """
+        print str_datetime_utc
         parsed_datetime = iso8601.parse_date(str_datetime_utc)
         # parsed_datetime = datetime.datetime.strptime(str_datetime_utc,'%Y-%m-%dT%H:%M:%S.%f%Z')
         return self._get_time_since_epoch(parsed_datetime)
