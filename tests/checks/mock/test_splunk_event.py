@@ -264,17 +264,16 @@ class TestSplunkPollingEventBatches(AgentCheckTest):
         self.assertEqual(len(self.events), 2)
         self.assertEqual([e['event_type'] for e in self.events], ["3_1", "3_2"])
 
-        # # Throw exception during search
-        # test_data["expected_searches"] = []
-        # test_data["time"] = 60
-        # test_data["throw"] = True
-        # thrown = False
-        # try:
-        #     self.run_check(config, mocks=test_mocks)
-        # except CheckException:
-        #     thrown = True
-        # self.assertTrue(thrown, "Expect thrown to be done from the mocked search")
-        # self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
+        # Throw exception during search
+        test_data["time"] = 60
+        test_data["throw"] = True
+        thrown = False
+        try:
+            self.run_check(config, mocks=test_mocks)
+        except CheckException:
+            thrown = True
+        self.assertTrue(thrown, "Expect thrown to be done from the mocked search")
+        self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
 
 
 # Sid is equal to search name
