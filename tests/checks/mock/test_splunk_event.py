@@ -157,10 +157,10 @@ def _mocked_search(*args, **kwargs):
 
 def _mocked_minimal_search(*args, **kwargs):
     # sid is set to saved search name
-    sid = args[1]
+    sid = args[2]
     return json.loads(Fixtures.read_file("minimal_%s.json" % sid))
 
 def _mocked_full_search(*args, **kwargs):
     # sid is set to saved search name
-    sid = args[1]
+    sid = args[2]
     return json.loads(Fixtures.read_file("full_%s.json" % sid))

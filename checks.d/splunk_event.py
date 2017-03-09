@@ -63,6 +63,7 @@ class SplunkEvent(AgentCheck):
     basic_default_fields = set(['host', 'index', 'linecount', 'punct', 'source', 'sourcetype', 'splunk_server', 'timestamp'])
     date_default_fields = set(['date_hour', 'date_mday', 'date_minute', 'date_month', 'date_second', 'date_wday', 'date_year', 'date_zone'])
     TIME_FMT = "%Y-%m-%dT%H:%M:%S.%3N%z"
+    BATCH_SIZE = 1000
 
     def __init__(self, name, init_config, agentConfig, instances=None):
         super(SplunkEvent, self).__init__(name, init_config, agentConfig, instances)
@@ -83,10 +84,6 @@ class SplunkEvent(AgentCheck):
 
         for (sid, saved_search) in search_ids:
             self._process_saved_search(sid, saved_search, instance)
-
-    def _process_saved_search(self, sid, saved_search, instance):
-        result = self._search(instance.instance_config, sid)
-        self._extract_events(saved_search, instance, result)
 
     def _extract_events(self, saved_search, instance, result):
         for data in result["results"]:
@@ -115,6 +112,58 @@ class SplunkEvent(AgentCheck):
                 "tags": event_tags
             })
 
+    def _process_saved_search(self, search_id, saved_search, instance):
+        # fetch results in batches
+        offset = 0
+        nr_of_results = None
+        while nr_of_results is None or nr_of_results == self.BATCH_SIZE:
+            response = self._search(instance.instance_config, saved_search, search_id, offset, self.BATCH_SIZE)
+            # received a message?
+            for message in response['messages']:
+                if message['type'] == "FATAL":
+                    raise CheckException("Received FATAL exception from Splunk, got: " + message['text'])
+                else:
+                    self.log.info("Received unhandled message, got: " + str(message))
+
+            # process components and relations
+            self._extract_events(saved_search, instance, response)
+            nr_of_results = len(response['results'])
+            offset += nr_of_results
+
+
+    @staticmethod
+    def _current_time_seconds():
+        return int(round(time.time()))
+
+    @staticmethod
+    def _search(instance_config, saved_search, search_id, offset, count):
+        """
+        Retrieves the results of an already running splunk search, identified by the given search id.
+        :param instance_config: InstanceConfig, current check configuration
+        :param saved_search: current SavedSearch being processed
+        :param search_id: perform a search operation on the search id
+        :param offset: starting offset, begin is 0, to start retrieving from
+        :param count: the maximum number of elements expecting to be returned by the API call
+        :return: raw json response from splunk
+        """
+        search_url = '%s/services/search/jobs/%s/results?output_mode=json&offset=%s&count=%s' % (instance_config.base_url, search_id, offset, count)
+        auth = instance_config.get_auth_tuple()
+
+        response = requests.get(search_url, auth=auth, timeout=saved_search.request_timeout_seconds)
+        response.raise_for_status()
+        retry_count = 0
+
+        # retry until information is available.
+        while response.status_code == 204: # HTTP No Content response
+            if retry_count == saved_search.search_max_retry_count:
+                raise CheckException("maximum retries reached for " + instance_config.base_url + " with search id " + search_id)
+            retry_count += 1
+            time.sleep(saved_search.search_seconds_between_retries)
+            response = requests.get(search_url, auth=auth, timeout=saved_search.request_timeout_seconds)
+            response.raise_for_status()
+
+        return response.json()
+
     def _filter_fields(self, data):
         # We remove default basic fields, default date fields and internal fields that start with "_"
         result = dict()
@@ -129,29 +178,6 @@ class SplunkEvent(AgentCheck):
             result.extend(["%s:%s" % (key, value)])
         return result
 
-    # copy pasted from topology check TODO generify into common class
-    def _search(self, instance_config, search_id):
-        """
-        perform a search operation on splunk given a search id (sid)
-        :param instance_config: current check configuration
-        :param search_id: perform a search operation on the search id
-        :return: raw response from splunk
-        """
-        search_url = '%s/services/search/jobs/%s/results?output_mode=json&count=0' % (instance_config.base_url, search_id)
-        auth = instance_config.get_auth_tuple()
-
-        response = requests.get(search_url, auth=auth, timeout=instance_config.timeout)
-        retry_count = 0
-
-        # retry until information is available.
-        while response.status_code == 204: # HTTP No Content response
-            if retry_count == instance_config.max_retry_count:
-                raise CheckException("maximum retries reached for " + instance_config.base_url + " with search id " + search_id)
-            retry_count += 1
-            time.sleep(instance_config.seconds_between_retries)
-            response = requests.get(search_url, auth=auth, timeout=instance_config.timeout)
-
-        return response.json()
 
     def _dispatch_saved_search(self, instance_config, saved_search):
         """
