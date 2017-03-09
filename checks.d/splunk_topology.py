@@ -21,12 +21,7 @@ class SavedSearch:
         self.request_timeout_seconds = int(saved_search_instance.get('request_timeout_seconds', instance_config.default_request_timeout_seconds))
         self.search_max_retry_count = int(saved_search_instance.get('search_max_retry_count', instance_config.default_search_max_retry_count))
         self.search_seconds_between_retries = int(saved_search_instance.get('search_seconds_between_retries', instance_config.default_search_seconds_between_retries))
-        self.polling_interval_seconds = int(saved_search_instance.get('polling_interval_seconds', instance_config.default_polling_interval_seconds))
 
-        self.last_successful_poll_epoch_seconds = None
-
-    def should_poll(self, time_seconds):
-        return self.last_successful_poll_epoch_seconds is None or time_seconds >= self.last_successful_poll_epoch_seconds + self.polling_interval_seconds
 
 
 class InstanceConfig:
@@ -69,6 +64,12 @@ class Instance:
         }
         self.tags = instance.get('tags', [])
 
+        self.polling_interval_seconds = int(instance.get('polling_interval_seconds', self.instance_config.default_polling_interval_seconds))
+        self.last_successful_poll_epoch_seconds = None
+
+    def should_poll(self, time_seconds):
+        return self.last_successful_poll_epoch_seconds is None or time_seconds >= self.last_successful_poll_epoch_seconds + self.polling_interval_seconds
+
 
 class SplunkTopology(AgentCheck):
     SERVICE_CHECK_NAME = "splunk.topology_information"
@@ -90,6 +91,9 @@ class SplunkTopology(AgentCheck):
         current_time_epoch_seconds = self._current_time_seconds()
         instance_key = instance.instance_key
 
+        if not instance.should_poll(current_time_epoch_seconds):
+            return
+
         try:
             search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
                           for saved_search in instance.saved_searches]
@@ -97,7 +101,10 @@ class SplunkTopology(AgentCheck):
             self.start_snapshot(instance_key)
             try:
                 for (sid, saved_search) in search_ids:
-                    self._process_saved_search(sid, saved_search, current_time_epoch_seconds, instance)
+                    self._process_saved_search(sid, saved_search, instance)
+
+                # If everything was successful, update the timestamp
+                instance.last_successful_poll_epoch_seconds = current_time_epoch_seconds
             finally:
                 self.stop_snapshot(instance_key)
 
@@ -107,10 +114,7 @@ class SplunkTopology(AgentCheck):
         else:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
 
-    def _process_saved_search(self, search_id, saved_search, current_time_epoch_seconds, instance):
-        if not saved_search.should_poll(current_time_epoch_seconds):
-            return
-
+    def _process_saved_search(self, search_id, saved_search, instance):
         # fetch results in batches
         offset = 0
         nr_of_results = None
@@ -131,10 +135,9 @@ class SplunkTopology(AgentCheck):
             nr_of_results = len(response['results'])
             offset += nr_of_results
 
-        # If everything was successful, update the timestamp
-        saved_search.last_successful_poll_epoch_seconds = current_time_epoch_seconds
 
-    def _current_time_seconds(self):
+    @staticmethod
+    def _current_time_seconds():
         return int(round(time.time()))
 
     @staticmethod
