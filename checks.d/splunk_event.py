@@ -83,11 +83,17 @@ class SplunkEvent(AgentCheck):
 
         instance = self.instance_data[instance["url"]]
 
-        search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
-                      for saved_search in instance.saved_searches]
+        try:
+            search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
+                          for saved_search in instance.saved_searches]
 
-        for (sid, saved_search) in search_ids:
-            self._process_saved_search(sid, saved_search, instance)
+            for (sid, saved_search) in search_ids:
+                self._process_saved_search(sid, saved_search, instance)
+        except Exception as e:
+            self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=instance.tags, message=str(e))
+            raise CheckException("Cannot connect to Splunk, please check your configuration. Message: " + str(e))
+        else:
+            self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
 
     def _extract_events(self, saved_search, instance, result):
         sent_events = saved_search.last_events_at_epoch_time

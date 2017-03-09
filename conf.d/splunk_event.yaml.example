@@ -20,6 +20,7 @@ instances:
     username: "admin"
     password: "admin"
     saved_searches:
+      # Splunk name of the saved search
       - name: "events"
         # request_timeout_seconds: 10
         # search_max_retry_count: 5
