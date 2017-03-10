@@ -98,7 +98,7 @@ class SplunkHelper():
 
 def take_required_field(field, obj):
     """
-    Get a field form an object, remove its vale and remove the field form the object
+    Get a field form an object, remove its value and remove the field form the object
     """
     if field not in obj:
         raise CheckException("Missing '%s' field in result data" % field)
@@ -109,7 +109,7 @@ def take_required_field(field, obj):
 
 def take_optional_field(field, obj):
     """
-    Get a field form an object, remove its vale and remove the field form the object
+    Get a field form an object, remove its value and remove the field form the object
     """
     if field not in obj:
         return None

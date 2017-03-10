@@ -225,8 +225,6 @@ class TestSplunkEarliestTime(AgentCheckTest):
         def _mocked_polling_search(*args, **kwargs):
             sid = args[0]
             count = args[1].batch_size
-            print "expected search %s" % (sid)
-            print "reading json batch_%s_seq_%s.json" % (sid, count)
             return json.loads(Fixtures.read_file("batch_%s_seq_%s.json" % (sid, count)))
 
         def _mocked_dispatch_saved_search_do_post(*args, **kwargs):
@@ -238,7 +236,6 @@ class TestSplunkEarliestTime(AgentCheckTest):
                     return {"sid": test_data["sid"]}
             earliest_time = args[2]['dispatch.earliest_time']
             if test_data["earliest_time"] != "":
-                print earliest_time
                 self.assertEquals(earliest_time, test_data["earliest_time"])
             return MockedResponse()
 
@@ -248,13 +245,14 @@ class TestSplunkEarliestTime(AgentCheckTest):
             '_current_time_seconds': _mocked_current_time_seconds
         }
 
-        # Inital run
+        # Initial run
         test_data["sid"] = "poll"
         test_data["time"] = 1
         self.run_check(config, mocks=test_mocks)
         self.assertEqual(len(self.events), 4)
         self.assertEqual([e['event_type'] for e in self.events], ["0_1", "0_2", "1_1", "1_2"])
 
+        # respect earliest_time
         test_data["sid"] = "poll1"
         test_data["time"] = 1
         test_data["earliest_time"] = '2017-03-08T18:29:59.000000+0000'
@@ -290,7 +288,7 @@ class TestSplunkDeduplicateEventsInTheSameRun(AgentCheckTest):
                     'username': "admin",
                     'password': "admin",
                     'saved_searches': [{
-                        "name": "dublicates",
+                        "name": "duplicates",
                         "parameters": {}
                     }],
                     'tags': ["checktag:checktagvalue"]
@@ -300,7 +298,7 @@ class TestSplunkDeduplicateEventsInTheSameRun(AgentCheckTest):
 
         # Used to validate which searches have been executed
         test_data = {
-            "expected_searches": ["dublicates"],
+            "expected_searches": ["duplicates"],
             "sid": "",
             "time": 0,
         }
@@ -332,9 +330,8 @@ class TestSplunkDeduplicateEventsInTheSameRun(AgentCheckTest):
         self.assertEqual(len(self.events), 2)
         self.assertEqual([e['event_type'] for e in self.events], ["1", "2"])
 
-# Sid is equal to search name
 def _mocked_dispatch_saved_search(*args, **kwargs):
-    print "_mocked_dispatch_saved_search"
+    # Sid is equal to search name
     return args[1].name
 
 def _mocked_search(*args, **kwargs):

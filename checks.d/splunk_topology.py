@@ -107,7 +107,6 @@ class SplunkTopology(AgentCheck):
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
 
     def _process_saved_search(self, search_id, saved_search, instance):
-        # fetch results in batches
         for response in self._search(search_id, saved_search, instance):
             for message in response['messages']:
                 if message['type'] != "FATAL":
@@ -128,7 +127,7 @@ class SplunkTopology(AgentCheck):
 
     def _dispatch_saved_search(self, instance_config, saved_search):
         """
-        Initiate a saved search, returning the saved id
+        Initiate a saved search, returning the search id
         :param instance_config: InstanceConfig of the splunk instance
         :param saved_search: SavedSearch to dispatch
         :return: search id

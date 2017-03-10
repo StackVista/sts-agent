@@ -68,7 +68,7 @@ class SplunkEvent(AgentCheck):
 
     def check(self, instance):
         if 'url' not in instance:
-            raise CheckException('Splunk topology instance missing "url" value.')
+            raise CheckException('Splunk event instance missing "url" value.')
 
         if instance["url"] not in self.instance_data:
             self.instance_data[instance["url"]] = Instance(instance, self.init_config)
@@ -103,8 +103,7 @@ class SplunkEvent(AgentCheck):
             if timestamp > saved_search.last_event_time_epoch_sec:
                 saved_search.last_events_at_epoch_time = set()
                 saved_search.last_event_time_epoch_sec = timestamp
-
-            if timestamp == saved_search.last_event_time_epoch_sec:
+            elif timestamp == saved_search.last_event_time_epoch_sec:
                 saved_search.last_events_at_epoch_time.add(event_id)
 
             if event_id in sent_events:
@@ -131,18 +130,12 @@ class SplunkEvent(AgentCheck):
             })
 
     def _process_saved_search(self, search_id, saved_search, instance):
-        # fetch results in batches
         for response in self._search(search_id, saved_search, instance):
             for message in response['messages']:
                 if message['type'] != "FATAL":
                     self.log.info("Received unhandled message, got: " + str(message))
 
             self._extract_events(saved_search, instance, response)
-
-
-    @staticmethod
-    def _current_time_seconds():
-        return int(round(time.time()))
 
     def _search(self, search_id, saved_search, instance):
         return self.splunkHelper.saved_search_results(search_id, saved_search, instance.instance_config)
@@ -155,7 +148,8 @@ class SplunkEvent(AgentCheck):
                 result[key] = value
         return result
 
-    def _convert_dict_to_tags(self, data):
+    @staticmethod
+    def _convert_dict_to_tags(data):
         result = []
         for key, value in data.iteritems():
             result.extend(["%s:%s" % (key, value)])
@@ -164,7 +158,7 @@ class SplunkEvent(AgentCheck):
 
     def _dispatch_saved_search(self, instance_config, saved_search):
         """
-        Initiate a saved search, returning the saved id
+        Initiate a saved search, returning the search id
         :param instance_config: Configuration of the splunk instance
         :param saved_search: Configuration of the saved search
         :return:
@@ -189,7 +183,6 @@ class SplunkEvent(AgentCheck):
         response_body = self._do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
         return response_body['sid']
 
-    # copy pasted from topology check TODO generify into common class
     def _do_post(self, url, auth, payload, timeout, verify_ssl):
         return self.splunkHelper.do_post(url, auth, payload, timeout, verify_ssl)
 
@@ -198,10 +191,10 @@ class SplunkEvent(AgentCheck):
         Converts time in utc format 2016-06-27T14:26:30.000+00:00 to seconds
         """
         parsed_datetime = iso8601.parse_date(str_datetime_utc)
-        # parsed_datetime = datetime.datetime.strptime(str_datetime_utc,'%Y-%m-%dT%H:%M:%S.%f%Z')
         return self._get_time_since_epoch(parsed_datetime)
 
-    def _get_time_since_epoch(self, utc_datetime):
+    @staticmethod
+    def _get_time_since_epoch(utc_datetime):
         utc = timezone('UTC')
         begin_epoch = datetime.datetime.utcfromtimestamp(0).replace(tzinfo = utc)
         timestamp = (utc_datetime - begin_epoch).total_seconds()
