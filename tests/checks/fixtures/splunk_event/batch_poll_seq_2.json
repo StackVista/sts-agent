@@ -1,0 +1,57 @@
+[{
+	"preview": false,
+	"init_offset": 0,
+	"messages": [],
+	"fields": [{
+		"name": "_time"
+	}, {
+		"name": "event_type"
+	}],
+	"results": [{
+		"_time": "2017-03-08T18:29:56.000+00:00",
+    "event_type": "0_1",
+		"_bkt": "1",
+		"_cd": "1"
+	}, {
+		"_time": "2017-03-08T18:29:57.000+00:00",
+    "event_type": "0_2",
+		"_bkt": "1",
+		"_cd": "2"
+	}],
+	"highlighted": {}
+},
+{
+  "preview": false,
+  "init_offset": 0,
+  "messages": [],
+  "fields": [{
+    "name": "_time"
+  }, {
+    "name": "event_type"
+  }],
+  "results": [{
+    "_time": "2017-03-08T18:29:58.000+00:00",
+    "event_type": "1_1",
+    "_bkt": "2",
+    "_cd": "1"
+  }, {
+    "_time": "2017-03-08T18:29:59.000+00:00",
+    "event_type": "1_2",
+    "_bkt": "2",
+    "_cd": "2"
+  }],
+  "highlighted": {}
+},
+{
+  "preview": false,
+  "init_offset": 0,
+  "messages": [],
+  "fields": [{
+    "name": "_time"
+  }, {
+    "name": "event_type"
+  }],
+  "results": [],
+  "highlighted": {}
+}]
+

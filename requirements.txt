@@ -80,3 +80,7 @@ python-consul==0.4.7
 
 # checks.d/spark.py
 beautifulsoup4==4.5.1
+
+# checks.d/splunk_event.py
+pytz==2016.10
+iso8601==0.1.11
