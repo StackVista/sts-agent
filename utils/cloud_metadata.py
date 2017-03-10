@@ -19,19 +19,19 @@ class GCE(object):
     TIMEOUT = 0.3 # second
     SOURCE_TYPE_NAME = 'google cloud platform'
     metadata = None
-    EXCLUDED_ATTRIBUTES = ["kube-env", "startup-script", "sshKeys", "user-data",
-    "cli-cert", "ipsec-cert", "ssl-cert"]
+    EXCLUDED_ATTRIBUTES = ["kube-env", "startup-script", "shutdown-script", "configure-sh", "sshKeys", "user-data",
+    "cli-cert", "ipsec-cert", "ssl-cert", "google-container-manifest"]
 
 
     @staticmethod
     def _get_metadata(agentConfig):
         if GCE.metadata is not None:
-            return GCE.metadata
+            return GCE.metadata.copy()
 
         if not agentConfig['collect_instance_metadata']:
             log.info("Instance metadata collection is disabled. Not collecting it.")
             GCE.metadata = {}
-            return GCE.metadata
+            return {}
 
         try:
             r = requests.get(
@@ -45,7 +45,7 @@ class GCE(object):
             log.debug("Collecting GCE Metadata failed %s", str(e))
             GCE.metadata = {}
 
-        return GCE.metadata
+        return GCE.metadata.copy()
 
 
 
@@ -218,7 +218,7 @@ class EC2(object):
                 log.debug("Collecting EC2 Metadata failed %s", str(e))
                 pass
 
-        return EC2.metadata
+        return EC2.metadata.copy()
 
     @staticmethod
     def get_instance_id(agentConfig):

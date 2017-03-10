@@ -7,6 +7,7 @@ The Check class is being deprecated so don't write new checks with it.
 # stdlib
 from collections import defaultdict
 import copy
+import inspect
 import logging
 import numbers
 import os
@@ -26,11 +27,13 @@ import yaml
 
 # project
 from checks import check_status
+from config import AGENT_VERSION
 from util import get_next_id, yLoader
 from utils.hostname import get_hostname
 from utils.proxy import get_proxy
 from utils.platform import Platform
 from utils.profile import pretty_statistics
+from utils.sdk import load_manifest
 if Platform.is_windows():
     from utils.debug import run_check  # noqa - windows debug purpose
 
@@ -40,6 +43,9 @@ log = logging.getLogger(__name__)
 DEFAULT_PSUTIL_METHODS = ['memory_info', 'io_counters']
 
 AGENT_METRICS_CHECK_NAME = 'agent_metrics'
+
+AGENT_CHECK_FRAME = 2
+NETWORK_CHECK_FRAME = 3
 
 
 # Konstants
@@ -381,8 +387,11 @@ class AgentCheck(object):
         self.name = name
         self.init_config = init_config or {}
         self.agentConfig = agentConfig
+
         self.in_developer_mode = agentConfig.get('developer_mode') and psutil
         self._internal_profiling_stats = None
+        self.allow_profiling = self.agentConfig.get('allow_profiling', True)
+
         self.default_integration_http_timeout = float(agentConfig.get('default_integration_http_timeout', 9))
 
         self.hostname = agentConfig.get('checksd_hostname') or get_hostname(agentConfig)
@@ -405,11 +414,14 @@ class AgentCheck(object):
         self.topology_instances = {}
         self.instances = instances or []
         self.warnings = []
+        self.check_version = None
         self.library_versions = None
         self.last_collection_time = defaultdict(int)
         self._instance_metadata = []
         self.svc_metadata = []
         self.historate_dict = {}
+
+        self.set_check_version(manifest=self._get_check_manifest())
 
         # Set proxy settings
         self.proxy_settings = get_proxy(self.agentConfig)
@@ -429,6 +441,40 @@ class AgentCheck(object):
                     uri=uri)
             self.proxies['http'] = "http://{uri}".format(uri=uri)
             self.proxies['https'] = "https://{uri}".format(uri=uri)
+
+    def _get_check_manifest(self, manifest_path=None):
+        """
+        Attempts to collect the manifest for SDK checks.
+
+        Do not use outside of the constructor if called without args, it assumes the following call chain:
+            CheckClass.__init__() -> AgentCheck.__init__() -> AgentCheck._get_check_manifest()
+        """
+        from checks.network_checks import NetworkCheck
+        if not manifest_path:
+            frames = inspect.stack()
+            # As we mention in the docstring this is expected to be called from
+            # AgentCheck constructor. By doing so we can assume two things:
+            #    - If the caller is a NetworkCheck, the Check() constructor
+            #      frame will be on the third frame in the stack.
+            #    - Otherwise it will be a regular check, so the Check()
+            #      constructor frame will be the second frame in the stack.
+            # In frame[1] we have the __file__ for that particular frame
+            # source.
+            frame_idx = NETWORK_CHECK_FRAME if isinstance(self, NetworkCheck) else AGENT_CHECK_FRAME
+            caller_frame = frames[frame_idx]  # frame_idx _should_ be the check __init__ frame
+            module_path = os.path.dirname(caller_frame[1])  # idx 1 contains the filename.
+            manifest_path = os.path.join(module_path, 'manifest.json')
+
+        return load_manifest(manifest_path)
+
+    def set_check_version(self, manifest=None):
+        version = AGENT_VERSION
+
+        if manifest is not None:
+            version = "{core}:{sdk}".format(core=AGENT_VERSION,
+                                        sdk=manifest.get('version', 'unknown'))
+
+        self.check_version = version
 
     def instance_count(self):
         """ Return the number of instances that are configured for this check. """
@@ -869,13 +915,16 @@ class AgentCheck(object):
         return stats
 
     def _set_internal_profiling_stats(self, before, after):
-        self._internal_profiling_stats = {'before': before, 'after': after}
+        if self.allow_profiling:
+            self._internal_profiling_stats = {'before': before, 'after': after}
 
     def _get_internal_profiling_stats(self):
         """
         If in developer mode, return a dictionary of statistics about the check run
         """
-        stats = self._internal_profiling_stats
+        stats = None
+        if self.allow_profiling:
+            stats = self._internal_profiling_stats
         self._internal_profiling_stats = None
         return stats
 
@@ -935,8 +984,9 @@ class AgentCheck(object):
         if self.in_developer_mode and self.name != AGENT_METRICS_CHECK_NAME:
             try:
                 after = AgentCheck._collect_internal_stats()
-                self._set_internal_profiling_stats(before, after)
-                log.info("\n \t %s %s" % (self.name, pretty_statistics(self._internal_profiling_stats)))
+                if self.allow_profiling:
+                    self._set_internal_profiling_stats(before, after)
+                    log.info("\n \t %s %s" % (self.name, pretty_statistics(self._internal_profiling_stats)))
             except Exception:  # It's fine if we can't collect stats for the run, just log and proceed
                 self.log.debug("Failed to collect Agent Stats after check {0}".format(self.name))
 

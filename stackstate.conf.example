@@ -50,6 +50,8 @@ api_key: none
 # developer_mode: no
 # In developer mode, the number of runs to be included in a single collector profile
 # collector_profile_interval: 20
+# In developer mode, disable profiling altogether, but still collect fine-grained agent metrics
+# allow_profiling: False
 
 # use unique hostname for GCE hosts, see http://dtdg.co/1eAynZk
 # when not specified, default: no
@@ -117,6 +119,12 @@ gce_updated_hostname: yes
 # `/stackstate/check_configs` key in the back-end. If you wish otherwise, uncomment this option
 # and modify its value.
 # sd_template_dir: /stackstate/check_configs
+#
+# If you Consul store requires token authentication for service discovery, you can define that token here.
+# consul_token:
+#
+# Enable JMX checks for service discovery
+# sd_jmx_enable: no
 #
 # ========================================================================== #
 # Other                                                                      #

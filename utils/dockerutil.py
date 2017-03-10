@@ -14,7 +14,12 @@ from docker import Client, tls
 from utils.platform import Platform
 from utils.singleton import Singleton
 
+SWARM_SVC_LABEL = 'com.docker.swarm.service.name'
 STACKSTATE_ID = 'com.stackstate.sd.check.id'
+
+
+class BogusPIDException(Exception):
+    pass
 
 
 class MountException(Exception):
@@ -30,6 +35,7 @@ DEFAULT_VERSION = 'auto'
 CHECK_NAME = 'docker_daemon'
 CONFIG_RELOAD_STATUS = ['start', 'die', 'stop', 'kill']  # used to trigger service discovery
 
+# only used if no exclude rule was defined
 DEFAULT_CONTAINER_EXCLUDE = ["docker_image:gcr.io/google_containers/pause.*"]
 
 log = logging.getLogger(__name__)
@@ -56,6 +62,9 @@ class DockerUtil:
 
         # At first run we'll just collect the events from the latest 60 secs
         self._latest_event_collection_ts = int(time.time()) - 60
+
+        # Try to detect if we are on Swarm
+        self.fetch_swarm_state()
 
         # Try to detect if we are on ECS
         self._is_ecs = False
@@ -117,6 +126,22 @@ class DockerUtil:
     def is_ecs(self):
         return self._is_ecs
 
+    def is_swarm(self):
+        if self.swarm_node_state == 'pending':
+            self.fetch_swarm_state()
+        if self.swarm_node_state == 'active':
+            return True
+        else:
+            return False
+
+    def fetch_swarm_state(self):
+        self.swarm_node_state = None
+        try:
+            info = self.client.info()
+            self.swarm_node_state = info.get('Swarm', {}).get('LocalNodeState')
+        except Exception:
+            pass
+
     def get_events(self):
         self.events = []
         changed_container_ids = set()
@@ -153,25 +178,29 @@ class DockerUtil:
 
         return None
 
-    def get_hostname(self, use_default_gw=True):
+    def get_hostname(self, use_default_gw=True, should_resolve=False):
         '''
         Return the `Name` param from `docker info` to use as the hostname
         Falls back to the default route.
         '''
+        # return or raise
+        is_resolvable = lambda host: socket.gethostbyname(host)
 
         if self.hostname is not None:
             # Use cache
-            return self.hostname
+            try:
+                if not should_resolve or is_resolvable(self.hostname):
+                    return self.hostname
+            except Exception:
+                log.debug("Couldn't resolve cached hostname %s, triggering new hostname detection." % self.hostname)
 
         if self._default_gateway is not None and use_default_gw:
             return self._default_gateway
 
         try:
-            docker_host_name = self.client.info().get("Name")
-            socket.gethostbyname(docker_host_name) # make sure we can resolve it
-            self.hostname = docker_host_name
-            return docker_host_name
-
+            self.hostname = self.client.info().get("Name")
+            if not should_resolve or is_resolvable(self.hostname):
+                return self.hostname
         except Exception as e:
             log.debug("Unable to retrieve hostname using docker API, %s", str(e))
             if not use_default_gw:
@@ -340,7 +369,7 @@ class DockerUtil:
                     if os.path.exists(stat_file_path):
                         return os.path.join(stat_file_path, '%(file)s')
 
-        raise MountException("Cannot find Docker cgroup directory. Be sure your system is supported.")
+        raise MountException("Cannot find Docker '%s' cgroup directory. Be sure your system is supported." % subsys)
 
     @classmethod
     def find_cgroup_filename_pattern(cls, mountpoints, container_id):
@@ -379,7 +408,7 @@ class DockerUtil:
                 # the split will be like [repo_url, repo_port/image_name, image_tag]. Let's avoid that
                 split = [':'.join(split[:-1]), split[-1]]
             return [split[key]]
-        if "RepoTags" in entity:
+        if entity.get('RepoTags'):
             splits = [el.split(":") for el in entity["RepoTags"]]
             tags = set()
             for split in splits:
@@ -389,6 +418,14 @@ class DockerUtil:
                     tags.add(split[key])
             if len(tags) > 0:
                 return list(tags)
+        elif entity.get('RepoDigests'):
+            # the human-readable tag is not mentioned in RepoDigests, only the image name
+            if key != 0:
+                return None
+            split = entity['RepoDigests'][0].split('@')
+            if len(split) > 1:
+                return [split[key]]
+
         return None
 
     @classmethod

@@ -17,7 +17,6 @@ from tests.core.test_topology_check import DummyTopologyCheck
 from checks.collector import Collector
 from tests.checks.common import load_check
 from utils.hostname import get_hostname
-from utils.ntp import NTPUtil
 from utils.proxy import get_proxy
 
 logger = logging.getLogger()
@@ -145,6 +144,142 @@ class TestCore(unittest.TestCase):
         }], val)
         self.assertEquals(len(check.service_checks), 0, check.service_checks)
 
+
+    def test_no_proxy(self):
+        """ Starting with Agent 5.0.0, there should always be a local forwarder
+        running and all payloads should go through it. So we should make sure
+        that we pass the no_proxy environment variable that will be used by requests
+        (See: https://github.com/kennethreitz/requests/pull/945 )
+        """
+        from requests.utils import get_environ_proxies
+        from os import environ as env
+
+        env["http_proxy"] = "http://localhost:3128"
+        env["https_proxy"] = env["http_proxy"]
+        env["HTTP_PROXY"] = env["http_proxy"]
+        env["HTTPS_PROXY"] = env["http_proxy"]
+
+        self.assertTrue("no_proxy" in env)
+
+        self.assertEquals(env["no_proxy"], "127.0.0.1,localhost,169.254.169.254")
+        self.assertEquals({}, get_environ_proxies(
+            "http://localhost:17123/intake"))
+
+        expected_proxies = {
+            'http': 'http://localhost:3128',
+            'https': 'http://localhost:3128',
+            'no': '127.0.0.1,localhost,169.254.169.254'
+        }
+        environ_proxies = get_environ_proxies("https://www.google.com")
+        self.assertEquals(expected_proxies, environ_proxies,
+                          (expected_proxies, environ_proxies))
+
+        # Clear the env variables set
+        del env["http_proxy"]
+        del env["https_proxy"]
+        if "HTTP_PROXY" in env:
+            # on some platforms (e.g. Windows) env var names are case-insensitive, so we have to avoid
+            # deleting the same key twice
+            del env["HTTP_PROXY"]
+            del env["HTTPS_PROXY"]
+
+    def test_get_proxy(self):
+
+        agentConfig = {
+            "proxy_host": "localhost",
+            "proxy_port": 4242,
+            "proxy_user": "foo",
+            "proxy_password": "bar"
+        }
+        proxy_from_config = get_proxy(agentConfig)
+
+        self.assertEqual(proxy_from_config,
+            {
+                "host": "localhost",
+                "port": 4242,
+                "user": "foo",
+                "password": "bar",
+            })
+
+        os.environ["HTTPS_PROXY"] = "https://fooenv:barenv@google.com:4444"
+        proxy_from_env = get_proxy({})
+        self.assertEqual(proxy_from_env,
+            {
+                "host": "google.com",
+                "port": 4444,
+                "user": "fooenv",
+                "password": "barenv"
+            })
+
+
+class TestCollectionInterval(unittest.TestCase):
+
+    def test_min_collection_interval(self):
+        config = {'instances': [{}], 'init_config': {}}
+
+        agentConfig = {
+            'version': '0.1',
+            'api_key': 'toto'
+        }
+
+        # default min collection interval for that check was 20sec
+        check = load_check('disk', config, agentConfig)
+        check.min_collection_interval = 20
+        check.aggregator.expiry_seconds = 20 + 300
+
+        check.run()
+        metrics = check.get_metrics()
+        self.assertTrue(len(metrics) > 0, metrics)
+
+        check.run()
+        metrics = check.get_metrics()
+        # No metrics should be collected as it's too early
+        self.assertEquals(len(metrics), 0, metrics)
+
+        # equivalent to time.sleep(20)
+        check.last_collection_time[0] -= 20
+        check.run()
+        metrics = check.get_metrics()
+        self.assertTrue(len(metrics) > 0, metrics)
+        check.last_collection_time[0] -= 3
+        check.run()
+        metrics = check.get_metrics()
+        self.assertEquals(len(metrics), 0, metrics)
+        check.min_collection_interval = 0
+        check.run()
+        metrics = check.get_metrics()
+        self.assertTrue(len(metrics) > 0, metrics)
+
+        config = {'instances': [{'min_collection_interval':3}], 'init_config': {}}
+        check = load_check('disk', config, agentConfig)
+        check.run()
+        metrics = check.get_metrics()
+        self.assertTrue(len(metrics) > 0, metrics)
+        check.run()
+        metrics = check.get_metrics()
+        self.assertEquals(len(metrics), 0, metrics)
+        check.last_collection_time[0] -= 4
+        check.run()
+        metrics = check.get_metrics()
+        self.assertTrue(len(metrics) > 0, metrics)
+
+        config = {'instances': [{'min_collection_interval': 12}], 'init_config': {'min_collection_interval':3}}
+        check = load_check('disk', config, agentConfig)
+        check.run()
+        metrics = check.get_metrics()
+        self.assertTrue(len(metrics) > 0, metrics)
+        check.run()
+        metrics = check.get_metrics()
+        self.assertEquals(len(metrics), 0, metrics)
+        check.last_collection_time[0] -= 4
+        check.run()
+        metrics = check.get_metrics()
+        self.assertEquals(len(metrics), 0, metrics)
+        check.last_collection_time[0] -= 8
+        check.run()
+        metrics = check.get_metrics()
+        self.assertTrue(len(metrics) > 0, metrics)
+
     def test_collector(self):
         agentConfig = {
             'api_key': 'test_apikey',
@@ -161,6 +296,7 @@ class TestCore(unittest.TestCase):
             "init_config": {},
             "instances": [{"host": "localhost", "port": 6379}]
         }
+
         checks = [load_check('redisdb', redis_config, agentConfig)]
 
         c = Collector(agentConfig, [], {}, get_hostname(agentConfig))
@@ -179,154 +315,6 @@ class TestCore(unittest.TestCase):
         for check in checks:
             tag = "check:%s" % check.name
             assert tag in all_tags, all_tags
-
-# Checks whether topology data announced to a check is properly stored for retrieval.
-    def test_announce_topology_data_presence(self):
-        self.setUpAgentCheck()
-
-        instance_key = {
-            "type": "type",
-            "url": "http://localhost:5050"
-        }
-        hashable_key = tuple(sorted(instance_key.items()))
-
-        # Create a component and check whether it is picked up by the collector
-        self.ac.component(instance_key, "test-component1", {"name": "container"}, {"tags": ['tag1', 'tag2']})
-        self.assertEquals(len(self.ac.topology_instances), 1)
-        self.assertEquals(len(self.ac.topology_instances[hashable_key]._components), 1)
-        self.assertEquals(len(self.ac.topology_instances[hashable_key]._relations), 0)
-        expected_component_1 = {"externalId": "test-component1", "type": {"name": "container"}, "data": {"tags":['tag1', 'tag2']}}
-        self.assertEquals(self.ac.topology_instances[hashable_key]._components[0], expected_component_1)
-
-        # Create a 2nd component and check whether it is picked up by the collector
-        self.ac.component(instance_key, "test-component2", {"name": "container"}, {"tags": ['tag3', 'tag4']}, )
-        self.assertEquals(len(self.ac.topology_instances[hashable_key]._components), 2)
-        self.assertEquals(len(self.ac.topology_instances[hashable_key]._relations), 0)
-        expected_component_2 = {"externalId": "test-component2", "type": {"name": "container"}, "data": {"tags":['tag3', 'tag4']}}
-        self.assertEquals(self.ac.topology_instances[hashable_key]._components[1], expected_component_2)
-
-        # Create a relation and check whether it is picked up by the collector
-        self.ac.relation(instance_key, "test-component1", "test-component2", {"name": "dependsOn"}, {"key":"value"})
-        self.assertEquals(len(self.ac.topology_instances[hashable_key]._components), 2)
-        self.assertEquals(len(self.ac.topology_instances[hashable_key]._relations), 1)
-        expected_relation = {"externalId": "test-component1-dependsOn-test-component2", "sourceId": "test-component1", "targetId": "test-component2", "type": {"name": "dependsOn"}, "data": {"key": "value"}}
-
-        self.assertEquals(self.ac.topology_instances[hashable_key]._relations[0], expected_relation)
-
-    def test_topology_no_start_stop(self):
-        self.setUpAgentCheck()
-
-        instance_key = {
-            "type": "type",
-            "url": "http://localhost:5050"
-        }
-        hashable_key = tuple(sorted(instance_key.items()))
-        self.ac.component(instance_key, "test-component1", {"name": "container"}, {"tags": ['tag1', 'tag2']})
-
-        instance = self.ac.topology_instances[hashable_key]
-        self.assertFalse(instance._in_snapshot)
-        self.assertFalse(instance._start_snapshot)
-        self.assertFalse(instance._stop_snapshot)
-
-        # A 2nd call to get_topology_instance should have ditched the data
-        self.assertEquals(len(self.ac.get_topology_instances()), 1)
-        self.assertEquals(len(self.ac.get_topology_instances()), 0)
-
-    def test_topology_start_stop(self):
-        self.setUpAgentCheck()
-
-        instance_key = {
-            "type": "type",
-            "url": "http://localhost:5050"
-        }
-        hashable_key = tuple(sorted(instance_key.items()))
-
-        self.ac.start_snapshot(instance_key)
-        self.ac.component(instance_key, "test-component1", {"name": "container"}, {"tags": ['tag1', 'tag2']})
-
-        # Check whether starting is reflected in returned data
-        instance = self.ac.topology_instances[hashable_key]
-        self.assertTrue(instance._in_snapshot)
-        self.assertTrue(instance._start_snapshot)
-        self.assertFalse(instance._stop_snapshot)
-        self.assertEquals(len(instance._components), 1)
-
-        # Do not throw away openened snapshot
-        self.assertEquals(len(self.ac.get_topology_instances()), 1)
-        self.assertEquals(len(self.ac.get_topology_instances()), 1)
-
-        # Another get_topology should leave the snapshot, but ditch the start message
-        instance = self.ac.topology_instances[hashable_key]
-        self.assertTrue(instance._in_snapshot)
-        self.assertFalse(instance._start_snapshot)
-        self.assertFalse(instance._stop_snapshot)
-        self.assertEquals(len(instance._components), 0)
-
-        self.ac.stop_snapshot(instance_key)
-
-        # Make sure stopping gives the proper data
-        instance = self.ac.topology_instances[hashable_key]
-        self.assertFalse(instance._in_snapshot)
-        self.assertFalse(instance._start_snapshot)
-        self.assertTrue(instance._stop_snapshot)
-        self.assertEquals(len(instance._components), 0)
-
-        # Make sure the instance is thrown away
-        self.assertEquals(len(self.ac.get_topology_instances()), 1)
-        self.assertEquals(len(self.ac.get_topology_instances()), 0)
-
-        # Make sure we can start again after the stop
-        self.ac.start_snapshot(instance_key)
-
-    def test_topology_start_twice(self):
-        self.setUpAgentCheck()
-
-        instance_key = {
-            "type": "type",
-            "url": "http://localhost:5050"
-        }
-
-        self.ac.start_snapshot(instance_key)
-
-        thrown = False
-        try:
-            self.ac.start_snapshot(instance_key)
-        except Exception:
-            thrown = True
-        self.assertTrue(thrown)
-
-    def test_topology_stop_no_start(self):
-        self.setUpAgentCheck()
-
-        instance_key = {
-            "type": "type",
-            "url": "http://localhost:5050"
-        }
-
-        thrown = False
-        try:
-            self.ac.stop_snapshot(instance_key)
-        except Exception:
-            thrown = True
-        self.assertTrue(thrown)
-
-    def test_topology_start_twice_in_run(self):
-        self.setUpAgentCheck()
-
-        instance_key = {
-            "type": "type",
-            "url": "http://localhost:5050"
-        }
-
-        self.ac.start_snapshot(instance_key)
-        self.ac.stop_snapshot(instance_key)
-
-        thrown = False
-        try:
-            self.ac.start_snapshot(instance_key)
-        except Exception:
-            thrown = True
-        self.assertTrue(thrown)
 
     # Test whether the collector collects topology information from checks
     def test_topology_collection(self):
@@ -405,6 +393,7 @@ class TestCore(unittest.TestCase):
             "init_config": {},
             "instances": [{"host": "localhost", "port": 6379}]
         }
+
         checks = [load_check('redisdb', redis_config, agentConfig)]
 
         c = Collector(agentConfig, [], {}, get_hostname(agentConfig))
@@ -415,192 +404,6 @@ class TestCore(unittest.TestCase):
 
         # We check that the redis DD_CHECK_TAG is sent in the payload
         self.assertTrue('dd_check:redisdb' in payload['host-tags']['system'])
-
-    def test_no_proxy(self):
-        """ Starting with Agent 5.0.0, there should always be a local forwarder
-        running and all payloads should go through it. So we should make sure
-        that we pass the no_proxy environment variable that will be used by requests
-        (See: https://github.com/kennethreitz/requests/pull/945 )
-        """
-        from requests.utils import get_environ_proxies
-        from os import environ as env
-
-        env["http_proxy"] = "http://localhost:3128"
-        env["https_proxy"] = env["http_proxy"]
-        env["HTTP_PROXY"] = env["http_proxy"]
-        env["HTTPS_PROXY"] = env["http_proxy"]
-
-        self.assertTrue("no_proxy" in env)
-
-        self.assertEquals(env["no_proxy"], "127.0.0.1,localhost,169.254.169.254")
-        self.assertEquals({}, get_environ_proxies(
-            "http://localhost:17123/intake"))
-
-        expected_proxies = {
-            'http': 'http://localhost:3128',
-            'https': 'http://localhost:3128',
-            'no': '127.0.0.1,localhost,169.254.169.254'
-        }
-        environ_proxies = get_environ_proxies("https://www.google.com")
-        self.assertEquals(expected_proxies, environ_proxies,
-                          (expected_proxies, environ_proxies))
-
-        # Clear the env variables set
-        del env["http_proxy"]
-        del env["https_proxy"]
-        if "HTTP_PROXY" in env:
-            # on some platforms (e.g. Windows) env var names are case-insensitive, so we have to avoid
-            # deleting the same key twice
-            del env["HTTP_PROXY"]
-            del env["HTTPS_PROXY"]
-
-    def test_get_proxy(self):
-
-        agentConfig = {
-            "proxy_host": "localhost",
-            "proxy_port": 4242,
-            "proxy_user": "foo",
-            "proxy_password": "bar"
-        }
-        proxy_from_config = get_proxy(agentConfig)
-
-        self.assertEqual(proxy_from_config,
-            {
-                "host": "localhost",
-                "port": 4242,
-                "user": "foo",
-                "password": "bar",
-            })
-
-        os.environ["HTTPS_PROXY"] = "https://fooenv:barenv@google.com:4444"
-        proxy_from_env = get_proxy({})
-        self.assertEqual(proxy_from_env,
-            {
-                "host": "google.com",
-                "port": 4444,
-                "user": "fooenv",
-                "password": "barenv"
-            })
-
-    def test_min_collection_interval(self):
-        config = {'instances': [{}], 'init_config': {}}
-
-        agentConfig = {
-            'version': '0.1',
-            'api_key': 'toto'
-        }
-
-        # default min collection interval for that check was 20sec
-        check = load_check('disk', config, agentConfig)
-        check.min_collection_interval = 20
-        check.aggregator.expiry_seconds = 20 + 300
-
-        check.run()
-        metrics = check.get_metrics()
-        self.assertTrue(len(metrics) > 0, metrics)
-
-        check.run()
-        metrics = check.get_metrics()
-        # No metrics should be collected as it's too early
-        self.assertEquals(len(metrics), 0, metrics)
-
-        # equivalent to time.sleep(20)
-        check.last_collection_time[0] -= 20
-        check.run()
-        metrics = check.get_metrics()
-        self.assertTrue(len(metrics) > 0, metrics)
-        check.last_collection_time[0] -= 3
-        check.run()
-        metrics = check.get_metrics()
-        self.assertEquals(len(metrics), 0, metrics)
-        check.min_collection_interval = 0
-        check.run()
-        metrics = check.get_metrics()
-        self.assertTrue(len(metrics) > 0, metrics)
-
-        config = {'instances': [{'min_collection_interval':3}], 'init_config': {}}
-        check = load_check('disk', config, agentConfig)
-        check.run()
-        metrics = check.get_metrics()
-        self.assertTrue(len(metrics) > 0, metrics)
-        check.run()
-        metrics = check.get_metrics()
-        self.assertEquals(len(metrics), 0, metrics)
-        check.last_collection_time[0] -= 4
-        check.run()
-        metrics = check.get_metrics()
-        self.assertTrue(len(metrics) > 0, metrics)
-
-        config = {'instances': [{'min_collection_interval': 12}], 'init_config': {'min_collection_interval':3}}
-        check = load_check('disk', config, agentConfig)
-        check.run()
-        metrics = check.get_metrics()
-        self.assertTrue(len(metrics) > 0, metrics)
-        check.run()
-        metrics = check.get_metrics()
-        self.assertEquals(len(metrics), 0, metrics)
-        check.last_collection_time[0] -= 4
-        check.run()
-        metrics = check.get_metrics()
-        self.assertEquals(len(metrics), 0, metrics)
-        check.last_collection_time[0] -= 8
-        check.run()
-        metrics = check.get_metrics()
-        self.assertTrue(len(metrics) > 0, metrics)
-
-    def test_ntp_global_settings(self):
-        # Clear any existing ntp config
-        NTPUtil._drop()
-
-        config = {'instances': [{
-            "host": "foo.com",
-            "port": "bar",
-            "version": 42,
-            "timeout": 13.37}],
-            'init_config': {}}
-
-        agentConfig = {
-            'version': '0.1',
-            'api_key': 'toto'
-        }
-
-        # load this config in the ntp singleton
-        ntp_util = NTPUtil(config)
-
-        # default min collection interval for that check was 20sec
-        check = load_check('ntp', config, agentConfig)
-        check.run()
-
-        self.assertEqual(ntp_util.args["host"], "foo.com")
-        self.assertEqual(ntp_util.args["port"], "bar")
-        self.assertEqual(ntp_util.args["version"], 42)
-        self.assertEqual(ntp_util.args["timeout"], 13.37)
-
-        # Clear the singleton to prepare for next config
-        NTPUtil._drop()
-
-        config = {'instances': [{}], 'init_config': {}}
-        agentConfig = {
-            'version': '0.1',
-            'api_key': 'toto'
-        }
-
-        # load the new config
-        ntp_util = NTPUtil(config)
-
-        # default min collection interval for that check was 20sec
-        check = load_check('ntp', config, agentConfig)
-        try:
-            check.run()
-        except Exception:
-            pass
-
-        self.assertTrue(ntp_util.args["host"].endswith("stackstate.pool.ntp.org"))
-        self.assertEqual(ntp_util.args["port"], "ntp")
-        self.assertEqual(ntp_util.args["version"], 3)
-        self.assertEqual(ntp_util.args["timeout"], 1.0)
-
-        NTPUtil._drop()
 
 
 class TestAggregator(unittest.TestCase):

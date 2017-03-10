@@ -102,4 +102,16 @@ BASIC_METRICS = {
         'rollup'       : 'average',
         'entity'       : ['VirtualMachine', 'HostSystem']
     },
+    'net.received': {
+        's_type'       : 'rate',
+        'unit'         : 'kiloBytesPerSecond',
+        'rollup'       : 'average',
+        'entity'       : ['VirtualMachine', 'HostSystem']
+    },
+    'net.transmitted': {
+        's_type'       : 'rate',
+        'unit'         : 'kiloBytesPerSecond',
+        'rollup'       : 'average',
+        'entity'       : ['VirtualMachine', 'HostSystem']
+    },
 }

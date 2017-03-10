@@ -4,6 +4,8 @@
 
 This document aims to provide some basic guidelines to contribute to this repository, but keep in mind that these are just guidelines, not rules; use your best judgment and feel free to propose changes to this document in a pull request.
 
+Want help with your PRs on this project? We offer [office hours](https://github.com/DataDog/dd-agent/wiki/Community-Office-Hours) twice a month via Slack and Google Hangouts.
+
 ## Submitting issues
 
 - You can first take a look at the [Troubleshooting](https://datadog.zendesk.com/hc/en-us/sections/200766955-Troubleshooting) section of our [Knowledge base](https://datadog.zendesk.com/hc/en-us).
@@ -26,6 +28,11 @@ Your Pull Request **must** always pass the Travis/Appveyor tests before being me
 
 _If you are adding a dependency (python module, library, ...), please check the [corresponding section](#add-dependencies)._
 
+## [Integrations](https://github.com/DataDog/integrations-core)
+
+All checks have been moved to the [Integration SDK](https://github.com/DataDog/integrations-core). Please look there to submit related issues, PRs, or review the latest changes.
+
+For new integrations, please open a pull request in the [integrations extras repo](https://github.com/DataDog/integrations-extras)
 
 ## Commits
 

@@ -1,7 +1,89 @@
 Changes
 =======
 
-# 5.10.0 / Unreleased
+# 5.11.3 / 02-27-2017
+**Mac OS only**
+
+### Details
+
+There was an issue with Gohai on Mac OS >= 10.11 leading to high CPU utilization. As a short term solution, Gohai has been disabled on Mac OS.
+
+### Changes
+
+* [OTHER] Do not run Gohai on Mac OS. See [#3224][].
+
+
+# 5.11.2 / 02-13-2017
+**Linux and Docker only**
+
+### Details
+
+There was an issue releasing 5.11.1 by which the package shipped still contained the bugs reported in 5.11.0 plaguing the SNMP check. Only affected debian package and the docker release.
+
+### Changes
+
+* [RELEASE] Releasing actual bugfix expected with 5.11.1, with version bump to 5.11.2.
+
+
+# 5.11.1 / 02-13-2017
+**Linux and Docker only**
+
+### Details
+
+There was a regression in 5.11.0 due to an inadverted subdependency upgrade, breaking the SNMP check.
+
+### Changes
+
+* [REGRESSION] pinning of `pyasn1` to version 0.1.9. See [#3183][], [omnibus-software-111](https://github.com/DataDog/omnibus-software/pull/111), [omnibus-software-114](https://github.com/DataDog/omnibus-software/pull/114), [omnibus-software-115](https://github.com/DataDog/omnibus-software/pull/115).
+
+
+# 5.11.0 / 02-08-2017
+**Linux and Docker only**
+
+### Details
+
+This release bundles the datadog-trace-agent as part of Linux and Docker installs. The dd-agent codebase contains a minimal set of changes to ensure the new trace-agent process will plug neatly into existing agent installs. Beta customers of Datadog's tracing tool will have received an email detailing the steps to transition to dd-agent 5.11.0 from the deprecated dd-trace-agent package.
+
+For more information:
+- https://github.com/DataDog/dd-agent/compare/5.10.1...5.11.0
+- https://github.com/DataDog/datadog-trace-agent
+- https://github.com/DataDog/datadog-trace-agent/releases/tag/5.11.0
+
+### Changes
+
+* [IMPROVEMENT] Supervisor: Add trace-agent as an optional process managed by supervisor
+* [IMPROVEMENT] Flare: Add trace-agent log file to flare output
+* [IMPROVEMENT] Core: append the output of trace-agent -info to service datadog-agent info command
+
+
+# 5.10.1 / 11-21-2016
+**Linux, Windows, Docker and Source Install**
+
+### Details
+https://github.com/DataDog/dd-agent/compare/5.10.0...5.10.1
+
+### Updated Integrations
+
+* RiakCS
+* Mongo
+
+### Changes
+* [IMPROVEMENT] Core/Forwarder: stop flushing after 10s. See [#3018][].
+* [IMPROVEMENT] Core: isolate system checks. See [#3011][].
+* [IMPROVEMENT] RiakCS: support Riak CS 2.1+ stats format. See [#2920][]. (Thanks [@millerdev][])
+* [IMPROVEMENT] Status: Silence requests exception. See [#3023][].
+* [IMPROVEMENT] SpooledTemporaryFile for subprocess output. See [#3002][].
+
+* [BUGFIX] Core: fix unintended subprocess_output empty output errors. See [#3024][].
+* [BUGFIX] Core/Multiple Checks: Only set `psutil.PROCFS_PATH` once in the collector. See [#3013][].
+* [BUGFIX] Core: use proxy for API key status check in info page. See [#3012][]. (Thanks [@2rs2ts][])
+* [BUGFIX] Mongo: use db.current_op instead of manually querying. See [#3016][] (Thanks [@ebroder][])
+* [BUGFIX] Mongo: use `currentOp` for monodb 3.1+. See [#3015][] (Thanks [@lattwood][])
+
+* [DEPRECATE] Process: `procfs_path` is now deprecated, should be set in `datadog.conf`. See [#3013][].
+
+
+# 5.10.0 / 11-09-2016
 **Linux, Windows, Docker and Source Install**
 
 ### Details
@@ -33,7 +115,7 @@ custom checks that rely on the former versions please make necessary amends:
 
 * kazoo `2.2.1` (previously `1.3.1`). See [Kazoo's changelog](https://github.com/python-zk/kazoo/blob/master/CHANGES.rst).
 * psutil `4.4.1` (previously `3.3.0`). See [psutil's changelog](https://github.com/giampaolo/psutil/blob/master/HISTORY.rst).
-* curl `7.51.0` (previously `7.50.0`). See [curl's changelog](https://curl.haxx.se/changes.html#7_51_0).
+* curl `7.51.0` (previously `7.50.0`). See [curl's changelog](https://curl.haxx.se/changes.html[#7][]_51_0).
 
 ### Updated integrations
 
@@ -106,6 +188,7 @@ custom checks that rely on the former versions please make necessary amends:
 * [BUGFIX] Kubernetes: Fix parsing of units in Kubernetes resource quantities. See [#2908][] (Thanks [@therc][])
 * [BUGFIX] Http Check: Fix SSL certificate parsing issue related to strptime. See [#2915][] (Thanks [@ghTravis][])
 * [BUGFIX] Mesos Slave: Connect to master with same protocol as slave. See [#2910][] (Thanks [@mcclurmc][])
+* [BUGFIX] Service Discovery: Fix single check reload on `auto_conf` templates and removed containers. See [#3006][]
 * [BUGFIX] Mongo: Fix case when check would send password in clear. See [#2940][]
 * [BUGFIX] Mongo: Fix hostname detection when username/password are part of the uri. See [#2894][] (Thanks [@ibwhite][])
 * [BUGFIX] MySQL: Improve innodb engine status check on RDS Aurora. See [#2971][] (Thanks [@scottgeary][])
@@ -2700,6 +2783,7 @@ https://github.com/DataDog/dd-agent/compare/2.2.9...2.2.10
 <!--- The following link definition list is generated by PimpMyChangelog --->
 [#2]: https://github.com/DataDog/dd-agent/issues/2
 [#3]: https://github.com/DataDog/dd-agent/issues/3
+[#7]: https://github.com/DataDog/dd-agent/issues/7
 [#8]: https://github.com/DataDog/dd-agent/issues/8
 [#9]: https://github.com/DataDog/dd-agent/issues/9
 [#16]: https://github.com/DataDog/dd-agent/issues/16
@@ -3608,6 +3692,7 @@ https://github.com/DataDog/dd-agent/compare/2.2.9...2.2.10
 [#2908]: https://github.com/DataDog/dd-agent/issues/2908
 [#2910]: https://github.com/DataDog/dd-agent/issues/2910
 [#2915]: https://github.com/DataDog/dd-agent/issues/2915
+[#2920]: https://github.com/DataDog/dd-agent/issues/2920
 [#2921]: https://github.com/DataDog/dd-agent/issues/2921
 [#2926]: https://github.com/DataDog/dd-agent/issues/2926
 [#2928]: https://github.com/DataDog/dd-agent/issues/2928
@@ -3643,7 +3728,20 @@ https://github.com/DataDog/dd-agent/compare/2.2.9...2.2.10
 [#2984]: https://github.com/DataDog/dd-agent/issues/2984
 [#2989]: https://github.com/DataDog/dd-agent/issues/2989
 [#2991]: https://github.com/DataDog/dd-agent/issues/2991
+[#3002]: https://github.com/DataDog/dd-agent/issues/3002
+[#3006]: https://github.com/DataDog/dd-agent/issues/3006
+[#3011]: https://github.com/DataDog/dd-agent/issues/3011
+[#3012]: https://github.com/DataDog/dd-agent/issues/3012
+[#3013]: https://github.com/DataDog/dd-agent/issues/3013
+[#3015]: https://github.com/DataDog/dd-agent/issues/3015
+[#3016]: https://github.com/DataDog/dd-agent/issues/3016
+[#3018]: https://github.com/DataDog/dd-agent/issues/3018
+[#3023]: https://github.com/DataDog/dd-agent/issues/3023
+[#3024]: https://github.com/DataDog/dd-agent/issues/3024
+[#3183]: https://github.com/DataDog/dd-agent/issues/3183
+[#3224]: https://github.com/DataDog/dd-agent/issues/3224
 [#3399]: https://github.com/DataDog/dd-agent/issues/3399
+[@2rs2ts]: https://github.com/2rs2ts
 [@AirbornePorcine]: https://github.com/AirbornePorcine
 [@AntoCard]: https://github.com/AntoCard
 [@CaptTofu]: https://github.com/CaptTofu
@@ -3734,6 +3832,7 @@ https://github.com/DataDog/dd-agent/compare/2.2.9...2.2.10
 [@jslatts]: https://github.com/jslatts
 [@jzoldak]: https://github.com/jzoldak
 [@kzw]: https://github.com/kzw
+[@lattwood]: https://github.com/lattwood
 [@leifwalsh]: https://github.com/leifwalsh
 [@leucos]: https://github.com/leucos
 [@loris]: https://github.com/loris
@@ -3749,6 +3848,7 @@ https://github.com/DataDog/dd-agent/compare/2.2.9...2.2.10
 [@micktwomey]: https://github.com/micktwomey
 [@mike-lerch]: https://github.com/mike-lerch
 [@mikekap]: https://github.com/mikekap
+[@millerdev]: https://github.com/millerdev
 [@mms-gianni]: https://github.com/mms-gianni
 [@mooney6023]: https://github.com/mooney6023
 [@morskoyzmey]: https://github.com/morskoyzmey

@@ -442,7 +442,7 @@ class Collector(object):
                 event_count, service_check_count, service_metadata=current_check_metadata,
                 library_versions=check.get_library_info(),
                 source_type_name=check.SOURCE_TYPE_NAME or check.name,
-                check_stats=check_stats
+                check_stats=check_stats, check_version=check.check_version
             )
 
             # Service check for Agent checks failures
@@ -477,6 +477,7 @@ class Collector(object):
             if not self.continue_running:
                 return
             check_status = CheckStatus(check_name, None, None, None, None,
+                                       check_version=info.get('version'),
                                        init_failed_error=info['error'],
                                        init_failed_traceback=info['traceback'])
             check_statuses.append(check_status)
@@ -786,15 +787,14 @@ class Collector(object):
         return self._run_gohai(['--only', 'processes'])
 
     def _run_gohai(self, options):
+        # Gohai is disabled on Mac for now
+        if Platform.is_mac():
+            return None
         output = None
         try:
-            if not Platform.is_windows():
-                command = "gohai"
-            else:
-                command = "gohai\gohai.exe"
-            output, err, _ = get_subprocess_output([command] + options, log)
+            output, err, _ = get_subprocess_output(["gohai"] + options, log)
             if err:
-                log.warning("GOHAI LOG | {0}".format(err))
+                log.debug("GOHAI LOG | %s", err)
         except OSError as e:
             if e.errno == 2:  # file not found, expected when install from source
                 log.info("gohai file not found")

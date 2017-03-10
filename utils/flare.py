@@ -28,6 +28,7 @@ import traceback
 
 # 3p
 import requests
+import simplejson as json
 
 # DD imports
 from checks.check_status import CollectorStatus, DogstatsdStatus, ForwarderStatus
@@ -43,7 +44,9 @@ from jmxfetch import JMXFetch
 from utils.hostname import get_hostname
 from utils.jmx import jmx_command, JMXFiles
 from utils.platform import Platform
+from utils.sdk import load_manifest
 from utils.configcheck import configcheck, sd_configcheck
+from utils.windows_configuration import get_sdk_integration_paths
 # Globals
 log = logging.getLogger(__name__)
 
@@ -68,10 +71,15 @@ class Flare(object):
             r'\1://\2:********@',
             'password in a uri'
         ),
+        CredentialPattern(
+            re.compile('^(\s*community_string:) *.+$'),
+            r'\1 ********',
+            'SNMP community string'
+        ),
     ]
     MAIN_CREDENTIALS = [
         CredentialPattern(
-            re.compile('^api_key:( *\w+(\w{5}) ?,?)+$'),
+            re.compile('^\s*api_key:( *\w+(\w{5}) ?,?)+$'),
             lambda matchobj:  'api_key: ' + ', '.join(map(
                 lambda key: '*' * 26 + key[-5:],
                 map(lambda x: x.strip(),
@@ -81,7 +89,7 @@ class Flare(object):
             'api_key'
         ),
         CredentialPattern(
-            re.compile('^(proxy_user|proxy_password): *.+'),
+            re.compile('^\s*(proxy_user|proxy_password): *.+'),
             r'\1: ********',
             'proxy credentials'
         ),
@@ -144,6 +152,8 @@ class Flare(object):
         log.info("  * stackstate-agent info output")
         self._add_command_output_tar('info.log', self._info_all)
         self._add_jmxinfo_tar()
+        log.info("  * sdk check output (if any)")
+        self._add_sdk_info_tar()
         log.info("  * pip freeze")
         self._add_command_output_tar('freeze.log', self._pip_freeze,
                                      command_desc="pip freeze --no-cache-dir")
@@ -240,15 +250,13 @@ class Flare(object):
 
     # Save logs file paths
     def _save_logs_path(self):
-        prefix = ''
-        if Platform.is_windows():
-            prefix = 'windows_'
         config = get_logging_config()
-        self._collector_log = config.get('{0}collector_log_file'.format(prefix))
-        self._forwarder_log = config.get('{0}forwarder_log_file'.format(prefix))
-        self._dogstatsd_log = config.get('{0}dogstatsd_log_file'.format(prefix))
+        self._collector_log = config.get('collector_log_file')
+        self._forwarder_log = config.get('forwarder_log_file')
+        self._dogstatsd_log = config.get('dogstatsd_log_file')
         self._jmxfetch_log = config.get('jmxfetch_log_file')
         self._gometro_log = config.get('go-metro_log_file')
+        self._trace_agent_log = config.get('trace-agent_log_file')
 
     # Add logs to the tarfile
     def _add_logs_tar(self):
@@ -257,9 +265,15 @@ class Flare(object):
         self._add_log_file_tar(self._dogstatsd_log)
         self._add_log_file_tar(self._jmxfetch_log)
         self._add_log_file_tar(self._gometro_log)
-        self._add_log_file_tar(
-            "{0}/*supervisord.log".format(os.path.dirname(self._collector_log))
-        )
+        self._add_log_file_tar(self._trace_agent_log)
+        if not Platform.is_windows():
+            self._add_log_file_tar(
+                "{0}/*supervisord.log".format(os.path.dirname(self._collector_log))
+            )
+        else:
+            self._add_log_file_tar(
+                "{0}/service.log".format(os.path.dirname(self._collector_log))
+            )
 
     def _add_log_file_tar(self, file_path):
         for f in glob.glob('{0}*'.format(file_path)):
@@ -298,6 +312,30 @@ class Flare(object):
                     os.path.join('etc', 'confd'),
                     self.CHECK_CREDENTIALS
                 )
+
+    # Collect SDK-package related information
+    def _add_sdk_info_tar(self):
+        sdk_manifest = {}
+
+        if Platform.is_windows():
+            integrations = get_sdk_integration_paths()
+            for integration, path in integrations.iteritems():
+                manifest_path = os.path.join(path, 'manifest.json')
+                if self._can_read(manifest_path):
+                    manifest = load_manifest(manifest_path)
+                    if manifest:
+                        sdk_manifest[integration] = manifest
+        else:
+            for file_path in glob.glob(os.path.join(self._get_sdk_integrations_path(), '**' ,'manifest.json')):
+                if self._can_read(file_path, output=False):
+                    manifest = load_manifest(file_path)
+                    if manifest:
+                        sdk_manifest[manifest['name']] = manifest
+
+        if sdk_manifest:
+            target_full_path = os.path.join(self._prefix, 'sdk_manifests.json')
+            self._add_object_tar(target_full_path,
+                                 json.dumps(sdk_manifest, sort_keys=True, indent=4 * ' '))
 
     # Collect JMXFetch-specific info and save to jmxinfo directory if jmx config
     # files are present and valid
@@ -354,6 +392,14 @@ class Flare(object):
             self._permissions_file.write(self._permissions_file_format.format(stat_file_path, mode, uname, gname))
 
         self._tar.add(file_path, target_full_path)
+
+    # Add in-memory object to tarfile
+    def _add_object_tar(self, file_path, contents):
+        iobuff = StringIO.StringIO(contents)
+
+        obj = tarfile.TarInfo(name=file_path)
+        obj.size = len(iobuff.getvalue())
+        self._tar.addfile(obj, fileobj=iobuff)
 
     # Returns whether JMXFetch should run or not
     def _should_run_jmx(self):
@@ -491,6 +537,15 @@ class Flare(object):
                 '../../bin/agent'
             )
         return agent_exec
+
+    # Find SDK integrations path
+    def _get_sdk_integrations_path(self):
+        sdk_path = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            '../../integrations/'
+        )
+
+        return sdk_path
 
     # Find the supervisor exec (package or source)
     def _get_path_supervisor_exec(self):

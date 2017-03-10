@@ -27,6 +27,7 @@ protobuf==3.1.0
 # checks.d/snmp.py
 # Require a compiler because pycrypto is a dep
 pysnmp-mibs==0.1.4
+pyasn1==0.1.9
 pysnmp==4.2.5
 
 # checks.d/mongo.py
@@ -42,7 +43,7 @@ paramiko==1.15.2
 
 # checks.d/pgbouncer.py
 # Require libpq
-psycopg2==2.6
+psycopg2==2.6.2
 
 # checks.d/win32_event_log.py
 # checks.d/wmi.py
@@ -51,4 +52,4 @@ psycopg2==2.6
 wmi==1.4.9
 
 # checks.d/directory.py
-scandir==1.2
+scandir==1.5

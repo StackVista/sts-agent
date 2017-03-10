@@ -19,10 +19,14 @@ import sys
 import traceback
 #from urlparse import urlparse
 
+# 3p
+import simplejson as json
+
 # project
-from util import check_yaml
+from util import check_yaml, config_to_yaml
 from utils.platform import Platform, get_os
 from utils.proxy import get_proxy
+from utils.sdk import load_manifest
 from utils.service_discovery.config import extract_agent_config
 from utils.service_discovery.config_stores import CONFIG_FROM_FILE, TRACE_CONFIG
 from utils.service_discovery.sd_backend import get_sd_backend, AUTO_CONFIG_DIR, SD_BACKENDS
@@ -30,15 +34,20 @@ from utils.subprocess_output import (
     get_subprocess_output,
     SubprocessOutputEmptyError,
 )
+from utils.windows_configuration import get_registry_conf, get_windows_sdk_check
+
 
 # CONSTANTS
-AGENT_VERSION = "1.0.0"
+AGENT_VERSION = "5.12.0"
 STACKSTATE_CONF = "stackstate.conf"
 UNIX_CONFIG_PATH = '/etc/sts-agent'
 MAC_CONFIG_PATH = '/opt/stackstate-agent/etc'
 DEFAULT_CHECK_FREQUENCY = 15   # seconds
 LOGGING_MAX_BYTES = 10 * 1024 * 1024
 SDK_INTEGRATIONS_DIR = 'integrations'
+SD_PIPE_NAME = "dd-service_discovery"
+SD_PIPE_UNIX_PATH = '/opt/datadog-agent/run'
+SD_PIPE_WIN_PATH = "\\\\.\\pipe\\{pipename}"
 
 log = logging.getLogger(__name__)
 
@@ -63,6 +72,15 @@ NAGIOS_OLD_CONF_KEYS = [
     'nagios_log',
     'nagios_perf_cfg'
 ]
+
+JMX_SD_CONF_TEMPLATE = '.jmx.{}.yaml'
+
+# These are unlikely to change, but manifests are versioned,
+# so keeping these as a list just in case we change add stuff.
+MANIFEST_VALIDATION = {
+    'max': ['max_agent_version'],
+    'min': ['min_agent_version']
+}
 
 class PathNotFound(Exception):
     pass
@@ -128,51 +146,19 @@ def _windows_commondata_path():
     return path_buf.value
 
 
-def _windows_config_path():
+def _windows_extra_checksd_path():
     common_data = _windows_commondata_path()
-    return _config_path(os.path.join(common_data, 'StackState'))
-
-
-def _windows_confd_path():
-    common_data = _windows_commondata_path()
-    return _confd_path(os.path.join(common_data, 'StackState'))
+    return os.path.join(common_data, 'StackState', 'checks.d')
 
 
 def _windows_checksd_path():
     if hasattr(sys, 'frozen'):
         # we're frozen - from py2exe
         prog_path = os.path.dirname(sys.executable)
-        return _checksd_path(os.path.join(prog_path, '..'))
+        return _checksd_path(os.path.normpath(os.path.join(prog_path, '..', 'agent')))
     else:
         cur_path = os.path.dirname(__file__)
         return _checksd_path(cur_path)
-
-
-def _mac_config_path():
-    return _config_path(MAC_CONFIG_PATH)
-
-
-def _mac_confd_path():
-    return _confd_path(MAC_CONFIG_PATH)
-
-
-def _mac_checksd_path():
-    return _unix_checksd_path()
-
-
-def _unix_config_path():
-    return _config_path(UNIX_CONFIG_PATH)
-
-
-def _unix_confd_path():
-    return _confd_path(UNIX_CONFIG_PATH)
-
-
-def _unix_checksd_path():
-    # Unix only will look up based on the current directory
-    # because checks.d will hang with the other python modules
-    cur_path = os.path.dirname(os.path.realpath(__file__))
-    return _checksd_path(cur_path)
 
 
 def _config_path(directory):
@@ -190,6 +176,11 @@ def _confd_path(directory):
 
 
 def _checksd_path(directory):
+    path_override = os.environ.get('CHECKSD_OVERRIDE')
+    if path_override and os.path.exists(path_override):
+        return path_override
+
+    # this is deprecated in testing on versions after SDK (5.12.0)
     path = os.path.join(directory, 'checks.d')
     if os.path.exists(path):
         return path
@@ -197,6 +188,8 @@ def _checksd_path(directory):
 
 
 def _is_affirmative(s):
+    if s is None:
+        return False
     # int or real bool
     if isinstance(s, int):
         return bool(s)
@@ -217,18 +210,16 @@ def get_config_path(cfg_path=None, os_name=None):
     except PathNotFound as e:
         pass
 
-    if os_name is None:
-        os_name = get_os()
-
     # Check for an OS-specific path, continue on not-found exceptions
     bad_path = ''
     try:
-        if os_name == 'windows':
-            return _windows_config_path()
-        elif os_name == 'mac':
-            return _mac_config_path()
+        if Platform.is_windows():
+            common_data = _windows_commondata_path()
+            return _config_path(os.path.join(common_data, 'Datadog'))
+        elif Platform.is_mac():
+            return _config_path(MAC_CONFIG_PATH)
         else:
-            return _unix_config_path()
+            return _config_path(UNIX_CONFIG_PATH)
     except PathNotFound as e:
         if len(e.args) > 0:
             bad_path = e.args[0]
@@ -309,7 +300,7 @@ def remove_empty(string_array):
     return filter(lambda x: x, string_array)
 
 
-def get_config(parse_args=True, cfg_path=None, options=None):
+def get_config(parse_args=True, cfg_path=None, options=None, can_query_registry=True):
     if parse_args:
         options, _ = get_parsed_args()
 
@@ -333,6 +324,8 @@ def get_config(parse_args=True, cfg_path=None, options=None):
 
     if Platform.is_mac():
         agentConfig['additional_checksd'] = '/opt/stackstate-agent/etc/checks.d'
+    elif Platform.is_windows():
+        agentConfig['additional_checksd'] = _windows_extra_checksd_path()
 
     # Config handling
     try:
@@ -356,7 +349,6 @@ def get_config(parse_args=True, cfg_path=None, options=None):
         if options is not None and options.profile:
             agentConfig['developer_mode'] = True
 
-        #
         # Core config
         #ap
         if not config.has_option('Main', 'api_key'):
@@ -414,10 +406,6 @@ def get_config(parse_args=True, cfg_path=None, options=None):
         # the linux directory is set by default
         if config.has_option('Main', 'additional_checksd'):
             agentConfig['additional_checksd'] = config.get('Main', 'additional_checksd')
-        elif get_os() == 'windows':
-            # default windows location
-            common_path = _windows_commondata_path()
-            agentConfig['additional_checksd'] = os.path.join(common_path, 'StackState', 'checks.d')
 
         if config.has_option('Main', 'use_dogstatsd'):
             agentConfig['use_dogstatsd'] = config.get('Main', 'use_dogstatsd').lower() in ("yes", "true")
@@ -544,12 +532,6 @@ def get_config(parse_args=True, cfg_path=None, options=None):
             for key, value in config.items('WMI'):
                 agentConfig['WMI'][key] = value
 
-        if (config.has_option("Main", "limit_memory_consumption") and
-                config.get("Main", "limit_memory_consumption") is not None):
-            agentConfig["limit_memory_consumption"] = int(config.get("Main", "limit_memory_consumption"))
-        else:
-            agentConfig["limit_memory_consumption"] = None
-
         if config.has_option("Main", "skip_ssl_validation"):
             agentConfig["skip_ssl_validation"] = _is_affirmative(config.get("Main", "skip_ssl_validation"))
 
@@ -590,6 +572,12 @@ def get_config(parse_args=True, cfg_path=None, options=None):
         agentConfig['ssl_certificate'] = get_ssl_certificate(get_os(), 'stackstate-cert.pem')
     else:
         agentConfig['ssl_certificate'] = agentConfig['ca_certs']
+
+    # On Windows, check for api key in registry if default api key
+    # this code should never be used and is only a failsafe
+    if Platform.is_windows() and agentConfig['api_key'] == 'APIKEYHERE' and can_query_registry:
+        registry_conf = get_registry_conf(config)
+        agentConfig.update(registry_conf)
 
     return agentConfig
 
@@ -682,16 +670,15 @@ def get_confd_path(osname=None):
     except PathNotFound as e:
         pass
 
-    if not osname:
-        osname = get_os()
     bad_path = ''
     try:
-        if osname == 'windows':
-            return _windows_confd_path()
-        elif osname == 'mac':
-            return _mac_confd_path()
+        if Platform.is_windows():
+            common_data = _windows_commondata_path()
+            return _confd_path(os.path.join(common_data, 'Datadog'))
+        elif Platform.is_mac():
+            return _confd_path(MAC_CONFIG_PATH)
         else:
-            return _unix_confd_path()
+            return _confd_path(UNIX_CONFIG_PATH)
     except PathNotFound as e:
         if len(e.args) > 0:
             bad_path = e.args[0]
@@ -700,27 +687,50 @@ def get_confd_path(osname=None):
 
 
 def get_checksd_path(osname=None):
-    if not osname:
-        osname = get_os()
-    if osname == 'windows':
+    if Platform.is_windows():
         return _windows_checksd_path()
-    elif osname == 'mac':
-        return _mac_checksd_path()
+    # Mac & Linux
     else:
-        return _unix_checksd_path()
+        # Unix only will look up based on the current directory
+        # because checks.d will hang with the other python modules
+        cur_path = os.path.dirname(os.path.realpath(__file__))
+        return _checksd_path(cur_path)
 
 
 def get_sdk_integrations_path(osname=None):
     if not osname:
         osname = get_os()
-    if osname in ['windows', 'mac']:
-        raise PathNotFound()
 
-    cur_path = os.path.dirname(os.path.realpath(__file__))
-    path = os.path.join(cur_path, '..', SDK_INTEGRATIONS_DIR)
+    if os.environ.get('INTEGRATIONS_DIR'):
+        if os.environ.get('TRAVIS'):
+            path = os.environ['TRAVIS_BUILD_DIR']
+        elif os.environ.get('CIRCLECI'):
+            path = os.path.join(
+                os.environ['HOME'],
+                os.environ['CIRCLE_PROJECT_REPONAME']
+            )
+        elif os.environ.get('APPVEYOR'):
+            path = os.environ['APPVEYOR_BUILD_FOLDER']
+        else:
+            cur_path = os.environ['INTEGRATIONS_DIR']
+            path = os.path.join(cur_path, '..') # might need tweaking in the future.
+    else:
+        cur_path = os.path.dirname(os.path.realpath(__file__))
+        path = os.path.join(cur_path, '..', SDK_INTEGRATIONS_DIR)
+
     if os.path.exists(path):
         return path
     raise PathNotFound(path)
+
+def get_jmx_pipe_path():
+    if Platform.is_windows():
+        pipe_path = SD_PIPE_WIN_PATH
+    else:
+        pipe_path = SD_PIPE_UNIX_PATH
+        if not os.path.isdir(pipe_path):
+            pipe_path = '/tmp'
+
+    return pipe_path
 
 
 def get_auto_confd_path(osname=None):
@@ -850,6 +860,7 @@ def _service_disco_configs(agentConfig):
             service_disco_configs = sd_backend.get_configs()
         except Exception:
             log.exception("Loading service discovery configurations failed.")
+            return {}
     else:
         service_disco_configs = {}
 
@@ -872,15 +883,19 @@ def get_checks_places(osname, agentConfig):
         log.error(e.args[0])
         sys.exit(3)
 
-    places = [lambda name: os.path.join(agentConfig['additional_checksd'], '%s.py' % name)]
+    places = [lambda name: (os.path.join(agentConfig['additional_checksd'], '%s.py' % name), None)]
 
     try:
-        sdk_integrations = get_sdk_integrations_path(osname)
-        places.append(lambda name: os.path.join(sdk_integrations, name, 'check.py'))
+        if Platform.is_windows():
+            places.append(get_windows_sdk_check)
+        else:
+            sdk_integrations = get_sdk_integrations_path(osname)
+            places.append(lambda name: (os.path.join(sdk_integrations, name, 'check.py'),
+                                        os.path.join(sdk_integrations, name, 'manifest.json')))
     except PathNotFound:
         log.debug('No sdk integrations path found')
 
-    places.append(lambda name: os.path.join(checksd_path, '%s.py' % name))
+    places.append(lambda name: (os.path.join(checksd_path, '%s.py' % name), None))
     return places
 
 
@@ -930,7 +945,23 @@ def _initialize_check(check_config, check_name, check_class, agentConfig):
     except Exception as e:
         log.exception('Unable to initialize check %s' % check_name)
         traceback_message = traceback.format_exc()
-        return {}, {check_name: {'error': e, 'traceback': traceback_message}}
+        # exc_info returns a tuple with traceback in idx 2
+        frames = inspect.getinnerframes(sys.exc_info()[2])
+        # This is a best effort. It "hopes" the exception originated
+        # in the check.py and thus the `-1` index when inspecting the
+        # frames. frames[idx][1] because 1 contains the frame's __file__.
+        #
+        # For debugging purposes we still have the flare with the
+        # collected manifests.
+        manifest_path = os.path.join(os.path.basedir(frames[-1][1]), 'manifest.json')
+        manifest = load_manifest(manifest_path)
+        if manifest is not None:
+            check_version = '{core}:{vers}'.format(core=AGENT_VERSION,
+                                                   vers=manifest.get('version', 'unknown'))
+        else:
+            check_version = AGENT_VERSION
+
+        return {}, {check_name: {'error': e, 'traceback': traceback_message, 'version': check_version}}
     else:
         return {check_name: check}, {}
 
@@ -944,18 +975,54 @@ def _update_python_path(check_config):
         sys.path.extend(pythonpath)
 
 
+def validate_sdk_check(manifest_path):
+    max_validated = min_validated = False
+    try:
+        with open(manifest_path, 'r') as fp:
+            manifest = json.load(fp)
+            for maxfield in MANIFEST_VALIDATION['max']:
+                max_version = manifest.get(maxfield)
+                if not max_version:
+                    continue
+
+                max_validated = False if max_version < get_version() else True
+                break
+
+            for minfield in MANIFEST_VALIDATION['min']:
+                min_version = manifest.get(minfield)
+                if not min_version:
+                    continue
+
+                min_validated = False if min_version > get_version() else True
+                break
+    except IOError:
+        log.debug("Manifest file (%s) not present." % manifest_path)
+    except json.JSONDecodeError:
+        log.debug("Manifest file (%s) has badly formatted json." % manifest_path)
+
+    return (min_validated and max_validated)
+
+
 def load_check_from_places(check_config, check_name, checks_places, agentConfig):
     '''Find a check named check_name in the given checks_places and try to initialize it with the given check_config.
     A failure (`load_failure`) can happen when the check class can't be validated or when the check can't be initialized. '''
     load_success, load_failure = {}, {}
     for check_path_builder in checks_places:
-        check_path = check_path_builder(check_name)
-        if not os.path.exists(check_path):
+        check_path, manifest_path = check_path_builder(check_name)
+        # The windows SDK function will return None,
+        # so the loop should also continue if there is no path.
+        if not (check_path and os.path.exists(check_path)):
             continue
 
         check_is_valid, check_class, load_failure = get_valid_check_class(check_name, check_path)
         if not check_is_valid:
             continue
+
+        if manifest_path:
+            validated = validate_sdk_check(manifest_path)
+            if not validated:
+                log.warn("The SDK check (%s) was designed for a different agent core "
+                         "or couldnt be validated - behavior is undefined" % check_name)
 
         load_success, load_failure = _initialize_check(
             check_config, check_name, check_class, agentConfig
@@ -974,6 +1041,7 @@ def load_check_directory(agentConfig, hostname):
     initialize. Only checks that have a configuration
     file in conf.d will be returned. '''
     from checks import AGENT_METRICS_CHECK_NAME
+    from jmxfetch import JMX_CHECKS
 
     initialized_checks = {}
     init_failed_checks = {}
@@ -1012,19 +1080,16 @@ def load_check_directory(agentConfig, hostname):
 
     for check_name, service_disco_check_config in _service_disco_configs(agentConfig).iteritems():
         # ignore this config from service disco if the check has been loaded through a file config
-        if check_name in initialized_checks or check_name in init_failed_checks:
+        if check_name in initialized_checks or \
+                check_name in init_failed_checks or \
+                check_name in JMX_CHECKS:
             continue
 
-        # if TRACE_CONFIG is set, service_disco_check_config looks like:
-        # (config_src, (sd_init_config, sd_instances)) instead of
-        # (sd_init_config, sd_instances)
+        sd_init_config, sd_instances = service_disco_check_config[1]
         if agentConfig.get(TRACE_CONFIG):
-            sd_init_config, sd_instances = service_disco_check_config[1]
             configs_and_sources[check_name] = (
                 service_disco_check_config[0],
                 {'init_config': sd_init_config, 'instances': sd_instances})
-        else:
-            sd_init_config, sd_instances = service_disco_check_config
 
         check_config = {'init_config': sd_init_config, 'instances': sd_instances}
 
@@ -1042,18 +1107,19 @@ def load_check_directory(agentConfig, hostname):
         return configs_and_sources
 
     return {'initialized_checks': initialized_checks.values(),
-            'init_failed_checks': init_failed_checks,
-            }
+            'init_failed_checks': init_failed_checks}
 
 
 def load_check(agentConfig, hostname, checkname):
     """Same logic as load_check_directory except it loads one specific check"""
+    from jmxfetch import JMX_CHECKS
+
     agentConfig['checksd_hostname'] = hostname
     osname = get_os()
     checks_places = get_checks_places(osname, agentConfig)
     for config_path in _file_configs_paths(osname, agentConfig):
         check_name = _conf_path_to_check_name(config_path)
-        if check_name == checkname:
+        if check_name == checkname and check_name not in JMX_CHECKS:
             conf_is_valid, check_config, invalid_check = _load_file_config(config_path, check_name, agentConfig)
 
             if invalid_check and not conf_is_valid:
@@ -1066,18 +1132,45 @@ def load_check(agentConfig, hostname, checkname):
     # the check was not found, try with service discovery
     for check_name, service_disco_check_config in _service_disco_configs(agentConfig).iteritems():
         if check_name == checkname:
-            sd_init_config, sd_instances = service_disco_check_config
+            sd_init_config, sd_instances = service_disco_check_config[1]
             check_config = {'init_config': sd_init_config, 'instances': sd_instances}
 
             # try to load the check and return the result
             load_success, load_failure = load_check_from_places(check_config, check_name, checks_places, agentConfig)
-            return load_success.values()[0] or load_failure
+            return load_success.values()[0] if load_success else load_failure
 
     return None
 
-#
-# logging
+def generate_jmx_configs(agentConfig, hostname, checknames=None):
+    """Similar logic to load_check_directory for JMX checks"""
+    from jmxfetch import get_jmx_checks
 
+    jmx_checks = get_jmx_checks(auto_conf=True)
+
+    if not checknames:
+        checknames = jmx_checks
+    agentConfig['checksd_hostname'] = hostname
+
+    # the check was not found, try with service discovery
+    generated = {}
+    for check_name, service_disco_check_config in _service_disco_configs(agentConfig).iteritems():
+        if check_name in checknames and check_name in jmx_checks:
+            log.debug('Generating JMX config for: %s' % check_name)
+
+            _, (sd_init_config, sd_instances) = service_disco_check_config
+
+            check_config = {'init_config': sd_init_config,
+                            'instances': sd_instances}
+
+            try:
+                yaml = config_to_yaml(check_config)
+                generated["{}_{}".format(check_name, 0)] = yaml
+            except Exception:
+                log.exception("Unable to generate YAML config for %s", check_name)
+
+    return generated
+
+# logging
 
 def get_log_date_format():
     return "%Y-%m-%d %H:%M:%S %Z"
@@ -1103,16 +1196,19 @@ def get_logging_config(cfg_path=None):
         'syslog_port': None,
     }
     if system_os == 'windows':
-        logging_config['windows_collector_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'collector.log')
-        logging_config['windows_forwarder_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'forwarder.log')
-        logging_config['windows_dogstatsd_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'dogstatsd.log')
+        logging_config['collector_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'collector.log')
+        logging_config['forwarder_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'forwarder.log')
+        logging_config['dogstatsd_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'dogstatsd.log')
         logging_config['jmxfetch_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'jmxfetch.log')
+        logging_config['service_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'service.log')
+        logging_config['log_to_syslog'] = False
     else:
         logging_config['collector_log_file'] = '/var/log/stackstate/collector.log'
         logging_config['forwarder_log_file'] = '/var/log/stackstate/forwarder.log'
-        logging_config['dogstatsd_log_file'] = '/var/log/stackstate/stsstatsd.log'
+        logging_config['dogstatsd_log_file'] = '/var/log/stackstate/dogstatsd.log'
         logging_config['jmxfetch_log_file'] = '/var/log/stackstate/jmxfetch.log'
         logging_config['go-metro_log_file'] = '/var/log/stackstate/go-metro.log'
+        logging_config['trace-agent_log_file'] = '/var/log/stackstate/trace-agent.log'
         logging_config['log_to_syslog'] = True
 
     config_path = get_config_path(cfg_path, os_name=system_os)
