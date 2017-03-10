@@ -4,6 +4,7 @@ branches:
   only:
     - master
     - serviceDiscoveryTest
+    - updateTo5.12
     - /^\d+\.\d+\.x$/ # release forked patches branch
 
 language: python
