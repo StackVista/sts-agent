@@ -1,6 +1,9 @@
+import datetime
 import requests
 import time
 
+from iso8601 import iso8601
+from pytz import timezone
 from checks import CheckException
 
 
@@ -116,3 +119,18 @@ def take_optional_field(field, obj):
     value = obj[field]
     del obj[field]
     return value
+
+
+def get_time_since_epoch(utc_datetime):
+    utc = timezone('UTC')
+    begin_epoch = datetime.datetime.utcfromtimestamp(0).replace(tzinfo = utc)
+    timestamp = (utc_datetime - begin_epoch).total_seconds()
+    return timestamp
+
+
+def time_to_seconds(str_datetime_utc):
+    """
+    Converts time in utc format 2016-06-27T14:26:30.000+00:00 to seconds
+    """
+    parsed_datetime = iso8601.parse_date(str_datetime_utc)
+    return get_time_since_epoch(parsed_datetime)

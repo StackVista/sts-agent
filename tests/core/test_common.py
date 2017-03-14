@@ -164,10 +164,11 @@ class TestCore(unittest.TestCase):
         checks = [load_check('redisdb', redis_config, agentConfig)]
 
         c = Collector(agentConfig, [], {}, get_hostname(agentConfig))
-        payload = c.run({
+        payload, continue_immediately = c.run({
             'initialized_checks': checks,
             'init_failed_checks': {}
         })
+        assert not continue_immediately
         metrics = payload['metrics']
 
         # Check that we got a timing metric for all checks.
@@ -357,7 +358,7 @@ class TestCore(unittest.TestCase):
             emitted_topologies.extend(message['topologies'])
 
         c = Collector(agentConfig, [mock_emitter], {}, get_hostname(agentConfig))
-        payload = c.run({
+        payload, _ = c.run({
             'initialized_checks': [check1, check2],
             'init_failed_checks': {}
         })
@@ -408,7 +409,7 @@ class TestCore(unittest.TestCase):
         checks = [load_check('redisdb', redis_config, agentConfig)]
 
         c = Collector(agentConfig, [], {}, get_hostname(agentConfig))
-        payload = c.run({
+        payload, _ = c.run({
             'initialized_checks': checks,
             'init_failed_checks': {}
         })

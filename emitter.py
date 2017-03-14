@@ -125,6 +125,7 @@ def http_emitter(message, log, agentConfig, endpoint):
             log.error("Received status code: {0}".format(r.status_code))
         except Exception:
             pass
+        raise Exception("Posting payload failed")
 
 
 def post_headers(agentConfig, payload):

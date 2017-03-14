@@ -520,6 +520,18 @@ class Collector(object):
                                         self.continue_running)
         self.emit_duration = timer.step()
 
+        # Commit the checks when emission succeeded
+        emit_success = all(emitter_status.error is None for emitter_status in emitter_statuses)
+        continue_immediately = False
+        try:
+            for check in self.initialized_checks_d:
+                if emit_success:
+                    continue_immediately = continue_immediately or check.commit_success()
+                else:
+                    check.commit_failure()
+        except Exception:
+            log.exception("Error committing check work")
+
         # Persist the status of the collection run.
         try:
             CollectorStatus(check_statuses, emitter_statuses,
@@ -537,7 +549,7 @@ class Collector(object):
             log.debug("Finished run #%s. Collection time: %ss. Emit time: %ss" %
                       (self.run_count, round(collect_duration, 2), round(self.emit_duration, 2)))
 
-        return payload
+        return payload, continue_immediately
 
     @staticmethod
     def run_single_check(check, verbose=True):
