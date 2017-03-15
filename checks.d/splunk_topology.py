@@ -8,7 +8,7 @@ import time
 from urllib import quote
 
 from checks import AgentCheck, CheckException
-from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field
+from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field, SavedSearches
 
 
 class SavedSearch(SplunkSavedSearch):
@@ -47,7 +47,7 @@ class Instance:
                       for saved_search_instance in instance['component_saved_searches']]
         relations = [SavedSearch("relation", self.instance_config, saved_search_instance)
                      for saved_search_instance in instance['relation_saved_searches']]
-        self.saved_searches = components + relations
+        self.saved_searches = SavedSearches(components + relations)
 
         self.instance_key = {
             "type": self.INSTANCE_TYPE,
@@ -88,8 +88,11 @@ class SplunkTopology(AgentCheck):
             return
 
         try:
+            saved_searches = self._saved_searches(instance.instance_config)
+            instance.saved_searches.update_searches(saved_searches)
+
             search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
-                          for saved_search in instance.saved_searches]
+                          for saved_search in instance.saved_searches.searches]
 
             self.start_snapshot(instance_key)
             try:
@@ -122,6 +125,9 @@ class SplunkTopology(AgentCheck):
     @staticmethod
     def _current_time_seconds():
         return int(round(time.time()))
+
+    def _saved_searches(self, instance_config):
+        return self.splunkHelper.saved_searches(instance_config)
 
     def _search(self, search_id, saved_search, instance):
         return self.splunkHelper.saved_search_results(search_id, saved_search, instance.instance_config)

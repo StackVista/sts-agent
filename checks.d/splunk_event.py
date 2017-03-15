@@ -11,7 +11,7 @@ import iso8601
 from pytz import timezone
 
 from checks import AgentCheck, CheckException
-from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field, take_optional_field
+from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field, take_optional_field, SavedSearches
 
 
 class SavedSearch(SplunkSavedSearch):
@@ -48,8 +48,8 @@ class Instance:
         if not isinstance(instance['saved_searches'], list):
             instance['saved_searches'] = []
 
-        self.saved_searches = [SavedSearch(self.instance_config, saved_search_instance)
-                               for saved_search_instance in instance['saved_searches']]
+        self.saved_searches = SavedSearches([SavedSearch(self.instance_config, saved_search_instance)
+                               for saved_search_instance in instance['saved_searches']])
 
         self.tags = instance.get('tags', [])
 
@@ -76,8 +76,11 @@ class SplunkEvent(AgentCheck):
         instance = self.instance_data[instance["url"]]
 
         try:
+            saved_searches = self._saved_searches(instance.instance_config)
+            instance.saved_searches.update_searches(saved_searches)
+
             search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
-                          for saved_search in instance.saved_searches]
+                          for saved_search in instance.saved_searches.searches]
 
             for (sid, saved_search) in search_ids:
                 self._process_saved_search(sid, saved_search, instance)
@@ -182,6 +185,9 @@ class SplunkEvent(AgentCheck):
 
         response_body = self._do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
         return response_body['sid']
+
+    def _saved_searches(self, instance_config):
+        return self.splunkHelper.saved_searches(instance_config)
 
     def _do_post(self, url, auth, payload, timeout, verify_ssl):
         return self.splunkHelper.do_post(url, auth, payload, timeout, verify_ssl)
