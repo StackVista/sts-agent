@@ -122,6 +122,9 @@ class SplunkTopology(AgentCheck):
     def _current_time_seconds():
         return int(round(time.time()))
 
+    def _saved_searches(self, instance_config):
+        raise Exception("Not yet implemented")
+
     def _search(self, search_id, saved_search, instance):
         return self.splunkHelper.saved_search_results(search_id, saved_search, instance.instance_config)
 
