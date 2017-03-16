@@ -28,7 +28,7 @@ class InstanceConfig(SplunkInstanceConfig):
         })
 
         self.default_polling_interval_seconds = init_config.get('default_polling_interval_seconds', 15)
-
+        self.default_saved_searches_parallel = init_config.get('default_saved_searches_parallel', 3)
 
 class Instance:
     INSTANCE_TYPE = "splunk"
@@ -48,7 +48,7 @@ class Instance:
         relations = [SavedSearch("relation", self.instance_config, saved_search_instance)
                      for saved_search_instance in instance['relation_saved_searches']]
         self.saved_searches = components + relations
-
+        self.saved_searches_parallel = int(instance.get('saved_searches_parallel', self.instance_config.default_saved_searches_parallel))
         self.instance_key = {
             "type": self.INSTANCE_TYPE,
             "url": self.instance_config.base_url
@@ -65,6 +65,12 @@ class Instance:
 class SplunkTopology(AgentCheck):
     SERVICE_CHECK_NAME = "splunk.topology_information"
     BATCH_SIZE = 1000
+
+    @staticmethod
+    def chunks(l, n):
+        """Yield successive n-sized chunks from l."""
+        for i in xrange(0, len(l), n):
+            yield l[i:i + n]
 
     def __init__(self, name, init_config, agentConfig, instances=None):
         super(SplunkTopology, self).__init__(name, init_config, agentConfig, instances)
@@ -86,20 +92,22 @@ class SplunkTopology(AgentCheck):
         if not instance.should_poll(current_time_epoch_seconds):
             return
 
+        self.start_snapshot(instance_key)
+        try:
+            for saved_searches in SplunkTopology.chunks(instance.saved_searches, 3):
+                self._dispatch_and_await_search(instance, saved_searches)
+
+            # If everything was successful, update the timestamp
+            instance.last_successful_poll_epoch_seconds = current_time_epoch_seconds
+        finally:
+            self.stop_snapshot(instance_key)
+
+    def _dispatch_and_await_search(self, instance, saved_searches):
         try:
             search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
-                          for saved_search in instance.saved_searches]
-
-            self.start_snapshot(instance_key)
-            try:
-                for (sid, saved_search) in search_ids:
-                    self._process_saved_search(sid, saved_search, instance)
-
-                # If everything was successful, update the timestamp
-                instance.last_successful_poll_epoch_seconds = current_time_epoch_seconds
-            finally:
-                self.stop_snapshot(instance_key)
-
+                          for saved_search in saved_searches]
+            for (sid, saved_search) in search_ids:
+                self._process_saved_search(sid, saved_search, instance)
         except Exception as e:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=instance.tags, message=str(e))
             raise CheckException("Cannot connect to Splunk, please check your configuration. Message: " + str(e))
