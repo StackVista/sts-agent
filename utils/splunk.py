@@ -2,6 +2,8 @@ import datetime
 import re
 
 import copy
+
+import logging
 import requests
 import time
 
@@ -57,6 +59,7 @@ class SavedSearches(object):
     def __init__(self, saved_searches):
         self.searches = filter(lambda ss: ss.name is not None, saved_searches)
         self.matches = filter(lambda ss: ss.match is not None, saved_searches)
+        self.log = logging.getLogger('%s.%s' % (__name__, "SavedSearches"))
 
     def update_searches(self, saved_searches):
         """
@@ -74,6 +77,7 @@ class SavedSearches(object):
                 if re.match(match.match, new_search) is not None:
                     search = copy.deepcopy(match)
                     search.name = new_search
+                    self.log.info("Created new saved search on saved search '%s'" % new_search)
                     self.searches.append(search)
                     break
 
