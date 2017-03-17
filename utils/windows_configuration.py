@@ -11,7 +11,7 @@ except ImportError:
     pass
 
 
-WINDOWS_REG_PATH = 'SOFTWARE\\Datadog\\Datadog Agent'
+WINDOWS_REG_PATH = 'SOFTWARE\\StackState\\StackState Agent'
 SDK_REG_PATH = WINDOWS_REG_PATH + '\\Integrations\\'
 
 
@@ -77,13 +77,13 @@ def get_sdk_integration_paths():
 
 def update_conf_file(registry_conf, config_path):
     config_dir = os.path.dirname(config_path)
-    config_bkp = os.path.join(config_dir, 'datadog.conf.bkp')
+    config_bkp = os.path.join(config_dir, 'stackstate.conf.bkp')
     try:
         if os.path.exists(config_bkp):
             os.remove(config_bkp)
         shutil.copy(config_path, config_bkp)
     except OSError as e:
-        log.debug('Unable to back up datadog.conf: %s', e)
+        log.debug('Unable to back up stackstate.conf: %s', e)
     temp_config, temp_config_path = tempfile.mkstemp(prefix='config-', text=True)
     temp_config = os.fdopen(temp_config, 'w')
     log.debug('Temporary conf path: %s', temp_config_path)
@@ -98,6 +98,6 @@ def update_conf_file(registry_conf, config_path):
         os.remove(config_path)
         os.rename(temp_config_path, config_path)
     except OSError as e:
-        log.exception('Unable to save new datadog.conf')
+        log.exception('Unable to save new stackstate.conf')
     else:
-        log.debug('Successfully saved the new datadog.conf')
+        log.debug('Successfully saved the new stackstate.conf')

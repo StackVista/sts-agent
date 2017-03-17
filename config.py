@@ -45,8 +45,8 @@ MAC_CONFIG_PATH = '/opt/stackstate-agent/etc'
 DEFAULT_CHECK_FREQUENCY = 15   # seconds
 LOGGING_MAX_BYTES = 10 * 1024 * 1024
 SDK_INTEGRATIONS_DIR = 'integrations'
-SD_PIPE_NAME = "dd-service_discovery"
-SD_PIPE_UNIX_PATH = '/opt/datadog-agent/run'
+SD_PIPE_NAME = "sts-service_discovery"
+SD_PIPE_UNIX_PATH = '/opt/stackstate-agent/run'
 SD_PIPE_WIN_PATH = "\\\\.\\pipe\\{pipename}"
 
 log = logging.getLogger(__name__)
@@ -215,7 +215,7 @@ def get_config_path(cfg_path=None, os_name=None):
     try:
         if Platform.is_windows():
             common_data = _windows_commondata_path()
-            return _config_path(os.path.join(common_data, 'Datadog'))
+            return _config_path(os.path.join(common_data, 'StackState'))
         elif Platform.is_mac():
             return _config_path(MAC_CONFIG_PATH)
         else:

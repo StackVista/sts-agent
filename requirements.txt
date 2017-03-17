@@ -3,7 +3,7 @@
 # for the dev env, the source install and the Win build.
 # It is NOT used for the DEB/RPM packages and the OS X
 # build. For these please update:
-# https://github.com/DataDog/omnibus-software
+# https://github.com/StackVista/omnibus-software
 ###########################################################
 
 ###########################################################

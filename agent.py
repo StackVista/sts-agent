@@ -59,12 +59,12 @@ PID_DIR = None
 WATCHDOG_MULTIPLIER = 10
 RESTART_INTERVAL = 4 * 24 * 60 * 60  # Defaults to 4 days
 
-JMX_SUPERVISOR_ENTRY = 'datadog-agent:jmxfetch'
+JMX_SUPERVISOR_ENTRY = 'stackstate-agent:jmxfetch'
 JMX_GRACE_SECS = 2
 SERVICE_DISCOVERY_PREFIX = 'SD-'
 SD_CONFIG_SEP = "#### SERVICE-DISCOVERY ####\n"
 
-DEFAULT_SUPERVISOR_SOCKET = '/opt/datadog-agent/run/datadog-supervisor.sock'
+DEFAULT_SUPERVISOR_SOCKET = '/opt/stackstate-agent/run/stackstate-supervisor.sock'
 DEFAULT_COLLECTOR_PROFILE_INTERVAL = 20
 
 # Globals
