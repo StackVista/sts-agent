@@ -5,6 +5,9 @@ import time
 
 from checks import CheckException
 
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class SplunkSavedSearch(object):
     def __init__(self, instance_config, saved_search_instance):
