@@ -411,13 +411,13 @@ class TestSplunkTopologyRespectParallelDispatches(AgentCheckTest):
                     'password': "admin",
                     'saved_searches_parallel': saved_searches_parallel,
                     'component_saved_searches': [
-                        {"name": "savedsearch1", "element_type": "component", "parameters": {} },
-                        {"name": "savedsearch2", "element_type": "component", "parameters": {} },
-                        {"name": "savedsearch3", "element_type": "component", "parameters": {} }
+                        {"name": "savedsearch1", "element_type": "component", "parameters": {}},
+                        {"name": "savedsearch2", "element_type": "component", "parameters": {}},
+                        {"name": "savedsearch3", "element_type": "component", "parameters": {}}
                     ],
                     'relation_saved_searches': [
-                        {"name": "savedsearch4", "element_type": "relation", "parameters": {} },
-                        {"name": "savedsearch5", "element_type": "relation", "parameters": {} }
+                        {"name": "savedsearch4", "element_type": "relation", "parameters": {}},
+                        {"name": "savedsearch5", "element_type": "relation", "parameters": {}}
                     ]
                 }
             ]
