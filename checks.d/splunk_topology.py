@@ -8,7 +8,7 @@ import time
 from urllib import quote
 
 from checks import AgentCheck, CheckException
-from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field
+from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field, chunks
 
 
 class SavedSearch(SplunkSavedSearch):
@@ -67,12 +67,6 @@ class SplunkTopology(AgentCheck):
     SERVICE_CHECK_NAME = "splunk.topology_information"
     EXCLUDE_FIELDS = set(['_raw', '_indextime', '_cd', '_serial', '_sourcetype', '_bkt', '_si'])
 
-    @staticmethod
-    def chunks(l, n):
-        """Yield successive n-sized chunks from l."""
-        for i in xrange(0, len(l), n):
-            yield l[i:i + n]
-
     def __init__(self, name, init_config, agentConfig, instances=None):
         super(SplunkTopology, self).__init__(name, init_config, agentConfig, instances)
         # Data to keep over check runs, keyed by instance url
@@ -95,7 +89,7 @@ class SplunkTopology(AgentCheck):
 
         self.start_snapshot(instance_key)
         try:
-            for saved_searches in SplunkTopology.chunks(instance.saved_searches, instance.saved_searches_parallel):
+            for saved_searches in chunks(instance.saved_searches, instance.saved_searches_parallel):
                 self._dispatch_and_await_search(instance, saved_searches)
 
             # If everything was successful, update the timestamp
