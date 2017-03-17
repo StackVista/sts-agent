@@ -26,6 +26,7 @@ class SplunkInstanceConfig(object):
         self.default_search_seconds_between_retries = self._get_or_default('default_search_seconds_between_retries', init_config, defaults)
         self.default_verify_ssl_certificate = self._get_or_default('default_verify_ssl_certificate', init_config, defaults)
         self.default_batch_size = self._get_or_default('default_batch_size', init_config, defaults)
+        self.default_saved_searches_parallel = self._get_or_default('default_saved_searches_parallel', init_config, defaults)
 
         self.verify_ssl_certificate = bool(instance.get('verify_ssl_certificate', self.default_verify_ssl_certificate))
         self.base_url = instance['url']
@@ -116,3 +117,9 @@ def take_optional_field(field, obj):
     value = obj[field]
     del obj[field]
     return value
+
+
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in xrange(0, len(l), n):
+        yield l[i:i + n]
