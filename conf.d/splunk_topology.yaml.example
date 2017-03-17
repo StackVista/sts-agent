@@ -10,6 +10,9 @@ init_config:
   default_search_max_retry_count: 10
   default_search_seconds_between_retries: 1
 
+  # The number of saved searches to dispatch and await for results simultaneously.
+  default_saved_searches_parallel: 3
+
   # How many results should we request per request to splunk
   default_batch_size: 1000
 
@@ -27,6 +30,7 @@ instances:
     username: "admin"
     password: "admin"
     # polling_interval_seconds: 300
+    # saved_searches_parallel: 5
     component_saved_searches:
       - name: "components"
         # request_timeout_seconds: 10

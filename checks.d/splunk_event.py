@@ -52,7 +52,8 @@ class InstanceConfig(SplunkInstanceConfig):
             'default_search_max_retry_count': 3,
             'default_search_seconds_between_retries': 1,
             'default_verify_ssl_certificate': False,
-            'default_batch_size': 1000
+            'default_batch_size': 1000,
+            'default_saved_searches_parallel': 3
         })
 
         self.default_initial_history_time_sec = init_config.get('default_initial_history_time_seconds', 0)

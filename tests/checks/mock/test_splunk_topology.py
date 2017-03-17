@@ -84,17 +84,9 @@ class TestSplunkTopology(AgentCheckTest):
             "externalId": u"vm_2_1",
             "type": {"name": u"vm"},
             "data": {
-                u"_bkt": u"main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
-                u"_cd": u"1:66",
                 u"running": True,
-                u"_indextime": u"1488812154",
-                u"_serial": u"0",
-                u"_si": [
-                    u"c5ff346549e7",
-                    u"main"
-                ],
-                u"_sourcetype": u"unknown-too_small",
                 u"_time": u"2017-03-06T14:55:54.000+00:00",
+                "label.label1Key": "label1Value",
                 "tags": ['result_tag1', 'mytag', 'mytag2']
             }
         })
@@ -104,13 +96,8 @@ class TestSplunkTopology(AgentCheckTest):
             "type": {"name": u"server"},
             "data": {
                 u"description": u"My important server 2",
-                u"_bkt": u"main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
-                u"_cd": u"1:56",
-                u"_indextime": u"1488812154",
-                u"_serial": u"3",
-                u"_si": [u"c5ff346549e7", u"main"],
-                u"_sourcetype": u"unknown-too_small",
                 u"_time": u"2017-03-06T14:55:54.000+00:00",
+                "label.label2Key": "label2Value",
                 "tags": ['result_tag2', 'mytag', 'mytag2']
             }
         })
@@ -122,12 +109,6 @@ class TestSplunkTopology(AgentCheckTest):
             "targetId": u"server_2",
             "data": {
                 u"description": u"Some relation",
-                u"_bkt": u"main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
-                u"_cd": u"1:81",
-                u"_indextime": u"1488813057",
-                u"_serial": u"0",
-                u"_si": [u"c5ff346549e7", u"main"],
-                u"_sourcetype": u"unknown-too_small",
                 u"_time": u"2017-03-06T15:10:57.000+00:00",
                 "tags": ['mytag', 'mytag2']
             }
@@ -261,7 +242,7 @@ class TestSplunkIncompleteTopology(AgentCheckTest):
         self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
 
 
-class TestSplunkPollingInterval(AgentCheckTest):
+class TestSplunkTopologyPollingInterval(AgentCheckTest):
     """
     Test whether the splunk check properly implements the polling intervals
     """
@@ -374,7 +355,7 @@ class TestSplunkPollingInterval(AgentCheckTest):
 
         self.assertEquals(self.service_checks[0]['status'], 0, "service check should have status AgentCheck.OK")
 
-class TestSplunkErrorResponse(AgentCheckTest):
+class TestSplunkTopologyErrorResponse(AgentCheckTest):
     """
     Splunk check should handle a FATAL message response
     """
@@ -412,3 +393,47 @@ class TestSplunkErrorResponse(AgentCheckTest):
         self.assertTrue(thrown, "Retrieving FATAL message from Splunk should throw.")
 
         self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
+
+class TestSplunkTopologyRespectParallelDispatches(AgentCheckTest):
+    CHECK_NAME = 'splunk_topology'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        saved_searches_parallel = 2
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:8089',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches_parallel': saved_searches_parallel,
+                    'component_saved_searches': [
+                        {"name": "savedsearch1", "element_type": "component", "parameters": {}},
+                        {"name": "savedsearch2", "element_type": "component", "parameters": {}},
+                        {"name": "savedsearch3", "element_type": "component", "parameters": {}}
+                    ],
+                    'relation_saved_searches': [
+                        {"name": "savedsearch4", "element_type": "relation", "parameters": {}},
+                        {"name": "savedsearch5", "element_type": "relation", "parameters": {}}
+                    ]
+                }
+            ]
+        }
+
+        self.expected_sid_increment = 1
+
+        def _mock_dispatch_and_await_search(instance, saved_searches):
+            self.assertLessEqual(len(saved_searches), saved_searches_parallel, "Did not respect the configured saved_searches_parallel setting, got value: %i" % len(saved_searches))
+
+            for saved_search in saved_searches:
+                result = saved_search.name
+                expected = "savedsearch%i" % self.expected_sid_increment
+                self.assertEquals(result, expected)
+                self.expected_sid_increment += 1
+
+        self.run_check(config, mocks={
+            '_dispatch_and_await_search': _mock_dispatch_and_await_search
+        })

@@ -8,7 +8,7 @@ import time
 from urllib import quote
 
 from checks import AgentCheck, CheckException
-from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field
+from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field, chunks
 
 
 class SavedSearch(SplunkSavedSearch):
@@ -24,7 +24,8 @@ class InstanceConfig(SplunkInstanceConfig):
             'default_search_max_retry_count': 3,
             'default_search_seconds_between_retries': 1,
             'default_verify_ssl_certificate': False,
-            'default_batch_size': 1000
+            'default_batch_size': 1000,
+            'default_saved_searches_parallel': 3
         })
 
         self.default_polling_interval_seconds = init_config.get('default_polling_interval_seconds', 15)
@@ -48,7 +49,6 @@ class Instance:
         relations = [SavedSearch("relation", self.instance_config, saved_search_instance)
                      for saved_search_instance in instance['relation_saved_searches']]
         self.saved_searches = components + relations
-
         self.instance_key = {
             "type": self.INSTANCE_TYPE,
             "url": self.instance_config.base_url
@@ -56,6 +56,8 @@ class Instance:
         self.tags = instance.get('tags', [])
 
         self.polling_interval_seconds = int(instance.get('polling_interval_seconds', self.instance_config.default_polling_interval_seconds))
+        self.saved_searches_parallel = int(instance.get('saved_searches_parallel', self.instance_config.default_saved_searches_parallel))
+
         self.last_successful_poll_epoch_seconds = None
 
     def should_poll(self, time_seconds):
@@ -64,7 +66,7 @@ class Instance:
 
 class SplunkTopology(AgentCheck):
     SERVICE_CHECK_NAME = "splunk.topology_information"
-    BATCH_SIZE = 1000
+    EXCLUDE_FIELDS = set(['_raw', '_indextime', '_cd', '_serial', '_sourcetype', '_bkt', '_si'])
 
     def __init__(self, name, init_config, agentConfig, instances=None):
         super(SplunkTopology, self).__init__(name, init_config, agentConfig, instances)
@@ -86,20 +88,23 @@ class SplunkTopology(AgentCheck):
         if not instance.should_poll(current_time_epoch_seconds):
             return
 
+        self.start_snapshot(instance_key)
+        try:
+            for saved_searches in chunks(instance.saved_searches, instance.saved_searches_parallel):
+                self._dispatch_and_await_search(instance, saved_searches)
+
+            # If everything was successful, update the timestamp
+            instance.last_successful_poll_epoch_seconds = current_time_epoch_seconds
+        finally:
+            self.stop_snapshot(instance_key)
+
+    def _dispatch_and_await_search(self, instance, saved_searches):
         try:
             search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
-                          for saved_search in instance.saved_searches]
-
-            self.start_snapshot(instance_key)
-            try:
-                for (sid, saved_search) in search_ids:
-                    self._process_saved_search(sid, saved_search, instance)
-
-                # If everything was successful, update the timestamp
-                instance.last_successful_poll_epoch_seconds = current_time_epoch_seconds
-            finally:
-                self.stop_snapshot(instance_key)
-
+                          for saved_search in saved_searches]
+            for (sid, saved_search) in search_ids:
+                self.log.debug("Processing saved search: %s." % saved_search.name)
+                self._process_saved_search(sid, saved_search, instance)
         except Exception as e:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=instance.tags, message=str(e))
             raise CheckException("Cannot connect to Splunk, please check your configuration. Message: " + str(e))
@@ -109,7 +114,7 @@ class SplunkTopology(AgentCheck):
     def _process_saved_search(self, search_id, saved_search, instance):
         for response in self._search(search_id, saved_search, instance):
             for message in response['messages']:
-                if message['type'] != "FATAL":
+                if message['type'] != "FATAL" and message['type'] != "INFO":
                     self.log.info("Received unhandled message, got: " + str(message))
 
             # process components and relations
@@ -139,6 +144,8 @@ class SplunkTopology(AgentCheck):
         # json output_mode is mandatory for response parsing
         parameters["output_mode"] = "json"
 
+        self.log.debug("Dispatching saved search: %s." % saved_search.name)
+
         response_body = self.splunkHelper.do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
         return response_body['sid']
 
@@ -148,17 +155,16 @@ class SplunkTopology(AgentCheck):
             external_id = take_required_field("id", data)
             comp_type = take_required_field("type", data)
 
-            # We don't want to present the raw field
-            if "_raw" in data:
-                del data["_raw"]
-
             # Add tags to data
             if 'tags' in data and instance.tags:
                 data['tags'] += instance.tags
             elif instance.tags:
                 data['tags'] = instance.tags
 
-            self.component(instance.instance_key, external_id, {"name": comp_type}, data)
+            # We don't want to present all fields
+            filtered_data = self._filter_fields(data)
+
+            self.component(instance.instance_key, external_id, {"name": comp_type}, filtered_data)
 
     def _extract_relations(self, instance, result):
         for data in result["results"]:
@@ -167,14 +173,20 @@ class SplunkTopology(AgentCheck):
             source_id = take_required_field("sourceId", data)
             target_id = take_required_field("targetId", data)
 
-            # We don't want to present the raw field
-            if "_raw" in data:
-                del data["_raw"]
-
             # Add tags to data
             if 'tags' in data and instance.tags:
                 data['tags'] += instance.tags
             elif instance.tags:
                 data['tags'] = instance.tags
 
-            self.relation(instance.instance_key, source_id, target_id, {"name": rel_type}, data)
+            # We don't want to present all fields
+            filtered_data = self._filter_fields(data)
+
+            self.relation(instance.instance_key, source_id, target_id, {"name": rel_type}, filtered_data)
+
+    def _filter_fields(self, data):
+        result = dict()
+        for key, value in data.iteritems():
+            if key not in self.EXCLUDE_FIELDS:
+                result[key] = value
+        return result
