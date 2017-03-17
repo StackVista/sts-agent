@@ -48,7 +48,6 @@ class Instance:
         relations = [SavedSearch("relation", self.instance_config, saved_search_instance)
                      for saved_search_instance in instance['relation_saved_searches']]
         self.saved_searches = components + relations
-        self.saved_searches_parallel = int(instance.get('saved_searches_parallel', self.instance_config.default_saved_searches_parallel))
         self.instance_key = {
             "type": self.INSTANCE_TYPE,
             "url": self.instance_config.base_url
@@ -56,6 +55,8 @@ class Instance:
         self.tags = instance.get('tags', [])
 
         self.polling_interval_seconds = int(instance.get('polling_interval_seconds', self.instance_config.default_polling_interval_seconds))
+        self.saved_searches_parallel = int(instance.get('saved_searches_parallel', self.instance_config.default_saved_searches_parallel))
+
         self.last_successful_poll_epoch_seconds = None
 
     def should_poll(self, time_seconds):
@@ -94,7 +95,7 @@ class SplunkTopology(AgentCheck):
 
         self.start_snapshot(instance_key)
         try:
-            for saved_searches in SplunkTopology.chunks(instance.saved_searches, 3):
+            for saved_searches in SplunkTopology.chunks(instance.saved_searches, instance.saved_searches_parallel):
                 self._dispatch_and_await_search(instance, saved_searches)
 
             # If everything was successful, update the timestamp
