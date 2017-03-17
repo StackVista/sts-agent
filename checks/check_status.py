@@ -150,9 +150,9 @@ class AgentStatus(object):
     def has_error(self):
         raise NotImplementedError
 
-    def persist(self):
+    def persist(self, prefix=""):
         try:
-            path = self._get_pickle_path()
+            path = self._get_pickle_path(prefix)
             log.debug("Persisting status to %s" % path)
             f = open(path, 'w')
             try:
@@ -237,17 +237,17 @@ class AgentStatus(object):
         return "\n".join(lines)
 
     @classmethod
-    def remove_latest_status(cls):
+    def remove_latest_status(cls, prefix=""):
         log.debug("Removing latest status")
         try:
-            os.remove(cls._get_pickle_path())
+            os.remove(cls._get_pickle_path(prefix))
         except OSError:
             pass
 
     @classmethod
-    def load_latest_status(cls):
+    def load_latest_status(cls, prefix=""):
         try:
-            f = open(cls._get_pickle_path())
+            f = open(cls._get_pickle_path(prefix))
             try:
                 return pickle.load(f)
             finally:
@@ -281,7 +281,7 @@ class AgentStatus(object):
         return exit_code
 
     @classmethod
-    def _get_pickle_path(cls):
+    def _get_pickle_path(cls, prefix=""):
         if Platform.is_win32():
             path = os.path.join(_windows_commondata_path(), 'StackState')
             if not os.path.isdir(path):
@@ -290,7 +290,7 @@ class AgentStatus(object):
             path = PidFile.get_dir()
         else:
             path = tempfile.gettempdir()
-        return os.path.join(path, cls.__name__ + '.pickle')
+        return os.path.join(path, prefix + cls.__name__ + '.pickle')
 
 
 class InstanceStatus(object):
@@ -825,6 +825,26 @@ class ForwarderStatus(AgentStatus):
             'transactions_rejected': self.transactions_rejected,
             'transactions_received': self.transactions_received,
             'transactions_flushed': self.transactions_flushed
+        })
+        return status_info
+
+
+class CheckData(AgentStatus):
+
+    def __init__(self):
+        AgentStatus.__init__(self)
+        self.data = dict()
+
+    def body_lines(self):
+        return []
+
+    def has_error(self):
+        return False
+
+    def to_dict(self):
+        status_info = AgentStatus.to_dict(self)
+        status_info.update({
+            'data': self.data
         })
         return status_info
 

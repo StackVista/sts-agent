@@ -17,7 +17,13 @@ init_config:
 
   # The amount of time (in seconds) to go in the past for an initial query when the agent starts up.
   # Warning: can cause events to be reported twice if the agent is start/stopped
-  default_initial_history_time: 60
+  default_initial_history_time_seconds: 0
+
+  # Maximum amount of history recovered after a restart
+  default_max_restart_history_seconds: 86400
+
+  # Maximum range of time when querying historical data from splunk
+  default_max_query_time_range_seconds: 3600
 
 # Currently it is not possible to specify multiple instances with the same url.
 # It is possible to specify multiple saved_searches on a single instance.
@@ -36,7 +42,13 @@ instances:
 
         # The amount of time (in seconds) to go in the past for an initial query when the agent starts up.
         # Warning: can cause events to be reported twice if the agent is start/stopped
-        # initial_history_time: 60
+        # initial_history_time_seconds: 60
+
+        # Maximum amount of history recovered after a restart
+        # max_restart_history_seconds: 86400
+
+        # Maximum range of time when querying historical data from splunk
+        # max_query_time_range_seconds: 3600
 
         # Additional parameters for the splunk saved search query
         parameters:

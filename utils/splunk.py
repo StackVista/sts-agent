@@ -1,18 +1,36 @@
+import datetime
+import re
+
+import copy
+
+import logging
 import requests
 import time
 
+from iso8601 import iso8601
+from pytz import timezone
 from checks import CheckException
 
 
 class SplunkSavedSearch(object):
     def __init__(self, instance_config, saved_search_instance):
-        self.name = saved_search_instance['name']
+
+        if "name" in saved_search_instance:
+            self.name = saved_search_instance['name']
+            self.match = None
+        elif "match":
+            self.match = saved_search_instance['match']
+            self.name = None
+        else:
+            raise Exception("Either 'name' or 'match' should be defined for saved search")
+
         self.parameters = saved_search_instance['parameters']
 
         self.request_timeout_seconds = int(saved_search_instance.get('request_timeout_seconds', instance_config.default_request_timeout_seconds))
         self.search_max_retry_count = int(saved_search_instance.get('search_max_retry_count', instance_config.default_search_max_retry_count))
         self.search_seconds_between_retries = int(saved_search_instance.get('search_seconds_between_retries', instance_config.default_search_seconds_between_retries))
         self.batch_size = int(saved_search_instance.get('batch_size', instance_config.default_batch_size))
+
 
 class SplunkInstanceConfig(object):
 
@@ -36,7 +54,47 @@ class SplunkInstanceConfig(object):
         return self.username, self.password
 
 
+class SavedSearches(object):
+
+    def __init__(self, saved_searches):
+        self.searches = filter(lambda ss: ss.name is not None, saved_searches)
+        self.matches = filter(lambda ss: ss.match is not None, saved_searches)
+        self.log = logging.getLogger('%s.%s' % (__name__, "SavedSearches"))
+
+    def update_searches(self, saved_searches):
+        """
+        :param saved_searches: List of strings with names of observed saved searches
+        """
+        # Drop missing matches
+        self.searches = filter(lambda s: s.match is None or s.name in saved_searches, self.searches)
+
+        # Filter already instantiated searches
+        new_searches = set(saved_searches).difference([s.name for s in self.searches])
+
+        # Match new searches
+        for new_search in new_searches:
+            for match in self.matches:
+                if re.match(match.match, new_search) is not None:
+                    search = copy.deepcopy(match)
+                    search.name = new_search
+                    self.log.info("Created new saved search on saved search '%s'" % new_search)
+                    self.searches.append(search)
+                    break
+
+
 class SplunkHelper():
+
+    def saved_searches(self, instance_config):
+        """
+        Retrieves a list of saved searches from splunk
+        :param instance_config: InstanceConfig, current check configuration
+        :return: json output of saved search
+        """
+        search_url = '%s/services/saved/searches?output_mode=json' % instance_config.base_url
+        auth = instance_config.get_auth_tuple()
+
+        response = self._do_get(search_url, auth, instance_config.default_request_timeout_seconds, instance_config.verify_ssl_certificate)
+        return [entry["name"] for entry in response.json()["entry"]]
 
     def _search_chunk(self, instance_config, saved_search, search_id, offset, count):
         """
@@ -86,6 +144,11 @@ class SplunkHelper():
             offset += nr_of_results
         return results
 
+    def _do_get(self, url, auth, request_timeout_seconds, verify_ssl_certificate):
+        resp = requests.get(url, auth=auth, timeout=request_timeout_seconds, verify=verify_ssl_certificate)
+        resp.raise_for_status()
+        return resp
+
     def do_post(self, url, auth, payload, request_timeout_seconds, verify_ssl_certificate):
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded'
@@ -116,3 +179,18 @@ def take_optional_field(field, obj):
     value = obj[field]
     del obj[field]
     return value
+
+
+def get_time_since_epoch(utc_datetime):
+    utc = timezone('UTC')
+    begin_epoch = datetime.datetime.utcfromtimestamp(0).replace(tzinfo = utc)
+    timestamp = (utc_datetime - begin_epoch).total_seconds()
+    return timestamp
+
+
+def time_to_seconds(str_datetime_utc):
+    """
+    Converts time in utc format 2016-06-27T14:26:30.000+00:00 to seconds
+    """
+    parsed_datetime = iso8601.parse_date(str_datetime_utc)
+    return get_time_since_epoch(parsed_datetime)
