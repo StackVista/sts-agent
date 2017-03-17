@@ -4,6 +4,8 @@ import json
 from checks import CheckException
 from tests.checks.common import AgentCheckTest, Fixtures
 
+def _mocked_saved_searches(*args, **kwargs):
+    return []
 
 class TestSplunkNoTopology(AgentCheckTest):
     """
@@ -26,7 +28,7 @@ class TestSplunkNoTopology(AgentCheckTest):
                 }
             ]
         }
-        self.run_check(config)
+        self.run_check(config, mocks={'_saved_searches':_mocked_saved_searches})
         instances = self.check.get_topology_instances()
         self.assertEqual(len(instances), 1)
 
@@ -73,7 +75,8 @@ class TestSplunkTopology(AgentCheckTest):
 
         self.run_check(config, mocks={
             '_dispatch_saved_search': _mocked_dispatch_saved_search,
-            '_search': _mocked_search
+            '_search': _mocked_search,
+            '_saved_searches': _mocked_saved_searches
         })
 
         instances = self.check.get_topology_instances()
@@ -175,7 +178,8 @@ class TestSplunkMinimalTopology(AgentCheckTest):
 
         self.run_check(config, mocks={
             '_dispatch_saved_search': _mocked_dispatch_saved_search,
-            '_search': _mocked_minimal_search
+            '_search': _mocked_minimal_search,
+            '_saved_searches': _mocked_saved_searches
         })
 
         instances = self.check.get_topology_instances()
@@ -252,7 +256,8 @@ class TestSplunkIncompleteTopology(AgentCheckTest):
         try:
             self.run_check(config, mocks={
                 '_dispatch_saved_search': _mocked_dispatch_saved_search,
-                '_search': _mocked_incomplete_search
+                '_search': _mocked_incomplete_search,
+                '_saved_searches': _mocked_saved_searches
             })
         except CheckException:
             thrown = True
@@ -330,7 +335,8 @@ class TestSplunkPollingInterval(AgentCheckTest):
         test_mocks = {
             '_dispatch_saved_search': _mocked_dispatch_saved_search,
             '_search': _mocked_interval_search,
-            '_current_time_seconds': _mocked_current_time_seconds
+            '_current_time_seconds': _mocked_current_time_seconds,
+            '_saved_searches': _mocked_saved_searches
         }
 
         # Inital run
@@ -405,7 +411,8 @@ class TestSplunkErrorResponse(AgentCheckTest):
         try:
             self.run_check(config, mocks={
                 '_dispatch_saved_search': _mocked_dispatch_saved_search,
-                '_search': _mocked_search
+                '_search': _mocked_search,
+                '_saved_searches': _mocked_saved_searches
             })
         except CheckException:
             thrown = True
@@ -429,12 +436,13 @@ class TestSplunkWildcardTopology(AgentCheckTest):
                     'url': 'http://localhost:8089',
                     'username': "admin",
                     'password': "admin",
+                    'polling_interval_seconds': 0,
                     'component_saved_searches': [{
-                        "name": "comp*",
+                        "match": "comp.*",
                         "parameters": {}
                     }],
                     'relation_saved_searches': [{
-                        "name": "rela*",
+                        "match": "rela.*",
                         "parameters": {}
                     }],
                     'tags': ['mytag', 'mytag2']
@@ -442,71 +450,39 @@ class TestSplunkWildcardTopology(AgentCheckTest):
             ]
         }
 
+        data = {
+            'saved_searches': []
+        }
+
+        def _mocked_saved_searches(*args, **kwargs):
+            return data['saved_searches']
+
+        # Add the saved searches
+        data['saved_searches'] = ["components", "relations"]
         self.run_check(config, mocks={
             '_dispatch_saved_search': _mocked_dispatch_saved_search,
             '_search': _mocked_search,
             '_saved_searches': _mocked_saved_searches
         })
-
         instances = self.check.get_topology_instances()
         self.assertEqual(len(instances), 1)
         self.assertEqual(instances[0]['instance'], {"type":"splunk","url":"http://localhost:8089"})
-
-        self.assertEqual(instances[0]['components'][0], {
-            "externalId": u"vm_2_1",
-            "type": {"name": u"vm"},
-            "data": {
-                u"_bkt": u"main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
-                u"_cd": u"1:66",
-                u"running": True,
-                u"_indextime": u"1488812154",
-                u"_serial": u"0",
-                u"_si": [
-                    u"c5ff346549e7",
-                    u"main"
-                ],
-                u"_sourcetype": u"unknown-too_small",
-                u"_time": u"2017-03-06T14:55:54.000+00:00",
-                "tags": ['result_tag1', 'mytag', 'mytag2']
-            }
-        })
-
-        self.assertEqual(instances[0]['components'][1], {
-            "externalId": u"server_2",
-            "type": {"name": u"server"},
-            "data": {
-                u"description": u"My important server 2",
-                u"_bkt": u"main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
-                u"_cd": u"1:56",
-                u"_indextime": u"1488812154",
-                u"_serial": u"3",
-                u"_si": [u"c5ff346549e7", u"main"],
-                u"_sourcetype": u"unknown-too_small",
-                u"_time": u"2017-03-06T14:55:54.000+00:00",
-                "tags": ['result_tag2', 'mytag', 'mytag2']
-            }
-        })
-
-        self.assertEquals(instances[0]['relations'][0], {
-            "externalId": u"vm_2_1-HOSTED_ON-server_2",
-            "type": {"name": u"HOSTED_ON"},
-            "sourceId": u"vm_2_1",
-            "targetId": u"server_2",
-            "data": {
-                u"description": u"Some relation",
-                u"_bkt": u"main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
-                u"_cd": u"1:81",
-                u"_indextime": u"1488813057",
-                u"_serial": u"0",
-                u"_si": [u"c5ff346549e7", u"main"],
-                u"_sourcetype": u"unknown-too_small",
-                u"_time": u"2017-03-06T15:10:57.000+00:00",
-                "tags": ['mytag', 'mytag2']
-            }
-        })
+        self.assertEqual(len(instances[0]['components']), 2)
+        self.assertEquals(len(instances[0]['relations']), 1)
 
         self.assertEquals(self.service_checks[0]['status'], 0, "service check should have status AgentCheck.OK")
 
-def _mocked_saved_searches(*args, **kwargs):
-    # sid is set to saved search name
-    return json.loads(Fixtures.read_file("saved_searches.json" % sid))
+        # Remove the saved searches
+        data['saved_searches'] = []
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_search,
+            '_saved_searches': _mocked_saved_searches
+        })
+        instances = self.check.get_topology_instances()
+        self.assertEqual(len(instances), 1)
+        self.assertEqual(instances[0]['instance'], {"type":"splunk","url":"http://localhost:8089"})
+        self.assertEqual(len(instances[0]['components']), 0)
+        self.assertEquals(len(instances[0]['relations']), 0)
+
+        self.assertEquals(self.service_checks[0]['status'], 0, "service check should have status AgentCheck.OK")
