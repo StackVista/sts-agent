@@ -102,7 +102,7 @@ class SplunkTopology(AgentCheck):
             search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
                           for saved_search in saved_searches]
             for (sid, saved_search) in search_ids:
-                self.log.info("Processing saved search: %s." % saved_search.name)
+                self.log.debug("Processing saved search: %s." % saved_search.name)
                 self._process_saved_search(sid, saved_search, instance)
         except Exception as e:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=instance.tags, message=str(e))
@@ -143,7 +143,7 @@ class SplunkTopology(AgentCheck):
         # json output_mode is mandatory for response parsing
         parameters["output_mode"] = "json"
 
-        self.log.info("Dispatching saved search: %s." % saved_search.name)
+        self.log.debug("Dispatching saved search: %s." % saved_search.name)
 
         response_body = self.splunkHelper.do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
         return response_body['sid']
