@@ -92,7 +92,7 @@ class SplunkTopology(AgentCheck):
         self.start_snapshot(instance_key)
         try:
             saved_searches = self._saved_searches(instance.instance_config)
-            instance.saved_searches.update_searches(saved_searches)
+            instance.saved_searches.update_searches(self.log, saved_searches)
 
             for saved_searches in chunks(instance.saved_searches.searches, instance.saved_searches_parallel):
                 self._dispatch_and_await_search(instance, saved_searches)

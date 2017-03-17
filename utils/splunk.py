@@ -1,6 +1,5 @@
 import re
 import copy
-import logging
 import requests
 import time
 
@@ -13,11 +12,11 @@ class SplunkSavedSearch(object):
         if "name" in saved_search_instance:
             self.name = saved_search_instance['name']
             self.match = None
-        elif "match":
+        elif "match" in saved_search_instance:
             self.match = saved_search_instance['match']
             self.name = None
         else:
-            raise Exception("Either 'name' or 'match' should be defined for saved search")
+            raise Exception("Neither 'name' or 'match' should be defined for saved search.")
 
         self.parameters = saved_search_instance['parameters']
 
@@ -55,9 +54,8 @@ class SavedSearches(object):
     def __init__(self, saved_searches):
         self.searches = filter(lambda ss: ss.name is not None, saved_searches)
         self.matches = filter(lambda ss: ss.match is not None, saved_searches)
-        self.log = logging.getLogger('%s.%s' % (__name__, "SavedSearches"))
 
-    def update_searches(self, saved_searches):
+    def update_searches(self, log, saved_searches):
         """
         :param saved_searches: List of strings with names of observed saved searches
         """
@@ -73,7 +71,7 @@ class SavedSearches(object):
                 if re.match(match.match, new_search) is not None:
                     search = copy.deepcopy(match)
                     search.name = new_search
-                    self.log.info("Created new saved search on saved search '%s'" % new_search)
+                    log.debug("Added saved search '%s'" % new_search)
                     self.searches.append(search)
                     break
 
@@ -84,7 +82,7 @@ class SplunkHelper():
         """
         Retrieves a list of saved searches from splunk
         :param instance_config: InstanceConfig, current check configuration
-        :return: json output of saved search
+        :return: list of names of saved searches
         """
         search_url = '%s/services/saved/searches?output_mode=json' % instance_config.base_url
         auth = instance_config.get_auth_tuple()

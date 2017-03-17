@@ -2,6 +2,8 @@
 import itertools
 from unittest import TestCase
 
+import logging
+
 from utils.splunk import SplunkHelper, SplunkSavedSearch, SplunkInstanceConfig, SavedSearches
 
 
@@ -80,6 +82,8 @@ class TestSavedSearches(TestCase):
 
     def test_saved_searches(self):
 
+        log = logging.getLogger('%s.%s' % (__name__, "SavedSearches"))
+
         instance_config = SplunkInstanceConfig({
             'url': 'dummy', 'username': 'admin', 'password': 'admin'
         }, {}, {
@@ -94,20 +98,20 @@ class TestSavedSearches(TestCase):
         saved_search_components = SplunkSavedSearch(instance_config, {"name": "components", "parameters": {}})
         saved_search_match = SplunkSavedSearch(instance_config, {"match": "comp.*", "parameters": {}})
 
-        saved_searches = SavedSearches([saved_search_components,saved_search_match])
+        saved_searches = SavedSearches([saved_search_components, saved_search_match])
 
         # Base configuration includes the exactly specified search
-        saved_searches.update_searches([])
+        saved_searches.update_searches(log, [])
         self.assertEquals([s.name for s in saved_searches.searches], ["components"])
 
         # This should not change anything
-        saved_searches.update_searches(["components"])
+        saved_searches.update_searches(log, ["components"])
         self.assertEquals([s.name for s in saved_searches.searches], ["components"])
 
         # Adding two component-like searches
-        saved_searches.update_searches(["comps1", "comps2", "blaat", "nocomp"])
+        saved_searches.update_searches(log, ["comps1", "comps2", "blaat", "nocomp"])
         self.assertEquals(set([s.name for s in saved_searches.searches]), set(["components", "comps1", "comps2"]))
 
         # And remove again
-        saved_searches.update_searches([])
+        saved_searches.update_searches(log, [])
         self.assertEquals([s.name for s in saved_searches.searches], ["components"])

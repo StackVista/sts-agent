@@ -78,7 +78,7 @@ class SplunkEvent(AgentCheck):
 
         try:
             saved_searches = self._saved_searches(instance.instance_config)
-            instance.saved_searches.update_searches(saved_searches)
+            instance.saved_searches.update_searches(self.log, saved_searches)
 
             search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
                           for saved_search in instance.saved_searches.searches]
