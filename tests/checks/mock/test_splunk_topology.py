@@ -84,17 +84,9 @@ class TestSplunkTopology(AgentCheckTest):
             "externalId": u"vm_2_1",
             "type": {"name": u"vm"},
             "data": {
-                u"_bkt": u"main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
-                u"_cd": u"1:66",
                 u"running": True,
-                u"_indextime": u"1488812154",
-                u"_serial": u"0",
-                u"_si": [
-                    u"c5ff346549e7",
-                    u"main"
-                ],
-                u"_sourcetype": u"unknown-too_small",
                 u"_time": u"2017-03-06T14:55:54.000+00:00",
+                "label.label1Key": "label1Value",
                 "tags": ['result_tag1', 'mytag', 'mytag2']
             }
         })
@@ -104,13 +96,8 @@ class TestSplunkTopology(AgentCheckTest):
             "type": {"name": u"server"},
             "data": {
                 u"description": u"My important server 2",
-                u"_bkt": u"main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
-                u"_cd": u"1:56",
-                u"_indextime": u"1488812154",
-                u"_serial": u"3",
-                u"_si": [u"c5ff346549e7", u"main"],
-                u"_sourcetype": u"unknown-too_small",
                 u"_time": u"2017-03-06T14:55:54.000+00:00",
+                "label.label2Key": "label2Value",
                 "tags": ['result_tag2', 'mytag', 'mytag2']
             }
         })
@@ -122,12 +109,6 @@ class TestSplunkTopology(AgentCheckTest):
             "targetId": u"server_2",
             "data": {
                 u"description": u"Some relation",
-                u"_bkt": u"main~1~60326C78-E9E8-45CD-90C3-CF75DB894977",
-                u"_cd": u"1:81",
-                u"_indextime": u"1488813057",
-                u"_serial": u"0",
-                u"_si": [u"c5ff346549e7", u"main"],
-                u"_sourcetype": u"unknown-too_small",
                 u"_time": u"2017-03-06T15:10:57.000+00:00",
                 "tags": ['mytag', 'mytag2']
             }

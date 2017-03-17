@@ -65,6 +65,7 @@ class Instance:
 
 class SplunkTopology(AgentCheck):
     SERVICE_CHECK_NAME = "splunk.topology_information"
+    EXCLUDE_FIELDS = set(['_raw', '_indextime', '_cd', '_serial', '_sourcetype', '_bkt', '_si'])
 
     @staticmethod
     def chunks(l, n):
@@ -159,17 +160,16 @@ class SplunkTopology(AgentCheck):
             external_id = take_required_field("id", data)
             comp_type = take_required_field("type", data)
 
-            # We don't want to present the raw field
-            if "_raw" in data:
-                del data["_raw"]
-
             # Add tags to data
             if 'tags' in data and instance.tags:
                 data['tags'] += instance.tags
             elif instance.tags:
                 data['tags'] = instance.tags
 
-            self.component(instance.instance_key, external_id, {"name": comp_type}, data)
+            # We don't want to present all fields
+            filtered_data = self._filter_fields(data)
+
+            self.component(instance.instance_key, external_id, {"name": comp_type}, filtered_data)
 
     def _extract_relations(self, instance, result):
         for data in result["results"]:
@@ -178,14 +178,20 @@ class SplunkTopology(AgentCheck):
             source_id = take_required_field("sourceId", data)
             target_id = take_required_field("targetId", data)
 
-            # We don't want to present the raw field
-            if "_raw" in data:
-                del data["_raw"]
-
             # Add tags to data
             if 'tags' in data and instance.tags:
                 data['tags'] += instance.tags
             elif instance.tags:
                 data['tags'] = instance.tags
 
-            self.relation(instance.instance_key, source_id, target_id, {"name": rel_type}, data)
+            # We don't want to present all fields
+            filtered_data = self._filter_fields(data)
+
+            self.relation(instance.instance_key, source_id, target_id, {"name": rel_type}, filtered_data)
+
+    def _filter_fields(self, data):
+        result = dict()
+        for key, value in data.iteritems():
+            if key not in self.EXCLUDE_FIELDS:
+                result[key] = value
+        return result
