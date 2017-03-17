@@ -674,7 +674,7 @@ def get_confd_path(osname=None):
     try:
         if Platform.is_windows():
             common_data = _windows_commondata_path()
-            return _confd_path(os.path.join(common_data, 'Datadog'))
+            return _confd_path(os.path.join(common_data, 'StackState'))
         elif Platform.is_mac():
             return _confd_path(MAC_CONFIG_PATH)
         else:
