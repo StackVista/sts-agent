@@ -72,7 +72,7 @@ def sanitize_payload(item, log, sanitize_func):
 def http_emitter(message, log, agentConfig, endpoint):
     "Send payload"
     url = agentConfig['dd_url']
-    http_emmiter_timeout = float(agentConfig['http_emmiter_timeout'])
+    http_emitter_timeout = float(agentConfig.get('http_emitter_timeout', 5))
 
     log.debug('http_emitter: attempting postback to ' + url)
 
@@ -113,7 +113,7 @@ def http_emitter(message, log, agentConfig, endpoint):
 
     try:
         headers = post_headers(agentConfig, zipped)
-        r = requests.post(url, data=zipped, timeout=http_emmiter_timeout, headers=headers)
+        r = requests.post(url, data=zipped, timeout=http_emitter_timeout, headers=headers)
 
         r.raise_for_status()
 
