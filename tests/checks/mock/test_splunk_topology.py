@@ -247,7 +247,7 @@ class TestSplunkIncompleteTopology(AgentCheckTest):
         self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
 
 
-class TestSplunkPollingInterval(AgentCheckTest):
+class TestSplunkTopologyPollingInterval(AgentCheckTest):
     """
     Test whether the splunk check properly implements the polling intervals
     """
@@ -361,7 +361,7 @@ class TestSplunkPollingInterval(AgentCheckTest):
 
         self.assertEquals(self.service_checks[0]['status'], 0, "service check should have status AgentCheck.OK")
 
-class TestSplunkErrorResponse(AgentCheckTest):
+class TestSplunkTopologyErrorResponse(AgentCheckTest):
     """
     Splunk check should handle a FATAL message response
     """
@@ -400,6 +400,7 @@ class TestSplunkErrorResponse(AgentCheckTest):
         self.assertTrue(thrown, "Retrieving FATAL message from Splunk should throw.")
 
         self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
+
 
 class TestSplunkWildcardTopology(AgentCheckTest):
     """
@@ -467,3 +468,49 @@ class TestSplunkWildcardTopology(AgentCheckTest):
         self.assertEquals(len(instances[0]['relations']), 0)
 
         self.assertEquals(self.service_checks[0]['status'], 0, "service check should have status AgentCheck.OK")
+
+
+class TestSplunkTopologyRespectParallelDispatches(AgentCheckTest):
+    CHECK_NAME = 'splunk_topology'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        saved_searches_parallel = 2
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:8089',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches_parallel': saved_searches_parallel,
+                    'component_saved_searches': [
+                        {"name": "savedsearch1", "element_type": "component", "parameters": {}},
+                        {"name": "savedsearch2", "element_type": "component", "parameters": {}},
+                        {"name": "savedsearch3", "element_type": "component", "parameters": {}}
+                    ],
+                    'relation_saved_searches': [
+                        {"name": "savedsearch4", "element_type": "relation", "parameters": {}},
+                        {"name": "savedsearch5", "element_type": "relation", "parameters": {}}
+                    ]
+                }
+            ]
+        }
+
+        self.expected_sid_increment = 1
+
+        def _mock_dispatch_and_await_search(instance, saved_searches):
+            self.assertLessEqual(len(saved_searches), saved_searches_parallel, "Did not respect the configured saved_searches_parallel setting, got value: %i" % len(saved_searches))
+
+            for saved_search in saved_searches:
+                result = saved_search.name
+                expected = "savedsearch%i" % self.expected_sid_increment
+                self.assertEquals(result, expected)
+                self.expected_sid_increment += 1
+
+        self.run_check(config, mocks={
+            '_dispatch_and_await_search': _mock_dispatch_and_await_search,
+            '_saved_searches': _mocked_saved_searches
+        })
