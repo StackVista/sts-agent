@@ -15,6 +15,8 @@ from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, 
 
 
 class SavedSearch(SplunkSavedSearch):
+    last_events_at_epoch_time = set()
+
     def __init__(self, instance_config, saved_search_instance):
         super(SavedSearch, self).__init__(instance_config, saved_search_instance)
 
@@ -92,16 +94,15 @@ class SplunkEvent(AgentCheck):
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
 
     def _dispatch_and_await_search(self, instance, saved_searches):
+        start_time = time.time()
         search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
                       for saved_search in saved_searches]
 
         for (sid, saved_search) in search_ids:
             self.log.debug("Processing saved search: %s." % saved_search.name)
-            self._process_saved_search(sid, saved_search, instance)
+            self._process_saved_search(sid, saved_search, instance, start_time)
 
-    def _extract_events(self, saved_search, instance, result):
-        sent_events = saved_search.last_events_at_epoch_time
-        saved_search.last_events_at_epoch_time = set()
+    def _extract_events(self, saved_search, instance, result, sent_events):
 
         for data in result["results"]:
 
@@ -114,6 +115,7 @@ class SplunkEvent(AgentCheck):
 
             if timestamp > saved_search.last_event_time_epoch_sec:
                 saved_search.last_events_at_epoch_time = set()
+                saved_search.last_events_at_epoch_time.add(event_id)
                 saved_search.last_event_time_epoch_sec = timestamp
             elif timestamp == saved_search.last_event_time_epoch_sec:
                 saved_search.last_events_at_epoch_time.add(event_id)
@@ -141,13 +143,20 @@ class SplunkEvent(AgentCheck):
                 "tags": event_tags
             })
 
-    def _process_saved_search(self, search_id, saved_search, instance):
+    def _process_saved_search(self, search_id, saved_search, instance, start_time):
+        count = 0
+
+        sent_events = saved_search.last_events_at_epoch_time
+        saved_search.last_events_at_epoch_time = set()
+
         for response in self._search(search_id, saved_search, instance):
             for message in response['messages']:
                 if message['type'] != "FATAL":
                     self.log.info("Received unhandled message, got: " + str(message))
 
-            self._extract_events(saved_search, instance, response)
+            count += len(response["results"])
+            self._extract_events(saved_search, instance, response, sent_events)
+        self.log.debug("Save search done: %s in time %d with results %d" % (saved_search.name, time.time() - start_time, count))
 
     def _search(self, search_id, saved_search, instance):
         return self.splunkHelper.saved_search_results(search_id, saved_search, instance.instance_config)

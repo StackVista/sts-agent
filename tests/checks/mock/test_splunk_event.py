@@ -191,7 +191,7 @@ class TestSplunkFullEvents(AgentCheckTest):
             ]
         })
 
-class TestSplunkEarliestTime(AgentCheckTest):
+class TestSplunkEarliestTimeAndDuplicates(AgentCheckTest):
     """
     Splunk event check should poll batches responses
     """
@@ -265,8 +265,8 @@ class TestSplunkEarliestTime(AgentCheckTest):
         test_data["time"] = 1
         test_data["earliest_time"] = '2017-03-08T18:29:59.000000+0000'
         self.run_check(config, mocks=test_mocks)
-        self.assertEqual(len(self.events), 2)
-        self.assertEqual([e['event_type'] for e in self.events], ["3_1", "3_2"])
+        self.assertEqual(len(self.events), 1)
+        self.assertEqual([e['event_type'] for e in self.events], ["2_1"])
 
         # Throw exception during search
         test_data["time"] = 60

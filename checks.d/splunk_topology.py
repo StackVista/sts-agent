@@ -108,24 +108,28 @@ class SplunkTopology(AgentCheck):
             self.stop_snapshot(instance_key)
 
     def _dispatch_and_await_search(self, instance, saved_searches):
+        start_time = time.time()
         search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
                       for saved_search in saved_searches]
 
         for (sid, saved_search) in search_ids:
             self.log.debug("Processing saved search: %s." % saved_search.name)
-            self._process_saved_search(sid, saved_search, instance)
+            self._process_saved_search(sid, saved_search, instance, start_time)
 
-    def _process_saved_search(self, search_id, saved_search, instance):
+    def _process_saved_search(self, search_id, saved_search, instance, start_time):
+        count = 0
         for response in self._search(search_id, saved_search, instance):
             for message in response['messages']:
                 if message['type'] != "FATAL" and message['type'] != "INFO":
                     self.log.info("Received unhandled message, got: " + str(message))
 
+            count += len(response["results"])
             # process components and relations
             if saved_search.element_type == "component":
                 self._extract_components(instance, response)
             elif saved_search.element_type == "relation":
                 self._extract_relations(instance, response)
+        self.log.debug("Save search done: %s in time %d with results %d" % (saved_search.name, time.time() - start_time, count))
 
     @staticmethod
     def _current_time_seconds():
