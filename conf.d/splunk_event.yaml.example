@@ -33,6 +33,8 @@ instances:
     saved_searches:
       # Splunk name of the saved search
       - name: "events"
+        # Wilcard match to find event queries, can be used instead of name
+        # match: "events.*"
         # request_timeout_seconds: 10
         # search_max_retry_count: 5
         # search_seconds_between_retries: 1

@@ -8,7 +8,7 @@ import time
 from urllib import quote
 
 from checks import AgentCheck, CheckException
-from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field, chunks
+from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field, SavedSearches, chunks
 
 
 class SavedSearch(SplunkSavedSearch):
@@ -48,7 +48,8 @@ class Instance:
                       for saved_search_instance in instance['component_saved_searches']]
         relations = [SavedSearch("relation", self.instance_config, saved_search_instance)
                      for saved_search_instance in instance['relation_saved_searches']]
-        self.saved_searches = components + relations
+
+        self.saved_searches = SavedSearches(components + relations)
         self.instance_key = {
             "type": self.INSTANCE_TYPE,
             "url": self.instance_config.base_url
@@ -90,43 +91,52 @@ class SplunkTopology(AgentCheck):
 
         self.start_snapshot(instance_key)
         try:
-            for saved_searches in chunks(instance.saved_searches, instance.saved_searches_parallel):
+            saved_searches = self._saved_searches(instance.instance_config)
+            instance.saved_searches.update_searches(self.log, saved_searches)
+
+            for saved_searches in chunks(instance.saved_searches.searches, instance.saved_searches_parallel):
                 self._dispatch_and_await_search(instance, saved_searches)
 
             # If everything was successful, update the timestamp
+            self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
             instance.last_successful_poll_epoch_seconds = current_time_epoch_seconds
-        finally:
-            self.stop_snapshot(instance_key)
-
-    def _dispatch_and_await_search(self, instance, saved_searches):
-        try:
-            search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
-                          for saved_search in saved_searches]
-            for (sid, saved_search) in search_ids:
-                self.log.debug("Processing saved search: %s." % saved_search.name)
-                self._process_saved_search(sid, saved_search, instance)
         except Exception as e:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=instance.tags, message=str(e))
             self.log.exception("Splunk topology exception: %s" % str(e))
             raise CheckException("Cannot connect to Splunk, please check your configuration. Message: " + str(e))
-        else:
-            self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
+        finally:
+            self.stop_snapshot(instance_key)
 
-    def _process_saved_search(self, search_id, saved_search, instance):
+    def _dispatch_and_await_search(self, instance, saved_searches):
+        start_time = time.time()
+        search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
+                      for saved_search in saved_searches]
+
+        for (sid, saved_search) in search_ids:
+            self.log.debug("Processing saved search: %s." % saved_search.name)
+            self._process_saved_search(sid, saved_search, instance, start_time)
+
+    def _process_saved_search(self, search_id, saved_search, instance, start_time):
+        count = 0
         for response in self._search(search_id, saved_search, instance):
             for message in response['messages']:
                 if message['type'] != "FATAL" and message['type'] != "INFO":
                     self.log.info("Received unhandled message, got: " + str(message))
 
+            count += len(response["results"])
             # process components and relations
             if saved_search.element_type == "component":
                 self._extract_components(instance, response)
             elif saved_search.element_type == "relation":
                 self._extract_relations(instance, response)
+        self.log.debug("Save search done: %s in time %d with results %d" % (saved_search.name, time.time() - start_time, count))
 
     @staticmethod
     def _current_time_seconds():
         return int(round(time.time()))
+
+    def _saved_searches(self, instance_config):
+        return self.splunkHelper.saved_searches(instance_config)
 
     def _search(self, search_id, saved_search, instance):
         return self.splunkHelper.saved_search_results(search_id, saved_search, instance.instance_config)

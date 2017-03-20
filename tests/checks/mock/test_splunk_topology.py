@@ -4,6 +4,8 @@ import json
 from checks import CheckException
 from tests.checks.common import AgentCheckTest, Fixtures
 
+def _mocked_saved_searches(*args, **kwargs):
+    return []
 
 class TestSplunkNoTopology(AgentCheckTest):
     """
@@ -26,7 +28,7 @@ class TestSplunkNoTopology(AgentCheckTest):
                 }
             ]
         }
-        self.run_check(config)
+        self.run_check(config, mocks={'_saved_searches':_mocked_saved_searches})
         instances = self.check.get_topology_instances()
         self.assertEqual(len(instances), 1)
 
@@ -73,7 +75,8 @@ class TestSplunkTopology(AgentCheckTest):
 
         self.run_check(config, mocks={
             '_dispatch_saved_search': _mocked_dispatch_saved_search,
-            '_search': _mocked_search
+            '_search': _mocked_search,
+            '_saved_searches': _mocked_saved_searches
         })
 
         instances = self.check.get_topology_instances()
@@ -156,7 +159,8 @@ class TestSplunkMinimalTopology(AgentCheckTest):
 
         self.run_check(config, mocks={
             '_dispatch_saved_search': _mocked_dispatch_saved_search,
-            '_search': _mocked_minimal_search
+            '_search': _mocked_minimal_search,
+            '_saved_searches': _mocked_saved_searches
         })
 
         instances = self.check.get_topology_instances()
@@ -233,7 +237,8 @@ class TestSplunkIncompleteTopology(AgentCheckTest):
         try:
             self.run_check(config, mocks={
                 '_dispatch_saved_search': _mocked_dispatch_saved_search,
-                '_search': _mocked_incomplete_search
+                '_search': _mocked_incomplete_search,
+                '_saved_searches': _mocked_saved_searches
             })
         except CheckException:
             thrown = True
@@ -311,7 +316,8 @@ class TestSplunkTopologyPollingInterval(AgentCheckTest):
         test_mocks = {
             '_dispatch_saved_search': _mocked_dispatch_saved_search,
             '_search': _mocked_interval_search,
-            '_current_time_seconds': _mocked_current_time_seconds
+            '_current_time_seconds': _mocked_current_time_seconds,
+            '_saved_searches': _mocked_saved_searches
         }
 
         # Inital run
@@ -386,13 +392,125 @@ class TestSplunkTopologyErrorResponse(AgentCheckTest):
         try:
             self.run_check(config, mocks={
                 '_dispatch_saved_search': _mocked_dispatch_saved_search,
-                '_search': _mocked_search
+                '_search': _mocked_search,
+                '_saved_searches': _mocked_saved_searches
             })
         except CheckException:
             thrown = True
         self.assertTrue(thrown, "Retrieving FATAL message from Splunk should throw.")
 
         self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
+
+
+class TestSplunkSavedSearchesError(AgentCheckTest):
+    """
+    Splunk topology check should have a service check failure when getting an exception from saved searches
+    """
+    CHECK_NAME = 'splunk_topology'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:8089',
+                    'username': "admin",
+                    'password': "admin",
+                    'component_saved_searches': [{
+                        "name": "error",
+                        "element_type": "component",
+                        "parameters": {}
+                    }],
+                    'relation_saved_searches': [],
+                    'tags': ['mytag', 'mytag2']
+                }
+            ]
+        }
+
+        def _mocked_saved_searches(*args, **kwargs):
+            raise Exception("Boom")
+
+        thrown = False
+        try:
+            self.run_check(config, mocks={
+                '_saved_searches': _mocked_saved_searches
+            })
+        except CheckException:
+            thrown = True
+        self.assertTrue(thrown, "Retrieving FATAL message from Splunk should throw.")
+        self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
+
+
+
+class TestSplunkWildcardTopology(AgentCheckTest):
+    """
+    Splunk check should work with component and relation data
+    """
+    CHECK_NAME = 'splunk_topology'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:8089',
+                    'username': "admin",
+                    'password': "admin",
+                    'polling_interval_seconds': 0,
+                    'component_saved_searches': [{
+                        "match": "comp.*",
+                        "parameters": {}
+                    }],
+                    'relation_saved_searches': [{
+                        "match": "rela.*",
+                        "parameters": {}
+                    }],
+                    'tags': ['mytag', 'mytag2']
+                }
+            ]
+        }
+
+        data = {
+            'saved_searches': []
+        }
+
+        def _mocked_saved_searches(*args, **kwargs):
+            return data['saved_searches']
+
+        # Add the saved searches
+        data['saved_searches'] = ["components", "relations"]
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_search,
+            '_saved_searches': _mocked_saved_searches
+        })
+        instances = self.check.get_topology_instances()
+        self.assertEqual(len(instances), 1)
+        self.assertEqual(instances[0]['instance'], {"type":"splunk","url":"http://localhost:8089"})
+        self.assertEqual(len(instances[0]['components']), 2)
+        self.assertEquals(len(instances[0]['relations']), 1)
+
+        self.assertEquals(self.service_checks[0]['status'], 0, "service check should have status AgentCheck.OK")
+
+        # Remove the saved searches
+        data['saved_searches'] = []
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_search,
+            '_saved_searches': _mocked_saved_searches
+        })
+        instances = self.check.get_topology_instances()
+        self.assertEqual(len(instances), 1)
+        self.assertEqual(instances[0]['instance'], {"type":"splunk","url":"http://localhost:8089"})
+        self.assertEqual(len(instances[0]['components']), 0)
+        self.assertEquals(len(instances[0]['relations']), 0)
+
+        self.assertEquals(self.service_checks[0]['status'], 0, "service check should have status AgentCheck.OK")
+
 
 class TestSplunkTopologyRespectParallelDispatches(AgentCheckTest):
     CHECK_NAME = 'splunk_topology'
@@ -435,5 +553,6 @@ class TestSplunkTopologyRespectParallelDispatches(AgentCheckTest):
                 self.expected_sid_increment += 1
 
         self.run_check(config, mocks={
-            '_dispatch_and_await_search': _mock_dispatch_and_await_search
+            '_dispatch_and_await_search': _mock_dispatch_and_await_search,
+            '_saved_searches': _mocked_saved_searches
         })
