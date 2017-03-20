@@ -5,6 +5,9 @@ from utils.splunk import time_to_seconds
 from tests.checks.common import AgentCheckTest, Fixtures
 from checks import CheckException
 
+def _mocked_saved_searches(*args, **kwargs):
+    return []
+
 class TestSplunkErrorResponse(AgentCheckTest):
     """
     Splunk event check should handle a FATAL message response
@@ -34,6 +37,7 @@ class TestSplunkErrorResponse(AgentCheckTest):
         try:
             self.run_check(config, mocks={
                 '_dispatch_saved_search': _mocked_dispatch_saved_search,
+                '_saved_searches': _mocked_saved_searches
             })
         except CheckException:
             thrown = True
@@ -67,7 +71,8 @@ class TestSplunkEmptyEvents(AgentCheckTest):
         }
         self.run_check(config, mocks={
             '_dispatch_saved_search': _mocked_dispatch_saved_search,
-            '_search': _mocked_minimal_search
+            '_search': _mocked_minimal_search,
+            '_saved_searches': _mocked_saved_searches
         })
         current_check_events = self.check.get_events()
         self.assertEqual(len(current_check_events), 0)
@@ -99,7 +104,8 @@ class TestSplunkMinimalEvents(AgentCheckTest):
 
         self.run_check(config, mocks={
             '_dispatch_saved_search': _mocked_dispatch_saved_search,
-            '_search': _mocked_minimal_search
+            '_search': _mocked_minimal_search,
+            '_saved_searches': _mocked_saved_searches
         })
 
         self.assertEqual(len(self.events), 2)
@@ -148,7 +154,8 @@ class TestSplunkFullEvents(AgentCheckTest):
 
         self.run_check(config, mocks={
             '_dispatch_saved_search': _mocked_dispatch_saved_search,
-            '_search': _mocked_full_search
+            '_search': _mocked_full_search,
+            '_saved_searches': _mocked_saved_searches
         })
 
         self.assertEqual(len(self.events), 2)
@@ -187,7 +194,7 @@ class TestSplunkFullEvents(AgentCheckTest):
         })
 
 
-class TestSplunkEarliestTime(AgentCheckTest):
+class TestSplunkEarliestTimeAndDuplicates(AgentCheckTest):
     """
     Splunk event check should poll batches responses
     """
@@ -245,23 +252,23 @@ class TestSplunkEarliestTime(AgentCheckTest):
         test_mocks = {
             '_do_post': _mocked_dispatch_saved_search_do_post,
             '_search': _mocked_polling_search,
-            '_current_time_seconds': _mocked_current_time_seconds
+            '_current_time_seconds': _mocked_current_time_seconds,
+            '_saved_searches': _mocked_saved_searches
         }
 
         # Initial run
         test_data["sid"] = "poll"
-        test_data["time"] = 1
+        test_data["time"] = time_to_seconds("2017-03-08T18:29:59.000000+0000")
         self.run_check(config, mocks=test_mocks)
         self.assertEqual(len(self.events), 4)
         self.assertEqual([e['event_type'] for e in self.events], ["0_1", "0_2", "1_1", "1_2"])
 
         # respect earliest_time
         test_data["sid"] = "poll1"
-        test_data["time"] = 1
         test_data["earliest_time"] = '2017-03-08T18:29:59.000000+0000'
         self.run_check(config, mocks=test_mocks)
-        self.assertEqual(len(self.events), 2)
-        self.assertEqual([e['event_type'] for e in self.events], ["3_1", "3_2"])
+        self.assertEqual(len(self.events), 1)
+        self.assertEqual([e['event_type'] for e in self.events], ["2_1"])
 
         # Throw exception during search
         test_data["time"] = 60
@@ -324,7 +331,8 @@ class TestSplunkDeduplicateEventsInTheSameRun(AgentCheckTest):
         test_mocks = {
             '_do_post': _mocked_dispatch_saved_search_do_post,
             '_search': _mocked_dup_search,
-            '_current_time_seconds': _mocked_current_time_seconds
+            '_current_time_seconds': _mocked_current_time_seconds,
+            '_saved_searches': _mocked_saved_searches
         }
 
         # Inital run
@@ -393,7 +401,8 @@ class TestSplunkContinueAfterRestart(AgentCheckTest):
         test_mocks = {
             '_do_post': _mocked_dispatch_saved_search_do_post,
             '_search': _mocked_search,
-            '_current_time_seconds': _mocked_current_time_seconds
+            '_current_time_seconds': _mocked_current_time_seconds,
+            '_saved_searches': _mocked_saved_searches
         }
 
         # Initial run with initial time
@@ -476,7 +485,8 @@ class TestSplunkQueryInitialHistory(AgentCheckTest):
         test_mocks = {
             '_do_post': _mocked_dispatch_saved_search_do_post,
             '_search': _mocked_minimal_search,
-            '_current_time_seconds': _mocked_current_time_seconds
+            '_current_time_seconds': _mocked_current_time_seconds,
+            '_saved_searches': _mocked_saved_searches
         }
 
         test_data["time"] = time_to_seconds('2017-03-09T00:00:00.000000+0000')
@@ -548,7 +558,8 @@ class TestSplunkMaxRestartTime(AgentCheckTest):
         test_mocks = {
             '_do_post': _mocked_dispatch_saved_search_do_post,
             '_search': _mocked_search,
-            '_current_time_seconds': _mocked_current_time_seconds
+            '_current_time_seconds': _mocked_current_time_seconds,
+            '_saved_searches': _mocked_saved_searches
         }
 
         # Initial run with initial time
@@ -612,7 +623,8 @@ class TestSplunkKeepTimeOnFailure(AgentCheckTest):
         test_mocks = {
             '_do_post': _mocked_dispatch_saved_search_do_post,
             '_search': _mocked_minimal_search,
-            '_current_time_seconds': _mocked_current_time_seconds
+            '_current_time_seconds': _mocked_current_time_seconds,
+            '_saved_searches': _mocked_saved_searches
         }
 
         self.collect_ok = False
@@ -625,6 +637,97 @@ class TestSplunkKeepTimeOnFailure(AgentCheckTest):
 
         # Make sure we keep the same start time
         self.run_check(config, mocks=test_mocks)
+
+
+class TestSplunkWildcardSearches(AgentCheckTest):
+    """
+    Splunk event check should process minimal response correctly
+    """
+    CHECK_NAME = 'splunk_event'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:13001',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches': [{
+                        "match": "even*",
+                        "parameters": {}
+                    }],
+                    'tags': []
+                }
+            ]
+        }
+
+        data = {
+            'saved_searches': []
+        }
+
+        def _mocked_saved_searches(*args, **kwargs):
+            return data['saved_searches']
+
+        data['saved_searches'] = ["events", "blaat"]
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_minimal_search,
+            '_saved_searches': _mocked_saved_searches
+        })
+
+        self.assertEqual(len(self.check.instance_data['http://localhost:13001'].saved_searches.searches), 1)
+        self.assertEqual(len(self.events), 2)
+
+        data['saved_searches'] = []
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_minimal_search,
+            '_saved_searches': _mocked_saved_searches
+        })
+        self.assertEqual(len(self.check.instance_data['http://localhost:13001'].saved_searches.searches), 0)
+        self.assertEqual(len(self.events), 0)
+
+
+class TestSplunkSavedSearchesError(AgentCheckTest):
+    """
+    Splunk event check should have a service check failure when getting an exception from saved searches
+    """
+    CHECK_NAME = 'splunk_event'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:13001',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches': [{
+                        "match": "even*",
+                        "parameters": {}
+                    }],
+                    'tags': []
+                }
+            ]
+        }
+
+        def _mocked_saved_searches(*args, **kwargs):
+            raise Exception("Boom")
+
+        thrown = False
+        try:
+            self.run_check(config, mocks={
+                '_saved_searches': _mocked_saved_searches
+            })
+        except CheckException:
+            thrown = True
+        self.assertTrue(thrown, "Retrieving FATAL message from Splunk should throw.")
+        self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
 
 
 def _mocked_dispatch_saved_search(*args, **kwargs):
@@ -686,5 +789,6 @@ class TestSplunkEventRespectParallelDispatches(AgentCheckTest):
                 self.expected_sid_increment += 1
 
         self.run_check(config, mocks={
-            '_dispatch_and_await_search': _mock_dispatch_and_await_search
+            '_dispatch_and_await_search': _mock_dispatch_and_await_search,
+            '_saved_searches': _mocked_saved_searches
         })
