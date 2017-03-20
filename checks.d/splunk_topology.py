@@ -112,6 +112,7 @@ class SplunkTopology(AgentCheck):
                 self._process_saved_search(sid, saved_search, instance)
         except Exception as e:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=instance.tags, message=str(e))
+            self.log.exception("Splunk topology exception: %s" % str(e))
             raise CheckException("Cannot connect to Splunk, please check your configuration. Message: " + str(e))
 
     def _process_saved_search(self, search_id, saved_search, instance):
