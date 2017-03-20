@@ -28,6 +28,9 @@ init_config:
   # Maximum range of time when querying historical data from splunk
   default_max_query_time_range_seconds: 3600
 
+  # Delay before starting polling events after starting
+  # default_initial_delay_first_time_seconds: 600
+
 # Currently it is not possible to specify multiple instances with the same url.
 # It is possible to specify multiple saved_searches on a single instance.
 instances:
