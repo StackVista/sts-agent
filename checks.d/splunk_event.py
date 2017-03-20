@@ -3,31 +3,28 @@
 """
 
 # 3rd party
-import datetime
 import time
 from urllib import quote
 
-from pytz import timezone
-
 from checks.check_status import CheckData
 from checks import AgentCheck, CheckException
-from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field, take_optional_field, chunks, time_to_seconds
+from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field, take_optional_field, chunks, time_to_seconds, get_utc_time
 
 
 class SavedSearch(SplunkSavedSearch):
     def __init__(self, instance_config, saved_search_instance):
         super(SavedSearch, self).__init__(instance_config, saved_search_instance)
 
-        self.initial_history_time_sec = int(saved_search_instance.get('initial_history_time_seconds', instance_config.default_initial_history_time_sec))
+        self.initial_history_time_seconds = int(saved_search_instance.get('initial_history_time_seconds', instance_config.default_initial_history_time_seconds))
         self.max_restart_history_seconds = int(saved_search_instance.get('max_restart_history_seconds', instance_config.default_max_restart_history_seconds))
         self.max_query_chunk_seconds = int(saved_search_instance.get('max_query_chunk_seconds', instance_config.default_max_query_chunk_seconds))
 
         # Up until which timestamp did we get with the data?
-        self.last_event_time_epoch_sec = 0
+        self.last_event_time_epoch_seconds = 0
 
         # End of the last recovery time window. When this is None recovery is done. 0 signifies uninitialized.
         # Any value above zero signifies until what time we recovered.
-        self.last_recover_latest_time_epoch_sec = 0
+        self.last_recover_latest_time_epoch_seconds = 0
 
         # We keep track of the events that were reported for the last timestamp, to deduplicate them when we get a new query
         self.last_events_at_epoch_time = set()
@@ -36,12 +33,12 @@ class SavedSearch(SplunkSavedSearch):
         """
         :return: Return a tuple of the last time until which the query was ran, and whether this was based on history
         """
-        if self.last_recover_latest_time_epoch_sec is None:
+        if self.last_recover_latest_time_epoch_seconds is None:
             # If there is not catching up to do, the status is as far as the last event time
-            return self.last_event_time_epoch_sec, False
+            return self.last_event_time_epoch_seconds, False
         else:
             # If we are still catching up, we got as far as the last finish time. We report as inclusive bound (hence the -1)
-            return self.last_recover_latest_time_epoch_sec - 1, True
+            return self.last_recover_latest_time_epoch_seconds - 1, True
 
 
 class InstanceConfig(SplunkInstanceConfig):
@@ -55,13 +52,13 @@ class InstanceConfig(SplunkInstanceConfig):
             'default_saved_searches_parallel': 3
         })
 
-        self.default_initial_history_time_sec = init_config.get('default_initial_history_time_seconds', 0)
+        self.default_initial_history_time_seconds = init_config.get('default_initial_history_time_seconds', 0)
         self.default_max_restart_history_seconds = init_config.get('default_max_restart_history_seconds', 86400)
         self.default_max_query_chunk_seconds = init_config.get('default_max_query_chunk_seconds', 3600)
 
 
 class Instance:
-    INSTANCE_TYPE = "splunk"
+    INSTANCE_NAME = "splunk_event"
 
     def __init__(self, instance, init_config):
         self.instance_config = InstanceConfig(instance, init_config)
@@ -79,7 +76,7 @@ class Instance:
 
     def get_status(self):
         """
-        :return: Aggregate the status for save searches and report whether there were historical queries among it.
+        :return: Aggregate the status for saved searches and report whether there were historical queries among it.
         """
         status_dict = dict()
         has_history = False
@@ -102,15 +99,15 @@ class Instance:
         for saved_search in self.saved_searches:
             # Do we still need to recover?
             last_committed = self.get_search_data(data, saved_search.name)
-            if saved_search.last_recover_latest_time_epoch_sec is not None or last_committed is None:
+            if saved_search.last_recover_latest_time_epoch_seconds is not None or last_committed is None:
                 if last_committed is None:  # Is this the first time we start?
-                    saved_search.last_event_time_epoch_sec = current_time - saved_search.initial_history_time_sec
+                    saved_search.last_event_time_epoch_seconds = current_time - saved_search.initial_history_time_seconds
                 else:  # Continue running or restarting, add one to not duplicate the last events.
-                    saved_search.last_event_time_epoch_sec = last_committed + 1
-                    if current_time - saved_search.last_event_time_epoch_sec > saved_search.max_restart_history_seconds:
-                        saved_search.last_event_time_epoch_sec = current_time - saved_search.max_restart_history_seconds
+                    saved_search.last_event_time_epoch_seconds = last_committed + 1
+                    if current_time - saved_search.last_event_time_epoch_seconds > saved_search.max_restart_history_seconds:
+                        saved_search.last_event_time_epoch_seconds = current_time - saved_search.max_restart_history_seconds
             else:
-                saved_search.last_event_time_epoch_sec = last_committed
+                saved_search.last_event_time_epoch_seconds = last_committed
 
 
 class SplunkEvent(AgentCheck):
@@ -124,8 +121,8 @@ class SplunkEvent(AgentCheck):
         # Data to keep over check runs, keyed by instance url
         self.instance_data = dict()
         self.splunkHelper = SplunkHelper()
-        self.data = None
-        self.load_data()
+        self.status = None
+        self.load_status()
 
     def check(self, instance):
         if 'url' not in instance:
@@ -135,7 +132,7 @@ class SplunkEvent(AgentCheck):
             self.instance_data[instance["url"]] = Instance(instance, self.init_config)
 
         instance = self.instance_data[instance["url"]]
-        instance.update_status(self._current_time_seconds(), self.data)
+        instance.update_status(self._current_time_seconds(), self.status)
 
         for saved_searches in chunks(instance.saved_searches, instance.saved_searches_parallel):
             self._dispatch_and_await_search(instance, saved_searches)
@@ -168,10 +165,10 @@ class SplunkEvent(AgentCheck):
             _time = take_required_field("_time", data)
             timestamp = time_to_seconds(_time)
 
-            if timestamp > saved_search.last_event_time_epoch_sec:
+            if timestamp > saved_search.last_event_time_epoch_seconds:
                 saved_search.last_events_at_epoch_time = set()
-                saved_search.last_event_time_epoch_sec = timestamp
-            elif timestamp == saved_search.last_event_time_epoch_sec:
+                saved_search.last_event_time_epoch_seconds = timestamp
+            elif timestamp == saved_search.last_event_time_epoch_seconds:
                 saved_search.last_events_at_epoch_time.add(event_id)
 
             if event_id in sent_events:
@@ -230,8 +227,8 @@ class SplunkEvent(AgentCheck):
     def commit_succeeded(self, instance):
         instance = self.instance_data[instance["url"]]
         status_dict, continue_after_commit = instance.get_status()
-        self.data.data[instance.instance_config.base_url] = status_dict
-        self.data.persist(Instance.INSTANCE_TYPE)
+        self.status.data[instance.instance_config.base_url] = status_dict
+        self.status.persist(Instance.INSTANCE_NAME)
         return continue_after_commit
 
     def commit_failed(self, instance):
@@ -254,7 +251,7 @@ class SplunkEvent(AgentCheck):
         # json output_mode is mandatory for response parsing
         parameters["output_mode"] = "json"
 
-        earliest_epoch_datetime = datetime.datetime.utcfromtimestamp(saved_search.last_event_time_epoch_sec).replace(tzinfo=timezone("UTC"))
+        earliest_epoch_datetime = get_utc_time(saved_search.last_event_time_epoch_seconds)
 
         parameters["dispatch.time_format"] = self.TIME_FMT
         parameters["dispatch.earliest_time"] = earliest_epoch_datetime.strftime(self.TIME_FMT)
@@ -263,16 +260,16 @@ class SplunkEvent(AgentCheck):
             del parameters["dispatch.latest_time"]
 
         # See whether we should recover events from the past
-        if saved_search.last_recover_latest_time_epoch_sec is not None:
-            latest_time_epoch = saved_search.last_event_time_epoch_sec + saved_search.max_query_chunk_seconds
+        if saved_search.last_recover_latest_time_epoch_seconds is not None:
+            latest_time_epoch = saved_search.last_event_time_epoch_seconds + saved_search.max_query_chunk_seconds
             current_time = self._current_time_seconds()
 
             if latest_time_epoch >= current_time:
                 self.log.warn("Caught up with old splunk data since %s" % parameters["dispatch.earliest_time"])
-                saved_search.last_recover_latest_time_epoch_sec = None
+                saved_search.last_recover_latest_time_epoch_seconds = None
             else:
-                saved_search.last_recover_latest_time_epoch_sec = latest_time_epoch
-                latest_epoch_datetime = datetime.datetime.utcfromtimestamp(latest_time_epoch).replace(tzinfo=timezone("UTC"))
+                saved_search.last_recover_latest_time_epoch_seconds = latest_time_epoch
+                latest_epoch_datetime = get_utc_time(latest_time_epoch)
                 parameters["dispatch.latest_time"] = latest_epoch_datetime.strftime(self.TIME_FMT)
                 self.log.warn("Catching up with old splunk data from %s to %s " % (parameters["dispatch.earliest_time"],parameters["dispatch.latest_time"]))
 
@@ -286,10 +283,13 @@ class SplunkEvent(AgentCheck):
         return self.splunkHelper.do_post(url, auth, payload, timeout, verify_ssl)
 
     def clear_status(self):
-        CheckData.remove_latest_status(Instance.INSTANCE_TYPE)
-        self.load_data()
+        """
+        This function is only used form test code to act as if the check is running for the first time
+        """
+        CheckData.remove_latest_status(Instance.INSTANCE_NAME)
+        self.load_status()
 
-    def load_data(self):
-        self.data = CheckData.load_latest_status(Instance.INSTANCE_TYPE)
-        if self.data is None:
-            self.data = CheckData()
+    def load_status(self):
+        self.status = CheckData.load_latest_status(Instance.INSTANCE_NAME)
+        if self.status is None:
+            self.status = CheckData()

@@ -122,9 +122,12 @@ def take_optional_field(field, obj):
     return value
 
 
+def get_utc_time(seconds):
+    return datetime.datetime.utcfromtimestamp(seconds).replace(tzinfo=timezone("UTC"))
+
+
 def get_time_since_epoch(utc_datetime):
-    utc = timezone('UTC')
-    begin_epoch = datetime.datetime.utcfromtimestamp(0).replace(tzinfo = utc)
+    begin_epoch = get_utc_time(0)
     timestamp = (utc_datetime - begin_epoch).total_seconds()
     return timestamp
 
