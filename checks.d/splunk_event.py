@@ -58,7 +58,7 @@ class InstanceConfig(SplunkInstanceConfig):
         self.default_initial_history_time_sec = init_config.get('default_initial_history_time_seconds', 0)
         self.default_max_restart_history_seconds = init_config.get('default_max_restart_history_seconds', 86400)
         self.default_max_query_time_range_seconds = init_config.get('default_max_query_time_range_seconds', 3600)
-
+        self.default_initial_delay_first_time_seconds = int(init_config.get('default_initial_delay_first_time_seconds', 0))
 
 class Instance:
     INSTANCE_TYPE = "splunk"
@@ -76,6 +76,9 @@ class Instance:
         self.saved_searches_parallel = int(instance.get('saved_searches_parallel', self.instance_config.default_saved_searches_parallel))
 
         self.tags = instance.get('tags', [])
+        self.initial_delay_first_time_seconds = int(instance.get('initial_delay_first_time_seconds', self.instance_config.default_initial_delay_first_time_seconds))
+
+
 
     def get_status(self):
         """

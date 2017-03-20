@@ -36,6 +36,7 @@ instances:
     username: "admin"
     password: "admin"
     # saved_searches_parallel: 3
+    # initial_delay_first_time_seconds: 600 // 10 minutes
     saved_searches:
       # Splunk name of the saved search
       - name: "events"
