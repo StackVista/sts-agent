@@ -33,6 +33,8 @@ instances:
     # saved_searches_parallel: 5
     component_saved_searches:
       - name: "components"
+        # Wilcard match to find component queries, can be used instead of name
+        # match: "comp.*"
         # request_timeout_seconds: 10
         # search_max_retry_count: 5
         # search_seconds_between_retries: 1
@@ -44,6 +46,8 @@ instances:
           dispatch.now: true
     relation_saved_searches:
       #- name: "relations"
+      # Wilcard match to find relation queries, can be used instead of name
+      #  match: "relation*"
       #  request_timeout_seconds: 10
       #  search_max_retry_count: 5
       #  search_seconds_between_retries: 1

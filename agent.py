@@ -297,9 +297,11 @@ class Agent(Daemon):
                     watchdog.reset()
                 if profiled:
                     collector_profiled_runs += 1
-                log.debug("Sleeping for {0} seconds".format(self.check_frequency))
                 if not continue_immediately:
+                    log.debug("Sleeping for {0} seconds".format(self.check_frequency))
                     time.sleep(self.check_frequency)
+                else:
+                    log.debug("Continuing immediately")
 
         # Now clean-up.
         try:

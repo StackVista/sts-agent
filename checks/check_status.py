@@ -247,9 +247,13 @@ class AgentStatus(object):
     @classmethod
     def load_latest_status(cls, prefix=""):
         try:
-            f = open(cls._get_pickle_path(prefix))
+            path = cls._get_pickle_path(prefix)
+            f = open(path)
             try:
-                return pickle.load(f)
+                r = pickle.load(f)
+                if not isinstance(r, cls):
+                    raise Exception("Expected class %s but got %s when loading pickle from %s" % (cls.__name__, type(r).__name__, path))
+                return r
             finally:
                 f.close()
         except (IOError, EOFError):
@@ -830,7 +834,11 @@ class ForwarderStatus(AgentStatus):
 
 
 class CheckData(AgentStatus):
-
+    """
+    Generic class to store data for checks. This contains a generic dictionary that checks can put data into.
+    At this point it is not possible for checks to make their own decoupled Status classes, because checks are not
+    loaded in the class environment and cannot be pickled.
+    """
     def __init__(self):
         AgentStatus.__init__(self)
         self.data = dict()

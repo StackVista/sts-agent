@@ -209,7 +209,7 @@ class AgentCheckTest(unittest.TestCase):
                 print traceback.format_exc()
                 error = e
 
-        if self.on_collect():
+        if self.collect_ok:
             self.continue_after_commit = self.check.commit_success()
         else:
             self.check.commit_failure()
@@ -227,10 +227,6 @@ class AgentCheckTest(unittest.TestCase):
 
         if error is not None:
             raise error  # pylint: disable=E0702
-
-    def on_collect(self):
-        """ Returns whether collecting was a success"""
-        return self.collect_ok
 
     def print_current_state(self):
         log.debug("""++++++++ CURRENT STATE ++++++++

@@ -22,11 +22,11 @@ init_config:
   # Warning: can cause events to be reported twice if the agent is start/stopped
   default_initial_history_time_seconds: 0
 
-  # Maximum amount of history recovered after a restart
+  # Maximum amount of history recovered after a restart (1 day)
   default_max_restart_history_seconds: 86400
 
-  # Maximum range of time when querying historical data from splunk
-  default_max_query_time_range_seconds: 3600
+  # Maximum size of chunks when querying historical data from splunk
+  default_max_query_chunk_seconds: 3600
 
   # Delay before starting polling events after starting
   # default_initial_delay_first_time_seconds: 600
@@ -43,20 +43,15 @@ instances:
     saved_searches:
       # Splunk name of the saved search
       - name: "events"
+        # Wilcard match to find event queries, can be used instead of name
+        # match: "events.*"
         # request_timeout_seconds: 10
         # search_max_retry_count: 5
         # search_seconds_between_retries: 1
         # batch_size: 1000
-
-        # The amount of time (in seconds) to go in the past for an initial query when the agent starts up.
-        # Warning: can cause events to be reported twice if the agent is start/stopped
-        # initial_history_time_seconds: 60
-
-        # Maximum amount of history recovered after a restart
+        # initial_history_time_seconds: 0
         # max_restart_history_seconds: 86400
-
-        # Maximum range of time when querying historical data from splunk
-        # max_query_time_range_seconds: 3600
+        # max_query_chunk_seconds: 3600
 
         # Additional parameters for the splunk saved search query
         parameters:
