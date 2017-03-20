@@ -430,7 +430,7 @@ class TestSplunkQueryInitialHistory(AgentCheckTest):
         config = {
             'init_config': {
                 'default_initial_history_time_seconds': 86400,
-                'default_max_query_time_range_seconds': 3600
+                'default_max_query_chunk_seconds': 3600
             },
             'instances': [
                 {
@@ -441,7 +441,7 @@ class TestSplunkQueryInitialHistory(AgentCheckTest):
                         "name": "empty",
                         "parameters": {},
                         'max_initial_history_seconds': 86400,
-                        'max_query_time_range_seconds': 3600
+                        'max_query_chunk_seconds': 3600
                     }],
                     'tags': ["checktag:checktagvalue"]
                 }
@@ -508,7 +508,7 @@ class TestSplunkMaxRestartTime(AgentCheckTest):
         config = {
             'init_config': {
                 'default_restart_history_time_seconds': 3600,
-                'default_max_query_time_range_seconds': 3600
+                'default_max_query_chunk_seconds': 3600
             },
             'instances': [
                 {
@@ -519,7 +519,7 @@ class TestSplunkMaxRestartTime(AgentCheckTest):
                         "name": "empty",
                         "parameters": {},
                         'max_restart_history_seconds': 3600,
-                        'max_query_time_range_seconds': 3600
+                        'max_query_chunk_seconds': 3600
                     }],
                     'tags': ["checktag:checktagvalue"]
                 }

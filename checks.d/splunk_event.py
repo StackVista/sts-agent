@@ -20,7 +20,7 @@ class SavedSearch(SplunkSavedSearch):
 
         self.initial_history_time_sec = int(saved_search_instance.get('initial_history_time_seconds', instance_config.default_initial_history_time_sec))
         self.max_restart_history_seconds = int(saved_search_instance.get('max_restart_history_seconds', instance_config.default_max_restart_history_seconds))
-        self.max_query_time_range_seconds = int(saved_search_instance.get('max_query_time_range_seconds', instance_config.default_max_query_time_range_seconds))
+        self.max_query_chunk_seconds = int(saved_search_instance.get('max_query_chunk_seconds', instance_config.default_max_query_chunk_seconds))
 
         # Up until which timestamp did we get with the data?
         self.last_event_time_epoch_sec = 0
@@ -57,7 +57,7 @@ class InstanceConfig(SplunkInstanceConfig):
 
         self.default_initial_history_time_sec = init_config.get('default_initial_history_time_seconds', 0)
         self.default_max_restart_history_seconds = init_config.get('default_max_restart_history_seconds', 86400)
-        self.default_max_query_time_range_seconds = init_config.get('default_max_query_time_range_seconds', 3600)
+        self.default_max_query_chunk_seconds = init_config.get('default_max_query_chunk_seconds', 3600)
 
 
 class Instance:
@@ -264,7 +264,7 @@ class SplunkEvent(AgentCheck):
 
         # See whether we should recover events from the past
         if saved_search.last_recover_latest_time_epoch_sec is not None:
-            latest_time_epoch = saved_search.last_event_time_epoch_sec + saved_search.max_query_time_range_seconds
+            latest_time_epoch = saved_search.last_event_time_epoch_sec + saved_search.max_query_chunk_seconds
             current_time = self._current_time_seconds()
 
             if latest_time_epoch >= current_time:
