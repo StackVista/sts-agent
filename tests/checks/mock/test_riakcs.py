@@ -19,6 +19,7 @@ class RiakCSTest(AgentCheckTest):
             self.config = {"instances": [{
                 "access_id":"foo",
                 "access_secret": "bar"}]}
+            self.collect_ok = True
             self.check = load_check(self.CHECK_NAME, self.config, {})
             self.check._connect = Mock(return_value=(None, None, ["aggregation_key:localhost:8080"], []))
             self.check._get_stats = Mock(return_value=self.check.load_json(
@@ -63,6 +64,7 @@ class Riak21CSTest(AgentCheckTest):
                 }],
             }
             self.check = load_check(self.CHECK_NAME, self.config, {})
+            self.collect_ok = True
             self.check._connect = Mock(return_value=(
                 None,
                 None,
