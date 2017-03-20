@@ -451,5 +451,6 @@ class TestSplunkEventRespectParallelDispatches(AgentCheckTest):
                 self.expected_sid_increment += 1
 
         self.run_check(config, mocks={
-            '_dispatch_and_await_search': _mock_dispatch_and_await_search
+            '_dispatch_and_await_search': _mock_dispatch_and_await_search,
+            '_saved_searches': _mocked_saved_searches
         })
