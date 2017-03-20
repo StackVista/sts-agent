@@ -11,7 +11,7 @@ import iso8601
 from pytz import timezone
 
 from checks import AgentCheck, CheckException
-from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field, take_optional_field
+from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field, take_optional_field, chunks
 
 
 class SavedSearch(SplunkSavedSearch):
@@ -52,6 +52,8 @@ class Instance:
         self.saved_searches = [SavedSearch(self.instance_config, saved_search_instance)
                                for saved_search_instance in instance['saved_searches']]
 
+        self.saved_searches_parallel = int(instance.get('saved_searches_parallel', self.instance_config.default_saved_searches_parallel))
+
         self.tags = instance.get('tags', [])
 
 
@@ -76,9 +78,13 @@ class SplunkEvent(AgentCheck):
 
         instance = self.instance_data[instance["url"]]
 
+        for saved_searches in chunks(instance.saved_searches, instance.saved_searches_parallel):
+            self._dispatch_and_await_search(instance, saved_searches)
+
+    def _dispatch_and_await_search(self, instance, saved_searches):
         try:
             search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
-                          for saved_search in instance.saved_searches]
+                          for saved_search in saved_searches]
 
             for (sid, saved_search) in search_ids:
                 self._process_saved_search(sid, saved_search, instance)
