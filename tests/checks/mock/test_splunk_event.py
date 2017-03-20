@@ -392,6 +392,45 @@ class TestSplunkWildcardSearches(AgentCheckTest):
         self.assertEqual(len(self.events), 0)
 
 
+class TestSplunkSavedSearchesError(AgentCheckTest):
+    """
+    Splunk event check should have a service check failure when getting an exception from saved searches
+    """
+    CHECK_NAME = 'splunk_event'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:13001',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches': [{
+                        "match": "even*",
+                        "parameters": {}
+                    }],
+                    'tags': []
+                }
+            ]
+        }
+
+        def _mocked_saved_searches(*args, **kwargs):
+            raise Exception("Boom")
+
+        thrown = False
+        try:
+            self.run_check(config, mocks={
+                '_saved_searches': _mocked_saved_searches
+            })
+        except CheckException:
+            thrown = True
+        self.assertTrue(thrown, "Retrieving FATAL message from Splunk should throw.")
+        self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
+
+
 def _mocked_dispatch_saved_search(*args, **kwargs):
     # Sid is equal to search name
     return args[1].name

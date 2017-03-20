@@ -100,20 +100,20 @@ class SplunkTopology(AgentCheck):
             # If everything was successful, update the timestamp
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
             instance.last_successful_poll_epoch_seconds = current_time_epoch_seconds
-        finally:
-            self.stop_snapshot(instance_key)
-
-    def _dispatch_and_await_search(self, instance, saved_searches):
-        try:
-            search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
-                          for saved_search in saved_searches]
-            for (sid, saved_search) in search_ids:
-                self.log.debug("Processing saved search: %s." % saved_search.name)
-                self._process_saved_search(sid, saved_search, instance)
         except Exception as e:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=instance.tags, message=str(e))
             self.log.exception("Splunk topology exception: %s" % str(e))
             raise CheckException("Cannot connect to Splunk, please check your configuration. Message: " + str(e))
+        finally:
+            self.stop_snapshot(instance_key)
+
+    def _dispatch_and_await_search(self, instance, saved_searches):
+        search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
+                      for saved_search in saved_searches]
+
+        for (sid, saved_search) in search_ids:
+            self.log.debug("Processing saved search: %s." % saved_search.name)
+            self._process_saved_search(sid, saved_search, instance)
 
     def _process_saved_search(self, search_id, saved_search, instance):
         for response in self._search(search_id, saved_search, instance):

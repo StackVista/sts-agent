@@ -402,6 +402,48 @@ class TestSplunkTopologyErrorResponse(AgentCheckTest):
         self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
 
 
+class TestSplunkSavedSearchesError(AgentCheckTest):
+    """
+    Splunk topology check should have a service check failure when getting an exception from saved searches
+    """
+    CHECK_NAME = 'splunk_topology'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:8089',
+                    'username': "admin",
+                    'password': "admin",
+                    'component_saved_searches': [{
+                        "name": "error",
+                        "element_type": "component",
+                        "parameters": {}
+                    }],
+                    'relation_saved_searches': [],
+                    'tags': ['mytag', 'mytag2']
+                }
+            ]
+        }
+
+        def _mocked_saved_searches(*args, **kwargs):
+            raise Exception("Boom")
+
+        thrown = False
+        try:
+            self.run_check(config, mocks={
+                '_saved_searches': _mocked_saved_searches
+            })
+        except CheckException:
+            thrown = True
+        self.assertTrue(thrown, "Retrieving FATAL message from Splunk should throw.")
+        self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
+
+
+
 class TestSplunkWildcardTopology(AgentCheckTest):
     """
     Splunk check should work with component and relation data
