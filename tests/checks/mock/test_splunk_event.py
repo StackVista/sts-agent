@@ -291,7 +291,7 @@ class TestSplunkDelayFirstTime(AgentCheckTest):
         self.maxDiff = None
 
         config = {
-            'init_config': {'default_initial_delay_first_time_seconds': 60},
+            'init_config': {'default_initial_delay_seconds': 60},
             'instances': [
                 {
                     'url': 'http://localhost:13001',

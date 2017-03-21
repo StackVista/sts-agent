@@ -29,7 +29,7 @@ init_config:
   default_max_query_chunk_seconds: 3600
 
   # Delay before starting polling events after starting
-  # default_initial_delay_first_time_seconds: 600
+  # default_initial_delay_seconds: 600
 
 # Currently it is not possible to specify multiple instances with the same url.
 # It is possible to specify multiple saved_searches on a single instance.
@@ -39,7 +39,7 @@ instances:
     username: "admin"
     password: "admin"
     # saved_searches_parallel: 3
-    # initial_delay_first_time_seconds: 600 // 10 minutes
+    # initial_delay_seconds: 600 // 10 minutes
     saved_searches:
       # Splunk name of the saved search
       - name: "events"

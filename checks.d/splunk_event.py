@@ -57,7 +57,7 @@ class InstanceConfig(SplunkInstanceConfig):
         self.default_initial_history_time_seconds = init_config.get('default_initial_history_time_seconds', 0)
         self.default_max_restart_history_seconds = init_config.get('default_max_restart_history_seconds', 86400)
         self.default_max_query_chunk_seconds = init_config.get('default_max_query_chunk_seconds', 3600)
-        self.default_initial_delay_first_time_seconds = int(init_config.get('default_initial_delay_first_time_seconds', 0))
+        self.default_initial_delay_seconds = int(init_config.get('default_initial_delay_seconds', 0))
 
 
 class Instance:
@@ -76,12 +76,12 @@ class Instance:
         self.saved_searches_parallel = int(instance.get('saved_searches_parallel', self.instance_config.default_saved_searches_parallel))
 
         self.tags = instance.get('tags', [])
-        self.initial_delay_first_time_seconds = int(instance.get('initial_delay_first_time_seconds', self.instance_config.default_initial_delay_first_time_seconds))
+        self.initial_delay_seconds = int(instance.get('initial_delay_seconds', self.instance_config.default_initial_delay_seconds))
 
         self.launch_time_seconds = current_time
 
     def initial_time_done(self, current_time_seconds):
-        return current_time_seconds >= self.launch_time_seconds + self.initial_delay_first_time_seconds
+        return current_time_seconds >= self.launch_time_seconds + self.initial_delay_seconds
 
     def get_status(self):
         """
