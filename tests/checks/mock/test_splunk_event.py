@@ -271,7 +271,6 @@ class TestSplunkEarliestTimeAndDuplicates(AgentCheckTest):
         self.assertEqual([e['event_type'] for e in self.events], ["2_1"])
 
         # Throw exception during search
-        test_data["time"] = 60
         test_data["throw"] = True
         thrown = False
         try:
@@ -280,6 +279,61 @@ class TestSplunkEarliestTimeAndDuplicates(AgentCheckTest):
             thrown = True
         self.assertTrue(thrown, "Expect thrown to be done from the mocked search")
         self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
+
+
+class TestSplunkDelayFirstTime(AgentCheckTest):
+    """
+    Splunk event check should only start polling after the specified time
+    """
+    CHECK_NAME = 'splunk_event'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {'default_initial_delay_seconds': 60},
+            'instances': [
+                {
+                    'url': 'http://localhost:13001',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches': [{
+                        "name": "events",
+                        "parameters": {}
+                    }],
+                    'tags': []
+                }
+            ]
+        }
+
+        # Used to validate which searches have been executed
+        test_data = {
+            "time": 1,
+        }
+
+        def _mocked_current_time_seconds():
+            return test_data["time"]
+
+        mocks = {
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_minimal_search,
+            '_current_time_seconds': _mocked_current_time_seconds,
+            '_saved_searches': _mocked_saved_searches
+        }
+
+        # Initial run
+        self.run_check(config, mocks=mocks)
+        self.assertEqual(len(self.events), 0)
+
+        # Not polling yet
+        test_data["time"] = 30
+        self.run_check(config, mocks=mocks)
+        self.assertEqual(len(self.events), 0)
+
+        # Start polling
+        test_data["time"] = 62
+        self.run_check(config, mocks=mocks)
+        self.assertEqual(len(self.events), 2)
 
 
 class TestSplunkDeduplicateEventsInTheSameRun(AgentCheckTest):

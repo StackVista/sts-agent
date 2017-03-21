@@ -57,12 +57,13 @@ class InstanceConfig(SplunkInstanceConfig):
         self.default_initial_history_time_seconds = init_config.get('default_initial_history_time_seconds', 0)
         self.default_max_restart_history_seconds = init_config.get('default_max_restart_history_seconds', 86400)
         self.default_max_query_chunk_seconds = init_config.get('default_max_query_chunk_seconds', 3600)
+        self.default_initial_delay_seconds = int(init_config.get('default_initial_delay_seconds', 0))
 
 
 class Instance:
     INSTANCE_NAME = "splunk_event"
 
-    def __init__(self, instance, init_config):
+    def __init__(self, current_time, instance, init_config):
         self.instance_config = InstanceConfig(instance, init_config)
 
         # no saved searches may be configured
@@ -75,6 +76,12 @@ class Instance:
         self.saved_searches_parallel = int(instance.get('saved_searches_parallel', self.instance_config.default_saved_searches_parallel))
 
         self.tags = instance.get('tags', [])
+        self.initial_delay_seconds = int(instance.get('initial_delay_seconds', self.instance_config.default_initial_delay_seconds))
+
+        self.launch_time_seconds = current_time
+
+    def initial_time_done(self, current_time_seconds):
+        return current_time_seconds >= self.launch_time_seconds + self.initial_delay_seconds
 
     def get_status(self):
         """
@@ -130,11 +137,17 @@ class SplunkEvent(AgentCheck):
         if 'url' not in instance:
             raise CheckException('Splunk event instance missing "url" value.')
 
-        if instance["url"] not in self.instance_data:
-            self.instance_data[instance["url"]] = Instance(instance, self.init_config)
+        current_time_seconds = self._current_time_seconds()
+        url = instance["url"]
+        if url not in self.instance_data:
+            self.instance_data[url] = Instance(current_time_seconds, instance, self.init_config)
 
-        instance = self.instance_data[instance["url"]]
-        instance.update_status(self._current_time_seconds(), self.status)
+        instance = self.instance_data[url]
+        if not instance.initial_time_done(current_time_seconds):
+            self.log.debug("Skipping splunk event instance %s, waiting for initial time to expire" % url)
+            return
+
+        instance.update_status(current_time_seconds, self.status)
 
         try:
             saved_searches = self._saved_searches(instance.instance_config)
