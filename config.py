@@ -116,6 +116,21 @@ def get_version():
     return AGENT_VERSION
 
 
+def _version_string_to_tuple(version_string):
+    '''Return a (X, Y, Z) version tuple from an 'X.Y.Z' version string'''
+    version_list = []
+    for elem in version_string.split('.'):
+        try:
+            elem_int = int(elem)
+        except ValueError:
+            log.warning("Unable to parse element '%s' of version string '%s'", elem, version_string)
+            raise
+
+        version_list.append(elem_int)
+
+    return tuple(version_list)
+
+
 # Return url endpoint, here because needs access to version number
 def get_url_endpoint(default_url, endpoint_type='app'):
     return default_url
@@ -912,7 +927,7 @@ def _load_file_config(config_path, check_name, agentConfig):
     except Exception as e:
         log.exception("Unable to parse yaml config in %s" % config_path)
         traceback_message = traceback.format_exc()
-        return False, None, {check_name: {'error': str(e), 'traceback': traceback_message}}
+        return False, None, {check_name: {'error': str(e), 'traceback': traceback_message, 'version': 'unknown'}}
     return True, check_config, {}
 
 
@@ -929,7 +944,7 @@ def get_valid_check_class(check_name, check_path):
     return True, check_class, {}
 
 
-def _initialize_check(check_config, check_name, check_class, agentConfig):
+def _initialize_check(check_config, check_name, check_class, agentConfig, manifest_path):
     init_config = check_config.get('init_config') or {}
     instances = check_config['instances']
     try:
@@ -942,18 +957,13 @@ def _initialize_check(check_config, check_name, check_class, agentConfig):
             check = check_class(check_name, init_config=init_config,
                                 agentConfig=agentConfig)
             check.instances = instances
+
+        if manifest_path:
+            check.set_manifest_path(manifest_path)
+        check.set_check_version(load_manifest(manifest_path))
     except Exception as e:
         log.exception('Unable to initialize check %s' % check_name)
         traceback_message = traceback.format_exc()
-        # exc_info returns a tuple with traceback in idx 2
-        frames = inspect.getinnerframes(sys.exc_info()[2])
-        # This is a best effort. It "hopes" the exception originated
-        # in the check.py and thus the `-1` index when inspecting the
-        # frames. frames[idx][1] because 1 contains the frame's __file__.
-        #
-        # For debugging purposes we still have the flare with the
-        # collected manifests.
-        manifest_path = os.path.join(os.path.basedir(frames[-1][1]), 'manifest.json')
         manifest = load_manifest(manifest_path)
         if manifest is not None:
             check_version = '{core}:{vers}'.format(core=AGENT_VERSION,
@@ -980,12 +990,13 @@ def validate_sdk_check(manifest_path):
     try:
         with open(manifest_path, 'r') as fp:
             manifest = json.load(fp)
+            current_version = _version_string_to_tuple(get_version())
             for maxfield in MANIFEST_VALIDATION['max']:
                 max_version = manifest.get(maxfield)
                 if not max_version:
                     continue
 
-                max_validated = False if max_version < get_version() else True
+                max_validated = _version_string_to_tuple(max_version) >= current_version
                 break
 
             for minfield in MANIFEST_VALIDATION['min']:
@@ -993,12 +1004,14 @@ def validate_sdk_check(manifest_path):
                 if not min_version:
                     continue
 
-                min_validated = False if min_version > get_version() else True
+                min_validated = _version_string_to_tuple(min_version) <= current_version
                 break
     except IOError:
         log.debug("Manifest file (%s) not present." % manifest_path)
     except json.JSONDecodeError:
         log.debug("Manifest file (%s) has badly formatted json." % manifest_path)
+    except ValueError:
+        log.debug("Versions in manifest file (%s) can't be validated.", manifest_path)
 
     return (min_validated and max_validated)
 
@@ -1025,7 +1038,7 @@ def load_check_from_places(check_config, check_name, checks_places, agentConfig)
                          "or couldnt be validated - behavior is undefined" % check_name)
 
         load_success, load_failure = _initialize_check(
-            check_config, check_name, check_class, agentConfig
+            check_config, check_name, check_class, agentConfig, manifest_path
         )
 
         _update_python_path(check_config)
