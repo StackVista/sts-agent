@@ -776,6 +776,24 @@ class AgentCheck(object):
         """
         self._instance_metadata.append((meta_name, unicode(value)))
 
+    def commit_succeeded(self, instance):
+        """
+
+        The collector uses this function to report to the check that the data it produced was committed
+
+        :return: boolean: representing whether the check has more data to produce.
+        """
+        pass
+
+    def commit_failed(self, instance):
+        """
+
+        The collector uses this function to report to the check that the data it produced failed to commit
+
+        :return: nothing
+        """
+        pass
+
     def has_events(self):
         """
         Check whether the check has saved any events
@@ -992,6 +1010,15 @@ class AgentCheck(object):
 
         return instance_statuses
 
+    def commit_success(self):
+        """ Report commit success """
+        return any(self.commit_succeeded(copy.deepcopy(instance)) for instance in self.instances)
+
+    def commit_failure(self):
+        """ Report commit failure """
+        for instance in self.instances:
+            self.commit_failed(copy.deepcopy(instance))
+
     def check(self, instance):
         """
         Overriden by the check class. This will be called to run the check.
@@ -1004,6 +1031,12 @@ class AgentCheck(object):
     def stop(self):
         """
         To be executed when the agent is being stopped to clean ressources
+        """
+        pass
+
+    def clear_status(self):
+        """
+        Overridable method to clear global status of the check. Used in the testing framework
         """
         pass
 

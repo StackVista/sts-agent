@@ -113,6 +113,11 @@ def post_payload(url, message, agentConfig, log):
 
     except Exception:
         log.exception("Unable to post payload.")
+        try:
+            log.error("Received status code: {0}".format(r.status_code))
+        except Exception:
+            pass
+        raise Exception("Posting payload failed")
 
 
 def split_payload(legacy_payload):

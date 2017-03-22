@@ -20,7 +20,16 @@ init_config:
 
   # The amount of time (in seconds) to go in the past for an initial query when the agent starts up.
   # Warning: can cause events to be reported twice if the agent is start/stopped
-  default_initial_history_time: 60
+  default_initial_history_time_seconds: 0
+
+  # Maximum amount of history recovered after a restart (1 day)
+  default_max_restart_history_seconds: 86400
+
+  # Maximum size of chunks when querying historical data from splunk
+  default_max_query_chunk_seconds: 3600
+
+  # Delay before starting polling events after starting
+  # default_initial_delay_seconds: 600
 
 # Currently it is not possible to specify multiple instances with the same url.
 # It is possible to specify multiple saved_searches on a single instance.
@@ -30,6 +39,7 @@ instances:
     username: "admin"
     password: "admin"
     # saved_searches_parallel: 3
+    # initial_delay_seconds: 600 // 10 minutes
     saved_searches:
       # Splunk name of the saved search
       - name: "events"
@@ -39,10 +49,9 @@ instances:
         # search_max_retry_count: 5
         # search_seconds_between_retries: 1
         # batch_size: 1000
-
-        # The amount of time (in seconds) to go in the past for an initial query when the agent starts up.
-        # Warning: can cause events to be reported twice if the agent is start/stopped
-        # initial_history_time: 60
+        # initial_history_time_seconds: 0
+        # max_restart_history_seconds: 86400
+        # max_query_chunk_seconds: 3600
 
         # Additional parameters for the splunk saved search query
         parameters:

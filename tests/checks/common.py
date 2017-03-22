@@ -201,6 +201,7 @@ class AgentCheckTest(unittest.TestCase):
             raise Exception("You must define CHECK_NAME")
 
         self.check = None
+        self.collect_ok = True
 
     def is_travis(self):
         return "TRAVIS" in os.environ
@@ -235,6 +236,11 @@ class AgentCheckTest(unittest.TestCase):
         # If not loaded already, do it!
         if self.check is None or force_reload:
             self.load_check(config, agent_config=agent_config)
+
+            # Clear status of the check when we load it
+            if not force_reload:
+                self.check.clear_status()
+
         if mocks is not None:
             for func_name, mock in mocks.iteritems():
                 if not hasattr(self.check, func_name):
@@ -256,6 +262,12 @@ class AgentCheckTest(unittest.TestCase):
                 print "Exception {0} during check".format(e)
                 print traceback.format_exc()
                 error = e
+
+        if self.collect_ok:
+            self.continue_after_commit = self.check.commit_success()
+        else:
+            self.check.commit_failure()
+
         self.metrics = self.check.get_metrics()
         self.events = self.check.get_events()
         self.service_checks = self.check.get_service_checks()

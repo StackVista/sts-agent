@@ -310,9 +310,9 @@ class Agent(Daemon):
 
             # Do the work. Pass `configs_reloaded` to let the collector know if it needs to
             # look for the AgentMetrics check and pop it out.
-            self.collector.run(checksd=self._checksd,
-                               start_event=self.start_event,
-                               configs_reloaded=True if self.reload_configs_flag else False)
+            _, continue_immediately = self.collector.run(checksd=self._checksd,
+                                                         start_event=self.start_event,
+                                                         configs_reloaded=True if self.reload_configs_flag else False)
 
             self.reload_configs_flag = False
 
@@ -354,8 +354,11 @@ class Agent(Daemon):
                     watchdog.reset()
                 if profiled:
                     collector_profiled_runs += 1
-                log.debug("Sleeping for {0} seconds".format(self.check_frequency))
-                time.sleep(self.check_frequency)
+                if not continue_immediately:
+                    log.debug("Sleeping for {0} seconds".format(self.check_frequency))
+                    time.sleep(self.check_frequency)
+                else:
+                    log.debug("Continuing immediately")
 
         # Now clean-up.
         try:
