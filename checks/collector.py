@@ -550,7 +550,7 @@ class Collector(object):
             log.debug("Finished run #%s. Collection time: %ss. Emit time: %ss" %
                       (self.run_count, round(collect_duration, 2), round(self.emit_duration, 2)))
 
-        return payload, continue_immediately
+        return payload
 
     @staticmethod
     def run_single_check(check, verbose=True):
