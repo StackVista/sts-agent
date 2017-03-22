@@ -13,7 +13,7 @@ from utils.dockerutil import DockerUtil
 from tornado.web import Application
 from tornado.testing import AsyncTestCase
 
-from ddagent import (
+from stsagent import (
     MAX_QUEUE_SIZE,
     MAX_WAIT_FOR_REPLAY,
     THROTTLING_DELAY,
