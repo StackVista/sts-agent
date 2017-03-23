@@ -341,13 +341,15 @@ class TopologyInstance:
 
         if self._in_snapshot or self._stop_snapshot:
             result["stop_snapshot"] = self._stop_snapshot
+        self.clear_topology()
 
+        return result
+
+    def clear_topology(self):
         self._components = []
         self._relations = []
         self._start_snapshot = False
         self._stop_snapshot = False
-
-        return result
 
 class AgentCheck(object):
     OK, WARNING, CRITICAL, UNKNOWN = (0, 1, 2, 3)
@@ -664,6 +666,10 @@ class AgentCheck(object):
         topology_instance = self._assure_instance(instance_key)
         topology_instance.stop_snapshot()
 
+    def _clear_topology(self, instance_key):
+        topology_instance = self._assure_instance(instance_key)
+        topology_instance.clear_topology()
+
     def component(self, instance_key, id, type, data={}):
         """
         Accounce a component to StackState.
@@ -797,6 +803,9 @@ class AgentCheck(object):
         result = [instance.get_topology() for instance in self.topology_instances.values()]
         self.topology_instances = dict((key, value) for key, value in self.topology_instances.iteritems() if value.is_in_snapshot())
         return result
+
+    def clear_topology(self, instance_key):
+        self._clear_topology(instance_key)
 
     def _roll_up_instance_metadata(self):
         """

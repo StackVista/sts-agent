@@ -100,12 +100,12 @@ class SplunkTopology(AgentCheck):
             # If everything was successful, update the timestamp
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
             instance.last_successful_poll_epoch_seconds = current_time_epoch_seconds
+            self.stop_snapshot(instance_key)
         except Exception as e:
+            self.clear_topology(instance_key)
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=instance.tags, message=str(e))
             self.log.exception("Splunk topology exception: %s" % str(e))
             raise CheckException("Cannot connect to Splunk, please check your configuration. Message: " + str(e))
-        finally:
-            self.stop_snapshot(instance_key)
 
     def _dispatch_and_await_search(self, instance, saved_searches):
         start_time = time.time()
