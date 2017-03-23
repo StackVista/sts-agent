@@ -350,6 +350,7 @@ class TopologyInstance:
         self._relations = []
         self._start_snapshot = False
         self._stop_snapshot = False
+        self._in_snapshot = False
 
 class AgentCheck(object):
     OK, WARNING, CRITICAL, UNKNOWN = (0, 1, 2, 3)
