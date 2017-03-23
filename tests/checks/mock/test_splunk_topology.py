@@ -35,6 +35,9 @@ class TestSplunkNoTopology(AgentCheckTest):
 
 # Sid is equal to search name
 def _mocked_dispatch_saved_search(*args, **kwargs):
+    name = args[1].name
+    if name == "dispatch_error":
+        raise Exception("BOOM")
     return args[1].name
 
 
@@ -242,10 +245,10 @@ class TestSplunkIncompleteTopology(AgentCheckTest):
             })
         except CheckException:
             thrown = True
+
         self.assertTrue(thrown, "Retrieving incomplete data from splunk should throw")
 
         self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
-
 
 class TestSplunkTopologyPollingInterval(AgentCheckTest):
     """
@@ -442,6 +445,65 @@ class TestSplunkSavedSearchesError(AgentCheckTest):
         self.assertTrue(thrown, "Retrieving FATAL message from Splunk should throw.")
         self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
 
+
+
+class TestTopologyDataIsClearedOnFailure(AgentCheckTest):
+    """
+    Splunk topology check should clear all topology data when one or more saves searches fail.
+    """
+    CHECK_NAME = 'splunk_topology'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:8089',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches_parallel': 1,
+                    'component_saved_searches': [{
+                        "name": "components",
+                        "element_type": "component",
+                        "parameters": {}
+                    },{
+                        "name": "components",
+                        "element_type": "component",
+                        "parameters": {}
+                    },{
+                        "name": "dispatch_error",
+                        "element_type": "component",
+                        "parameters": {}
+                    }],
+                    'relation_saved_searches': [],
+                    'tags': ['mytag', 'mytag2']
+                }
+            ]
+        }
+
+        thrown = False
+
+        try:
+            self.run_check(config, mocks={
+                '_dispatch_saved_search': _mocked_dispatch_saved_search,
+                '_search': _mocked_search,
+                '_saved_searches': _mocked_saved_searches
+            })
+        except CheckException:
+            thrown = True
+
+        self.assertTrue(thrown, "Retrieving FATAL message from Splunk should throw.")
+        self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
+
+        instances = self.check.get_topology_instances()
+        self.assertEqual(len(instances), 1)
+        instance = instances[0]
+
+        self.assertEqual(instance['instance'], {"type":"splunk","url":"http://localhost:8089"})
+        self.assertEqual(len(instance['components']), 0)
+        self.assertEqual(len(instance['relations']), 0)
 
 
 class TestSplunkWildcardTopology(AgentCheckTest):
