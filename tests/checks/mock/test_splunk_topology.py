@@ -447,7 +447,7 @@ class TestSplunkSavedSearchesError(AgentCheckTest):
 
 
 
-  class TestTopologyDataIsClearedOnFailure(AgentCheckTest):
+class TestTopologyDataIsClearedOnFailure(AgentCheckTest):
     """
     Splunk topology check should clear all topology data when one or more saves searches fail.
     """
