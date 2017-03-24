@@ -693,6 +693,69 @@ class TestSplunkKeepTimeOnFailure(AgentCheckTest):
         self.run_check(config, mocks=test_mocks)
 
 
+class TestSplunkAdvanceTimeOnSuccess(AgentCheckTest):
+    """
+    Splunk event check should advance the start time when commit succeeds
+    """
+    CHECK_NAME = 'splunk_event'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {
+            },
+            'instances': [
+                {
+                    'url': 'http://localhost:13001',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches': [{
+                        "name": "events",
+                        "parameters": {},
+                    }],
+                    'tags': ["checktag:checktagvalue"]
+                }
+            ]
+        }
+
+        # Used to validate which searches have been executed
+        test_data = {
+            "time": 0,
+            "earliest_time": ""
+        }
+
+        def _mocked_current_time_seconds():
+            return test_data["time"]
+
+        def _mocked_dispatch_saved_search_do_post(*args, **kwargs):
+            class MockedResponse():
+                def json(self):
+                    return {"sid": "events"}
+            earliest_time = args[2]['dispatch.earliest_time']
+            if test_data["earliest_time"] != "":
+                self.assertEquals(earliest_time, test_data["earliest_time"])
+
+            return MockedResponse()
+
+        test_mocks = {
+            '_do_post': _mocked_dispatch_saved_search_do_post,
+            '_search': _mocked_minimal_search,
+            '_current_time_seconds': _mocked_current_time_seconds,
+            '_saved_searches': _mocked_saved_searches
+        }
+
+        # Run the check, collect will fail
+        test_data["time"] = time_to_seconds('2017-03-08T11:00:00.000000+0000')
+        test_data["earliest_time"] = '2017-03-08T11:00:00.000000+0000'
+        self.run_check(config, mocks=test_mocks)
+        self.assertEqual(len(self.events), 2)
+
+        # Make sure we advance the start time
+        test_data["earliest_time"] = '2017-03-08T12:00:00.000000+0000'
+        self.run_check(config, mocks=test_mocks)
+
+
 class TestSplunkWildcardSearches(AgentCheckTest):
     """
     Splunk event check should process minimal response correctly
