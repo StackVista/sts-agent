@@ -147,6 +147,7 @@ class SplunkEvent(AgentCheck):
             self.log.debug("Skipping splunk event instance %s, waiting for initial time to expire" % url)
             return
 
+        self.load_status()
         instance.update_status(current_time_seconds, self.status)
 
         try:
@@ -185,7 +186,7 @@ class SplunkEvent(AgentCheck):
             if timestamp > saved_search.last_event_time_epoch_seconds:
                 saved_search.last_events_at_epoch_time = set()
                 saved_search.last_events_at_epoch_time.add(event_id)
-                saved_search.last_event_time_epoch_sec = timestamp
+                saved_search.last_event_time_epoch_seconds = timestamp
             elif timestamp == saved_search.last_event_time_epoch_seconds:
                 saved_search.last_events_at_epoch_time.add(event_id)
 
@@ -299,7 +300,7 @@ class SplunkEvent(AgentCheck):
                 self.log.warn("Catching up with old splunk data from %s to %s " % (parameters["dispatch.earliest_time"],parameters["dispatch.latest_time"]))
 
 
-        self.log.debug("Dispatching saved search: %s." % saved_search.name)
+        self.log.debug("Dispatching saved search: %s starting at %s." % (saved_search.name, parameters["dispatch.earliest_time"]))
 
         response_body = self._do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
         return response_body['sid']
