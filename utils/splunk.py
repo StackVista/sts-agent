@@ -90,7 +90,7 @@ class SplunkHelper():
         :param instance_config: InstanceConfig, current check configuration
         :return: list of names of saved searches
         """
-        search_url = '%s/services/saved/searches?output_mode=json' % instance_config.base_url
+        search_url = '%s/services/saved/searches?output_mode=json&count=1000' % instance_config.base_url
         auth = instance_config.get_auth_tuple()
 
         response = self._do_get(search_url, auth, instance_config.default_request_timeout_seconds, instance_config.verify_ssl_certificate)
