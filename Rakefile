@@ -18,7 +18,9 @@ CLOBBER.include '**/*.pyc'
 unless ENV['CI']
   rakefile_dir = File.dirname(__FILE__)
   ENV['TRAVIS_BUILD_DIR'] = rakefile_dir
-  ENV['INTEGRATIONS_DIR'] = File.join(rakefile_dir, 'embedded')
+  # Commented out to make 'rake run' work with integrations in ../integrations and
+  # configuration in ./confi.d/*.yaml
+  # ENV['INTEGRATIONS_DIR'] = File.join(rakefile_dir, 'embedded')
   ENV['CHECKSD_OVERRIDE'] = File.join(rakefile_dir, 'tests/checks/fixtures/checks')
   ENV['PIP_CACHE'] = File.join(rakefile_dir, '.cache/pip')
   ENV['VOLATILE_DIR'] = '/tmp/dd-agent-testing'
