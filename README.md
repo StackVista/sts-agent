@@ -34,6 +34,10 @@ bundle exec rake lint
 
 # Run a flavored test
 bundle exec rake ci:run[apache]
+
+# Start agent locally
+# Assumes integrations in ../integrations and configurations in ./conf.d
+rake run
 ```
 
 ## Test suite
