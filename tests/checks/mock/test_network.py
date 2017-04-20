@@ -103,9 +103,9 @@ class TestCheckNetwork(AgentCheckTest):
             sconn(fd=-1, family=socket.AF_INET6, type=socket.SOCK_STREAM, laddr=('::', 50482), raddr=('::',2638), status='ESTABLISHED', pid=42),
             sconn(fd=-1, family=socket.AF_INET6, type=socket.SOCK_STREAM, laddr=('::', 49163), raddr=(), status='LISTEN', pid=1416),
             sconn(fd=-1, family=socket.AF_INET, type=socket.SOCK_STREAM, laddr=('0.0.0.0', 445), raddr=(), status='LISTEN', pid=4),
-            sconn(fd=-1, family=socket.AF_INET6, type=socket.SOCK_STREAM, laddr=('::1', 56521), raddr=('::1', 17123), status='TIME_WAIT', pid=0),
+            sconn(fd=-1, family=socket.AF_INET6, type=socket.SOCK_STREAM, laddr=('::1', 56521), raddr=('::1', 18123), status='TIME_WAIT', pid=0),
             sconn(fd=-1, family=socket.AF_INET6, type=socket.SOCK_DGRAM, laddr=('::', 500), raddr=(), status='NONE', pid=892),
-            sconn(fd=-1, family=socket.AF_INET6, type=socket.SOCK_STREAM, laddr=('::1', 56493), raddr=('::1', 17123), status='TIME_WAIT', pid=0),
+            sconn(fd=-1, family=socket.AF_INET6, type=socket.SOCK_STREAM, laddr=('::1', 56493), raddr=('::1', 18123), status='TIME_WAIT', pid=0),
             sconn(fd=-1, family=socket.AF_INET, type=socket.SOCK_STREAM, laddr=('127.0.0.1', 54541), raddr=('127.0.0.1', 54542), status='ESTABLISHED', pid=20500),
         ]
 

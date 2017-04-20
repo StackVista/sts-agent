@@ -550,9 +550,9 @@ class Application(tornado.web.Application):
 def init(skip_ssl_validation=False, use_simple_http_client=False):
     agentConfig = get_config(parse_args=False)
 
-    port = agentConfig.get('listen_port', 17123)
+    port = agentConfig.get('listen_port', 18123)
     if port is None:
-        port = 17123
+        port = 18123
     else:
         port = int(port)
 

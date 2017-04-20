@@ -180,8 +180,8 @@ class Network(AgentCheck):
                     output, _, _ = get_subprocess_output(["ss", "-n", "-u", "-t", "-a", "-{0}".format(ip_version)], self.log)
                     lines = output.splitlines()
                     # Netid  State      Recv-Q Send-Q     Local Address:Port       Peer Address:Port
-                    # udp    UNCONN     0      0              127.0.0.1:8125                  *:*
-                    # udp    ESTAB      0      0              127.0.0.1:37036         127.0.0.1:8125
+                    # udp    UNCONN     0      0              127.0.0.1:8225                  *:*
+                    # udp    ESTAB      0      0              127.0.0.1:37036         127.0.0.1:8225
                     # udp    UNCONN     0      0        fe80::a00:27ff:fe1c:3c4:123          :::*
                     # tcp    TIME-WAIT  0      0          90.56.111.177:56867        46.105.75.4:143
                     # tcp    LISTEN     0      0       ::ffff:127.0.0.1:33217  ::ffff:127.0.0.1:7199
