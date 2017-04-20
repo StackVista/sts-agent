@@ -233,7 +233,7 @@ class JMXFetch(object):
             if statsd_host == "0.0.0.0":
                 # If statsd is bound to all interfaces, just use localhost for clients
                 statsd_host = "localhost"
-            statsd_port = self.agentConfig.get('dogstatsd_port', "8125")
+            statsd_port = self.agentConfig.get('dogstatsd_port', "8225")
             reporter = "statsd:%s:%s" % (statsd_host, statsd_port)
 
         log.info("Starting jmxfetch:")

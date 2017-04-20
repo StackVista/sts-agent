@@ -356,7 +356,7 @@ class Server(object):
         # In case we want to forward every packet received to another statsd server
         if self.should_forward:
             if forward_to_port is None:
-                forward_to_port = 8125
+                forward_to_port = 8225
 
             log.info("External statsd forwarding enabled. All packets received will be forwarded to %s:%s" % (forward_to_host, forward_to_port))
             try:

@@ -22,7 +22,7 @@ init_config:
     idle_ttl: 300           # time after which an idle flow (no traffic received) is flushed.
     exp_ttl: 60             # time after which a finished flow is flushed.
     statsd_ip: 127.0.0.1
-    statsd_port: 8125
+    statsd_port: 8225
     log_to_file: true
     log_level: info         # available levels: trace, debug, info, warning, error, critical
 
