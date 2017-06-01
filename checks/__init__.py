@@ -341,13 +341,15 @@ class TopologyInstance:
 
         if self._in_snapshot or self._stop_snapshot:
             result["stop_snapshot"] = self._stop_snapshot
+        return result
 
+    def clear_topology_and_snapshot(self, clear_in_snapshot=True):
         self._components = []
         self._relations = []
         self._start_snapshot = False
         self._stop_snapshot = False
-
-        return result
+        if clear_in_snapshot:
+            self._in_snapshot = False
 
 class AgentCheck(object):
     OK, WARNING, CRITICAL, UNKNOWN = (0, 1, 2, 3)
@@ -664,6 +666,10 @@ class AgentCheck(object):
         topology_instance = self._assure_instance(instance_key)
         topology_instance.stop_snapshot()
 
+    def _clear_topology(self, instance_key, clear_in_snapshot=True):
+        topology_instance = self._assure_instance(instance_key)
+        topology_instance.clear_topology_and_snapshot(clear_in_snapshot)
+
     def component(self, instance_key, id, type, data={}):
         """
         Accounce a component to StackState.
@@ -730,6 +736,24 @@ class AgentCheck(object):
         """
         self._instance_metadata.append((meta_name, unicode(value)))
 
+    def commit_succeeded(self, instance):
+        """
+
+        The collector uses this function to report to the check that the data it produced was committed
+
+        :return: boolean: representing whether the check has more data to produce.
+        """
+        pass
+
+    def commit_failed(self, instance):
+        """
+
+        The collector uses this function to report to the check that the data it produced failed to commit
+
+        :return: nothing
+        """
+        pass
+
     def has_events(self):
         """
         Check whether the check has saved any events
@@ -777,6 +801,10 @@ class AgentCheck(object):
         :return: object with topology changes
         """
         result = [instance.get_topology() for instance in self.topology_instances.values()]
+
+        for instance in self.topology_instances.values():
+            instance.clear_topology_and_snapshot(clear_in_snapshot=False)
+
         self.topology_instances = dict((key, value) for key, value in self.topology_instances.iteritems() if value.is_in_snapshot())
         return result
 
@@ -942,6 +970,15 @@ class AgentCheck(object):
 
         return instance_statuses
 
+    def commit_success(self):
+        """ Report commit success """
+        return any(self.commit_succeeded(copy.deepcopy(instance)) for instance in self.instances)
+
+    def commit_failure(self):
+        """ Report commit failure """
+        for instance in self.instances:
+            self.commit_failed(copy.deepcopy(instance))
+
     def check(self, instance):
         """
         Overriden by the check class. This will be called to run the check.
@@ -954,6 +991,12 @@ class AgentCheck(object):
     def stop(self):
         """
         To be executed when the agent is being stopped to clean ressources
+        """
+        pass
+
+    def clear_status(self):
+        """
+        Overridable method to clear global status of the check. Used in the testing framework
         """
         pass
 

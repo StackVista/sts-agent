@@ -1,0 +1,19 @@
+{
+  "preview": false,
+  "init_offset": 0,
+  "messages": [],
+  "fields": [
+    {
+      "name": "id"
+    },
+    {
+      "name": "type"
+    }
+  ],
+  "results": [
+    {
+      "type": "HOSTED_ON"
+    }
+  ],
+  "highlighted": {}
+}

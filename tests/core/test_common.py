@@ -164,10 +164,11 @@ class TestCore(unittest.TestCase):
         checks = [load_check('redisdb', redis_config, agentConfig)]
 
         c = Collector(agentConfig, [], {}, get_hostname(agentConfig))
-        payload = c.run({
+        payload, continue_immediately = c.run({
             'initialized_checks': checks,
             'init_failed_checks': {}
         })
+        assert not continue_immediately
         metrics = payload['metrics']
 
         # Check that we got a timing metric for all checks.
@@ -357,7 +358,7 @@ class TestCore(unittest.TestCase):
             emitted_topologies.extend(message['topologies'])
 
         c = Collector(agentConfig, [mock_emitter], {}, get_hostname(agentConfig))
-        payload = c.run({
+        payload, _ = c.run({
             'initialized_checks': [check1, check2],
             'init_failed_checks': {}
         })
@@ -408,7 +409,7 @@ class TestCore(unittest.TestCase):
         checks = [load_check('redisdb', redis_config, agentConfig)]
 
         c = Collector(agentConfig, [], {}, get_hostname(agentConfig))
-        payload = c.run({
+        payload, _ = c.run({
             'initialized_checks': checks,
             'init_failed_checks': {}
         })
@@ -434,7 +435,7 @@ class TestCore(unittest.TestCase):
 
         self.assertEquals(env["no_proxy"], "127.0.0.1,localhost,169.254.169.254")
         self.assertEquals({}, get_environ_proxies(
-            "http://localhost:17123/intake"))
+            "http://localhost:18123/intake"))
 
         expected_proxies = {
             'http': 'http://localhost:3128',
@@ -595,7 +596,7 @@ class TestCore(unittest.TestCase):
         except Exception:
             pass
 
-        self.assertTrue(ntp_util.args["host"].endswith("stackstate.pool.ntp.org"))
+        self.assertTrue(ntp_util.args["host"].endswith("pool.ntp.org"))
         self.assertEqual(ntp_util.args["port"], "ntp")
         self.assertEqual(ntp_util.args["version"], 3)
         self.assertEqual(ntp_util.args["timeout"], 1.0)

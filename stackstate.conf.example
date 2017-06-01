@@ -26,6 +26,9 @@ api_key: none
 # Set the host's tags (optional)
 # tags: mytag, env:prod, role:database
 
+# Timeout in seconds for requests to for StackState intake api
+http_emitter_timeout=60
+
 # Set timeout in seconds for outgoing requests to StackState. (default: 20)
 # When a request timeout, it will be retried after some time.
 # It will only be deleted if the forwarder queue becomes too big. (30 MB by default)
@@ -64,7 +67,7 @@ gce_updated_hostname: yes
 # use_mount: no
 
 # Forwarder listening port
-# listen_port: 17123
+# listen_port: 18123
 
 # Graphite listener port
 # graphite_listen_port: 17124
@@ -136,18 +139,18 @@ gce_updated_hostname: yes
 # use_dogstatsd: yes
 
 #  Make sure your client is sending to the same port.
-# dogstatsd_port: 8125
+# dogstatsd_port: 8225
 
 # By default stsstatsd will post aggregate metrics to the Agent (which handles
 # errors/timeouts/retries/etc).
-# dogstatsd_target: http://localhost:17123
+# dogstatsd_target: http://localhost:18123
 
 # If you want to forward every packet received by the stsstatsd server
 # to another statsd server, uncomment these lines.
 # WARNING: Make sure that forwarded packets are regular statsd packets and not "stsstatsd" packets,
 # as your other statsd server might not be able to handle them.
 # statsd_forward_host: address_of_own_statsd_server
-# statsd_forward_port: 8125
+# statsd_forward_port: 8225
 
 # you may want all statsd metrics coming from this host to be namespaced
 # in some way; if so, configure your namespace here. a metric that looks
