@@ -1,5 +1,7 @@
 # 3rd party
 import simplejson as json
+import requests
+
 
 # project
 from tests.checks.common import Fixtures, AgentCheckTest
@@ -29,6 +31,7 @@ class TestKubernetesTopology(AgentCheckTest):
             'type': 'kubernetes',
             'url': 'http://kubernetes'
         })
+
         self.assertEqual(len(instances[0]['relations']), 66)
 
         pod_name_client = 'client-3129927420-r90fc'
@@ -97,3 +100,65 @@ class TestKubernetesTopology(AgentCheckTest):
         first_replicaset = first_pod + 51
         replicaset = instances[0]['components'][first_replicaset]
         self.assertEqual(replicaset['type'], {'name': 'KUBERNETES_REPLICASET'})
+
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_services_list',
+                side_effect=requests.exceptions.ReadTimeout())
+    def test_kube_timeout_exception(self, *args):
+        self.run_check({'instances': [{'host': 'foo'}]})
+
+        instances = self.check.get_topology_instances()
+        self.assertEqual(len(instances), 1)
+        self.assertEqual(instances[0]['instance'], {
+            'type': 'kubernetes',
+            'url': 'http://kubernetes'
+        })
+        print self.service_checks
+        self.assertEqual(len(instances[0]['relations']), 0)
+        self.assertEqual(len(instances[0]['components']), 0)
+        self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
+
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_services_list',
+                side_effect=Exception("generic error"))
+    def test_kube_generic_exception(self, *args):
+        self.run_check({'instances': [{'host': 'foo'}]})
+
+        instances = self.check.get_topology_instances()
+        self.assertEqual(len(instances), 1)
+        self.assertEqual(instances[0]['instance'], {
+            'type': 'kubernetes',
+            'url': 'http://kubernetes'
+        })
+        print self.service_checks
+        self.assertEqual(len(instances[0]['relations']), 0)
+        self.assertEqual(len(instances[0]['components']), 0)
+        self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
+
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_json_auth')
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_machine_info')
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_nodes_list',
+                side_effect=lambda: json.loads(Fixtures.read_file("nodes_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_services_list',
+                side_effect=lambda: json.loads(Fixtures.read_file("services_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_pods_list',
+                side_effect=lambda: json.loads(Fixtures.read_file("pods_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_endpoints_list',
+                side_effect=lambda: json.loads(Fixtures.read_file("endpoints_list.json", string_escape=False)))
+    def test_kube_multiple_instances(self, *args):
+        self.run_check({'instances': [{'host': 'foo', 'url':'http://foo'},{'host': 'bar', 'url':'http://bar'}]})
+
+        instances = self.check.get_topology_instances()
+        self.assertEqual(len(instances), 2)
+        self.assertEqual(instances[0]['instance'], {
+            'type': 'kubernetes',
+            'url': 'http://foo'
+        })
+
+        self.assertEqual(instances[1]['instance'], {
+            'type': 'kubernetes',
+            'url': 'http://bar'
+        })
+
+        self.assertEqual(len(instances[0]['relations']), 66)
+        self.assertEqual(len(instances[0]['components']), 68)
+        self.assertEqual(len(instances[1]['relations']), 66)
+        self.assertEqual(len(instances[1]['components']), 68)

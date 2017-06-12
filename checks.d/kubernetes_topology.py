@@ -8,6 +8,7 @@
 from collections import defaultdict
 
 # 3rd party
+import requests
 
 # project
 from checks import AgentCheck
@@ -16,47 +17,50 @@ from utils.kubernetes import KubeUtil
 class KubernetesTopology(AgentCheck):
     INSTANCE_TYPE = "kubernetes"
     SERVICE_CHECK_NAME = "kubernetes.topology_information"
-    service_check_needed = True
-
-    def __init__(self, name, init_config, agentConfig, instances=None):
-        if instances is not None and len(instances) > 1:
-            raise Exception('Kubernetes topology only supports one configured instance.')
-
-        AgentCheck.__init__(self, name, init_config, agentConfig, instances)
-
-        inst = instances[0] if instances is not None else None
-        self.kubeutil = KubeUtil(instance=inst)
-        if not self.kubeutil.host:
-            raise Exception('Unable to retrieve Docker hostname and host parameter is not set')
+    DEFAULT_KUBERNETES_URL = "http://kubernetes"
 
     def check(self, instance):
-        # For now we only support monitoring 1 kubernetes at a time, so the instance_key containing
-        # just the 'kubernetes' type is sufficient. Once we start supporting monitoring multiple clusters
-        # simultaneously we need to uniquely identify them in the instance_key
-        instance_key = {
-            'type': self.INSTANCE_TYPE,
-            'url': 'http://kubernetes'
-        }
+        url = instance['url'] if 'url' in instance else self.DEFAULT_KUBERNETES_URL
+        instance_key = {'type': self.INSTANCE_TYPE, 'url': url}
+        msg = None
+        status = None
+
+        kubeutil = KubeUtil(instance=instance)
+        if not kubeutil.host:
+            raise Exception('Unable to retrieve Docker hostname and host parameter is not set')
 
         self.start_snapshot(instance_key)
-
-        self._extract_services(instance_key)
-        self._extract_nodes(instance_key)
-        self._extract_pods(instance_key)
-        self._link_pods_to_services(instance_key)
+        try:
+            self._extract_topology(kubeutil, instance_key)
+        except requests.exceptions.Timeout as e:
+            # If there's a timeout
+            msg = "%s seconds timeout when hitting %s" % (kubeutil.timeoutSeconds, url)
+            status = AgentCheck.CRITICAL
+        except Exception as e:
+            msg = str(e)
+            status = AgentCheck.CRITICAL
+        finally:
+            if status is AgentCheck.CRITICAL:
+                self.service_check(self.SERVICE_CHECK_NAME, status, message=msg)
 
         self.stop_snapshot(instance_key)
 
-    def _extract_services(self, instance_key):
-        for service in self.kubeutil.retrieve_services_list()['items']:
+    def _extract_topology(self, kubeutil, instance_key):
+        self._extract_services(kubeutil, instance_key)
+        self._extract_nodes(kubeutil, instance_key)
+        self._extract_pods(kubeutil, instance_key)
+        self._link_pods_to_services(kubeutil, instance_key)
+
+    def _extract_services(self, kubeutil, instance_key):
+        for service in kubeutil.retrieve_services_list()['items']:
             data = dict()
             data['type'] = service['spec']['type']
             if 'clusterIP' in service['spec'].keys():
                 data['cluster_ip'] = service['spec']['clusterIP']
             self.component(instance_key, service['metadata']['name'], {'name': 'KUBERNETES_SERVICE'}, data)
 
-    def _extract_nodes(self, instance_key):
-        for node in self.kubeutil.retrieve_nodes_list()['items']:
+    def _extract_nodes(self, kubeutil, instance_key):
+        for node in kubeutil.retrieve_nodes_list()['items']:
             data = dict()
             addresses = {item['type']: item['address'] for item in node['status']['addresses']}
             data['internal_ip'] = addresses['InternalIP']
@@ -65,9 +69,9 @@ class KubernetesTopology(AgentCheck):
             data['hostname'] = addresses['Hostname']
             self.component(instance_key, node['metadata']['name'], {'name': 'KUBERNETES_NODE'}, data)
 
-    def _extract_pods(self, instance_key):
+    def _extract_pods(self, kubeutil, instance_key):
         replicasets = defaultdict(list)
-        for pod in self.kubeutil.retrieve_pods_list()['items']:
+        for pod in kubeutil.retrieve_pods_list()['items']:
             data = dict()
             pod_name = pod['metadata']['name']
             data['uid'] = pod['metadata']['uid']
@@ -106,8 +110,8 @@ class KubernetesTopology(AgentCheck):
             relation_data = dict()
             self.relation(instance_key, container_id, pod_name, {'name': 'ON_POD'}, relation_data)
 
-    def _link_pods_to_services(self, instance_key):
-        for endpoint in self.kubeutil.retrieve_endpoints_list()['items']:
+    def _link_pods_to_services(self, kubeutil, instance_key):
+        for endpoint in kubeutil.retrieve_endpoints_list()['items']:
             service_name = endpoint['metadata']['name']
             for subset in endpoint['subsets']:
                 for address in subset['addresses']:

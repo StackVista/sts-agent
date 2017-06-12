@@ -4,7 +4,7 @@ init_config:
   #      - optional_tag2
 
 instances:
-  # The kubernetes topology check retrieves metrics from the kubernetes api.
+  # The kubernetes topology check retrieves topology from the kubernetes api.
   # By default we will assume we're running under docker and will use the address
   # of the default router to reach the kubernetes api.
   #
