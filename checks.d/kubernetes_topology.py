@@ -55,6 +55,7 @@ class KubernetesTopology(AgentCheck):
         for service in kubeutil.retrieve_services_list()['items']:
             data = dict()
             data['type'] = service['spec']['type']
+            data['labels'] = self._flatten_dict(kubeutil.extract_metadata_labels(service['metadata']))
             if 'clusterIP' in service['spec'].keys():
                 data['cluster_ip'] = service['spec']['clusterIP']
             self.component(instance_key, service['metadata']['name'], {'name': 'KUBERNETES_SERVICE'}, data)
@@ -63,6 +64,7 @@ class KubernetesTopology(AgentCheck):
         for node in kubeutil.retrieve_nodes_list()['items']:
             data = dict()
             addresses = {item['type']: item['address'] for item in node['status']['addresses']}
+            data['labels'] = self._flatten_dict(kubeutil.extract_metadata_labels(node['metadata']))
             data['internal_ip'] = addresses['InternalIP']
             data['legacy_host_ip'] = addresses['LegacyHostIP']
             data['external_ip'] = addresses['ExternalIP']
@@ -75,6 +77,7 @@ class KubernetesTopology(AgentCheck):
             data = dict()
             pod_name = pod['metadata']['name']
             data['uid'] = pod['metadata']['uid']
+            data['labels'] = self._flatten_dict(kubeutil.extract_metadata_labels(pod['metadata']))
 
             self.component(instance_key, pod_name, {'name': 'KUBERNETES_POD'}, data)
 
@@ -82,7 +85,7 @@ class KubernetesTopology(AgentCheck):
             self.relation(instance_key, pod_name, pod['spec']['nodeName'], {'name': 'HOSTED_ON'}, relation_data)
 
             if 'containerStatuses' in pod['status'].keys():
-                self._extract_containers(instance_key, pod_name, pod['status']['podIP'], pod['status']['hostIP'], pod['status']['containerStatuses'])
+                self._extract_containers(instance_key, pod_name, pod['status']['podIP'], pod['status']['hostIP'], pod['spec']['nodeName'], pod['status']['containerStatuses'])
 
             if 'ownerReferences' in pod['metadata'].keys():
                 for reference in pod['metadata']['ownerReferences']:
@@ -96,7 +99,7 @@ class KubernetesTopology(AgentCheck):
             for pod in replicasets[replicaset_name]:
                 self.relation(instance_key, pod['name'], replicaset_name, {'name': 'CONTROLLED_BY'}, dict())
 
-    def _extract_containers(self, instance_key, pod_name, pod_ip, host_ip, statuses):
+    def _extract_containers(self, instance_key, pod_name, pod_ip, host_ip, host_name, statuses):
         for containerStatus in statuses:
             container_id = containerStatus['containerID']
             data = dict()
@@ -109,6 +112,7 @@ class KubernetesTopology(AgentCheck):
 
             relation_data = dict()
             self.relation(instance_key, container_id, pod_name, {'name': 'ON_POD'}, relation_data)
+            self.relation(instance_key, container_id, host_name, {'name': 'HOSTED_ON'}, relation_data)
 
     def _link_pods_to_services(self, kubeutil, instance_key):
         for endpoint in kubeutil.retrieve_endpoints_list()['items']:
@@ -119,3 +123,7 @@ class KubernetesTopology(AgentCheck):
                         data = dict()
                         pod_name = address['targetRef']['name']
                         self.relation(instance_key, pod_name, service_name, {'name': 'BELONGS_TO'}, data)
+
+    def _flatten_dict(self, dict_of_list):
+        from itertools import chain
+        return sorted(set(chain.from_iterable(dict_of_list.itervalues())))

@@ -31,8 +31,8 @@ class TestKubernetesTopology(AgentCheckTest):
             'type': 'kubernetes',
             'url': 'http://kubernetes'
         })
-
-        self.assertEqual(len(instances[0]['relations']), 66)
+        # print instances[0]['relations']
+        self.assertEqual(len(instances[0]['relations']), 95)
 
         pod_name_client = 'client-3129927420-r90fc'
         pod_name_service = 'raboof1-1475403310-kc380'
@@ -49,17 +49,22 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(containerToPod['sourceId'], 'docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359')
         self.assertEqual(containerToPod['targetId'], pod_name_client)
 
-        podToNode = instances[0]['relations'][8]
+        containerToNode = instances[0]['relations'][8]
+        self.assertEqual(containerToNode['type'], {'name': 'HOSTED_ON'})
+        self.assertEqual(containerToNode['sourceId'], 'docker://e5b644e19d1ab821644b6228693e7c6a5afecec35e027128cff3570792eb274a')
+        self.assertEqual(containerToNode['targetId'], node_name)
+
+        podToNode = instances[0]['relations'][12]
         self.assertEqual(podToNode['type'], {'name': 'HOSTED_ON'})
         self.assertEqual(podToNode['sourceId'], pod_name_service)
         self.assertEqual(podToNode['targetId'], node_name)
 
-        podToService = instances[0]['relations'][61]
+        podToService = instances[0]['relations'][90]
         self.assertEqual(podToService['type'], {'name': 'BELONGS_TO'})
         self.assertEqual(podToService['sourceId'], pod_name_service)
         self.assertEqual(podToService['targetId'], service_name)
 
-        podToReplicaSet = instances[0]['relations'][55]
+        podToReplicaSet = instances[0]['relations'][84]
         self.assertEqual(podToReplicaSet['type'], {'name': 'CONTROLLED_BY'})
         self.assertEqual(podToReplicaSet['sourceId'], pod_name_client)
         self.assertEqual(podToReplicaSet['targetId'], 'client-3129927420')
@@ -70,6 +75,8 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(service['type'], {'name': 'KUBERNETES_SERVICE'})
         self.assertEqual(service['data']['type'], 'NodePort')
         self.assertEqual(service['data']['cluster_ip'], '10.3.0.149')
+        self.assertEqual(service['data']['labels'],
+            [u'kube_k8s-app:heapster',u'kube_kubernetes.io/cluster-service:true',u'kube_kubernetes.io/name:Heapster'])
 
         first_node = 6
         node = instances[0]['components'][first_node]
@@ -78,13 +85,23 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(node['data']['legacy_host_ip'], '10.0.0.107')
         self.assertEqual(node['data']['external_ip'], '54.171.163.96')
         self.assertEqual(node['data']['hostname'], 'ip-10-0-0-107.eu-west-1.compute.internal')
+        self.assertEqual(node['data']['labels'],
+            [u'kube_beta.kubernetes.io/arch:amd64',
+             u'kube_beta.kubernetes.io/instance-type:t2.medium',
+             u'kube_beta.kubernetes.io/os:linux',
+             u'kube_failure-domain.beta.kubernetes.io/region:eu-west-1',
+             u'kube_failure-domain.beta.kubernetes.io/zone:eu-west-1a',
+             u'kube_kubernetes.io/hostname:ip-10-0-0-107.eu-west-1.compute.internal'])
 
         first_pod = first_node + 3
         first_pod_with_container = first_pod
         pod = instances[0]['components'][first_pod_with_container]
         self.assertEqual(pod['type'], {'name': 'KUBERNETES_POD'})
         self.assertEqual(pod['data'], {
-            'uid': '6771158d-f826-11e6-ae06-020c94063ecf'
+            'labels': [u'kube_app:client',
+                       u'kube_pod-template-hash:3129927420',
+                       u'kube_version:1'],
+            'uid': u'6771158d-f826-11e6-ae06-020c94063ecf'
         })
 
         container = instances[0]['components'][first_pod_with_container+1]
@@ -158,7 +175,7 @@ class TestKubernetesTopology(AgentCheckTest):
             'url': 'http://bar'
         })
 
-        self.assertEqual(len(instances[0]['relations']), 66)
+        self.assertEqual(len(instances[0]['relations']), 95)
         self.assertEqual(len(instances[0]['components']), 68)
-        self.assertEqual(len(instances[1]['relations']), 66)
+        self.assertEqual(len(instances[1]['relations']), 95)
         self.assertEqual(len(instances[1]['components']), 68)

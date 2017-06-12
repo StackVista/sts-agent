@@ -13,7 +13,12 @@
         "selfLink": "/api/v1/namespaces/default/services/heapster-nodeport",
         "uid": "4d976df4-f453-11e6-ae06-020c94063ecf",
         "resourceVersion": "182178",
-        "creationTimestamp": "2017-02-16T14:22:10Z"
+        "creationTimestamp": "2017-02-16T14:22:10Z",
+        "labels": {
+          "k8s-app": "heapster",
+          "kubernetes.io/cluster-service": "true",
+          "kubernetes.io/name": "Heapster"
+        }
       },
       "spec": {
         "ports": [
@@ -72,7 +77,12 @@
         "selfLink": "/api/v1/namespaces/default/services/my-externalservice",
         "uid": "c66ea74e-fe71-11e6-ae06-020c94063ecf",
         "resourceVersion": "1753142",
-        "creationTimestamp": "2017-03-01T11:25:29Z"
+        "creationTimestamp": "2017-03-01T11:25:29Z",
+        "labels": {
+          "k8s-app": "my-externalservice",
+          "kubernetes.io/cluster-service": "true",
+          "kubernetes.io/name": "my-externalservice"
+        }
       },
       "spec": {
         "ports": [

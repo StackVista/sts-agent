@@ -100,18 +100,30 @@ class KubeUtil:
         pod_items = pods_list.get("items") or []
         for pod in pod_items:
             metadata = pod.get("metadata", {})
-            name = metadata.get("name")
-            namespace = metadata.get("namespace")
-            labels = metadata.get("labels")
-            if name and labels and namespace:
+            pod_labels = self.extract_metadata_labels(metadata, excluded_keys)
+            kube_labels.update(pod_labels)
+
+        return kube_labels
+
+    def extract_metadata_labels(self, metadata, excluded_keys={}):
+        """
+        Extract labels from metadata section coming from the kubelet API.
+        """
+        kube_labels = defaultdict(list)
+        name = metadata.get("name")
+        namespace = metadata.get("namespace")
+        labels = metadata.get("labels")
+        if name and labels:
+            if namespace:
                 key = "%s/%s" % (namespace, name)
+            else:
+                key = name
 
-                for k, v in labels.iteritems():
-                    if k in excluded_keys:
-                        continue
+            for k, v in labels.iteritems():
+                if k in excluded_keys:
+                    continue
 
-                    kube_labels[key].append(u"kube_%s:%s" % (k, v))
-
+                kube_labels[key].append(u"kube_%s:%s" % (k, v))
         return kube_labels
 
     def extract_meta(self, pods_list, field_name):
@@ -128,6 +140,7 @@ class KubeUtil:
             if value is not None:
                 uids.append(value)
         return uids
+
 
     def retrieve_pods_list(self):
         """
