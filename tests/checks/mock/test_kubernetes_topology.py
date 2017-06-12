@@ -45,9 +45,9 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(podToNode['targetId'], node_name)
 
         containerToPod = instances[0]['relations'][1]
-        self.assertEqual(containerToPod['type'], {'name': 'ON_POD'})
-        self.assertEqual(containerToPod['sourceId'], 'docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359')
-        self.assertEqual(containerToPod['targetId'], pod_name_client)
+        self.assertEqual(containerToPod['type'], {'name': 'CONSISTS_OF'})
+        self.assertEqual(containerToPod['sourceId'], pod_name_client)
+        self.assertEqual(containerToPod['targetId'], 'docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359')
 
         containerToNode = instances[0]['relations'][8]
         self.assertEqual(containerToNode['type'], {'name': 'HOSTED_ON'})
@@ -60,9 +60,9 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(podToNode['targetId'], node_name)
 
         podToService = instances[0]['relations'][90]
-        self.assertEqual(podToService['type'], {'name': 'BELONGS_TO'})
-        self.assertEqual(podToService['sourceId'], pod_name_service)
-        self.assertEqual(podToService['targetId'], service_name)
+        self.assertEqual(podToService['type'], {'name': 'EXPOSES'})
+        self.assertEqual(podToService['sourceId'], service_name)
+        self.assertEqual(podToService['targetId'], pod_name_service)
 
         podToReplicaSet = instances[0]['relations'][84]
         self.assertEqual(podToReplicaSet['type'], {'name': 'CONTROLLED_BY'})

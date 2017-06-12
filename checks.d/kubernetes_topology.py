@@ -111,7 +111,7 @@ class KubernetesTopology(AgentCheck):
             self.component(instance_key, container_id, {'name': 'KUBERNETES_CONTAINER'}, data)
 
             relation_data = dict()
-            self.relation(instance_key, container_id, pod_name, {'name': 'ON_POD'}, relation_data)
+            self.relation(instance_key, pod_name, container_id, {'name': 'CONSISTS_OF'}, relation_data)
             self.relation(instance_key, container_id, host_name, {'name': 'HOSTED_ON'}, relation_data)
 
     def _link_pods_to_services(self, kubeutil, instance_key):
@@ -122,7 +122,7 @@ class KubernetesTopology(AgentCheck):
                     if 'targetRef' in address.keys() and address['targetRef']['kind'] == 'Pod':
                         data = dict()
                         pod_name = address['targetRef']['name']
-                        self.relation(instance_key, pod_name, service_name, {'name': 'BELONGS_TO'}, data)
+                        self.relation(instance_key, service_name, pod_name, {'name': 'EXPOSES'}, data)
 
     def _flatten_dict(self, dict_of_list):
         from itertools import chain
