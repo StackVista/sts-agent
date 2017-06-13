@@ -25,13 +25,18 @@ class KubeUtil:
     DEFAULT_METHOD = 'http'
     MACHINE_INFO_PATH = '/api/v1.3/machine/'
     METRICS_PATH = '/api/v1.3/subcontainers/'
-    PODS_LIST_PATH = '/pods/'
+    PODS_LIST_PATH = 'pods/'
+    SERVICES_LIST_PATH = 'services/'
+    NODES_LIST_PATH = 'nodes/'
+    ENDPOINTS_LIST_PATH = 'endpoints/'
     DEFAULT_CADVISOR_PORT = 4194
     DEFAULT_KUBELET_PORT = 10255
-    DEFAULT_MASTER_PORT = 8080
+    DEFAULT_MASTER_METHOD = 'https'
+    DEFAULT_MASTER_PORT = 443
     DEFAULT_MASTER_NAME = 'kubernetes'  # DNS name to reach the master from a pod.
     CA_CRT_PATH = '/run/secrets/kubernetes.io/serviceaccount/ca.crt'
     AUTH_TOKEN_PATH = '/run/secrets/kubernetes.io/serviceaccount/token'
+    DEFAULT_TIMEOUT_SECONDS = 10
 
     POD_NAME_LABEL = "io.kubernetes.pod.name"
     NAMESPACE_LABEL = "io.kubernetes.pod.namespace"
@@ -52,6 +57,7 @@ class KubeUtil:
                           'Trying connecting to kubelet with default settings anyway...')
                 instance = {}
 
+        self.timeoutSeconds = instance.get("timeoutSeconds", KubeUtil.DEFAULT_TIMEOUT_SECONDS)
         self.method = instance.get('method', KubeUtil.DEFAULT_METHOD)
         self.host = instance.get("host") or self.docker_util.get_hostname()
         self._node_ip = self._node_name = None  # lazy evaluation
@@ -59,14 +65,21 @@ class KubeUtil:
 
         self.cadvisor_port = instance.get('port', KubeUtil.DEFAULT_CADVISOR_PORT)
         self.kubelet_port = instance.get('kubelet_port', KubeUtil.DEFAULT_KUBELET_PORT)
+        self.master_method = instance.get('master_method', KubeUtil.DEFAULT_MASTER_METHOD)
+        self.master_name = instance.get('master_name', KubeUtil.DEFAULT_MASTER_NAME)
+        self.master_port = instance.get('master_port', KubeUtil.DEFAULT_MASTER_PORT)
 
         self.kubelet_api_url = '%s://%s:%d' % (self.method, self.host, self.kubelet_port)
         self.cadvisor_url = '%s://%s:%d' % (self.method, self.host, self.cadvisor_port)
-        self.kubernetes_api_url = 'https://%s/api/v1' % (os.environ.get('KUBERNETES_SERVICE_HOST') or self.DEFAULT_MASTER_NAME)
+        self.master_host = os.environ.get('KUBERNETES_SERVICE_HOST') or ('%s:%d' % (self.master_name, self.master_port))
+        self.kubernetes_api_url = '%s://%s/api/v1/' % (self.master_method, self.master_host)
 
         self.metrics_url = urljoin(self.cadvisor_url, KubeUtil.METRICS_PATH)
         self.machine_info_url = urljoin(self.cadvisor_url, KubeUtil.MACHINE_INFO_PATH)
-        self.pods_list_url = urljoin(self.kubelet_api_url, KubeUtil.PODS_LIST_PATH)
+        self.nodes_list_url = urljoin(self.kubernetes_api_url, KubeUtil.NODES_LIST_PATH)
+        self.services_list_url = urljoin(self.kubernetes_api_url, KubeUtil.SERVICES_LIST_PATH)
+        self.endpoints_list_url = urljoin(self.kubernetes_api_url, KubeUtil.ENDPOINTS_LIST_PATH)
+        self.pods_list_url = urljoin(self.kubernetes_api_url, KubeUtil.PODS_LIST_PATH)
         self.kube_health_url = urljoin(self.kubelet_api_url, 'healthz')
 
         # keep track of the latest k8s event we collected and posted
@@ -87,18 +100,30 @@ class KubeUtil:
         pod_items = pods_list.get("items") or []
         for pod in pod_items:
             metadata = pod.get("metadata", {})
-            name = metadata.get("name")
-            namespace = metadata.get("namespace")
-            labels = metadata.get("labels")
-            if name and labels and namespace:
+            pod_labels = self.extract_metadata_labels(metadata, excluded_keys)
+            kube_labels.update(pod_labels)
+
+        return kube_labels
+
+    def extract_metadata_labels(self, metadata, excluded_keys={}):
+        """
+        Extract labels from metadata section coming from the kubelet API.
+        """
+        kube_labels = defaultdict(list)
+        name = metadata.get("name")
+        namespace = metadata.get("namespace")
+        labels = metadata.get("labels")
+        if name and labels:
+            if namespace:
                 key = "%s/%s" % (namespace, name)
+            else:
+                key = name
 
-                for k, v in labels.iteritems():
-                    if k in excluded_keys:
-                        continue
+            for k, v in labels.iteritems():
+                if k in excluded_keys:
+                    continue
 
-                    kube_labels[key].append(u"kube_%s:%s" % (k, v))
-
+                kube_labels[key].append(u"kube_%s:%s" % (k, v))
         return kube_labels
 
     def extract_meta(self, pods_list, field_name):
@@ -116,25 +141,46 @@ class KubeUtil:
                 uids.append(value)
         return uids
 
+
     def retrieve_pods_list(self):
         """
         Retrieve the list of pods for this cluster querying the kubelet API.
 
         TODO: the list of pods could be cached with some policy to be decided.
         """
-        return retrieve_json(self.pods_list_url)
+        return retrieve_json(url=self.pods_list_url, timeout=self.timeoutSeconds)
+
+    def retrieve_endpoints_list(self):
+        """
+        Retrieve the list of endpoints for this cluster querying the kubelet API.
+
+        TODO: the list of endpoints could be cached with some policy to be decided.
+        """
+        return retrieve_json(url=self.endpoints_list_url, timeout=self.timeoutSeconds)
 
     def retrieve_machine_info(self):
         """
         Retrieve machine info from Cadvisor.
         """
-        return retrieve_json(self.machine_info_url)
+        return retrieve_json(url=self.machine_info_url, timeout=self.timeoutSeconds)
 
     def retrieve_metrics(self):
         """
         Retrieve metrics from Cadvisor.
         """
-        return retrieve_json(self.metrics_url)
+        return retrieve_json(url=self.metrics_url, timeout=self.timeoutSeconds)
+
+    def retrieve_nodes_list(self):
+        """
+        Retrieve the list of nodes for this cluster querying the kublet API.
+        """
+        return retrieve_json(self.nodes_list_url, timeout=self.timeoutSeconds)
+
+    def retrieve_services_list(self):
+        """
+        Retrieve the list of services for this cluster querying the kublet API.
+        """
+        return retrieve_json(url=self.services_list_url, timeout=self.timeoutSeconds)
 
     def filter_pods_list(self, pods_list, host_ip):
         """
