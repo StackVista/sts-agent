@@ -93,7 +93,8 @@ env:
     - TRAVIS_FLAVOR=zookeeper FLAVOR_VERSION=3.3.6
 
 # Override travis defaults with empty jobs
-before_install: echo "OVERRIDING TRAVIS STEPS"
+before_install:
+- rvm install 2.1.5
 install: echo "OVERRIDING TRAVIS STEPS"
 before_script: echo "OVERRIDING TRAVIS STEPS"
 
