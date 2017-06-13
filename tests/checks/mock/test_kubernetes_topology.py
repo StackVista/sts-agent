@@ -40,7 +40,7 @@ class TestKubernetesTopology(AgentCheckTest):
         service_name = 'raboof1'
 
         podToNode = instances[0]['relations'][0]
-        self.assertEqual(podToNode['type'], {'name': 'HOSTED_ON'})
+        self.assertEqual(podToNode['type'], {'name': 'PLACED_ON'})
         self.assertEqual(podToNode['sourceId'], pod_name_client)
         self.assertEqual(podToNode['targetId'], node_name)
 
@@ -55,7 +55,7 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(containerToNode['targetId'], node_name)
 
         podToNode = instances[0]['relations'][12]
-        self.assertEqual(podToNode['type'], {'name': 'HOSTED_ON'})
+        self.assertEqual(podToNode['type'], {'name': 'PLACED_ON'})
         self.assertEqual(podToNode['sourceId'], pod_name_service)
         self.assertEqual(podToNode['targetId'], node_name)
 

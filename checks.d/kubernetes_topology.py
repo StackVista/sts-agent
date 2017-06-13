@@ -83,7 +83,7 @@ class KubernetesTopology(AgentCheck):
             self.component(instance_key, pod_name, {'name': 'KUBERNETES_POD'}, data)
 
             relation_data = dict()
-            self.relation(instance_key, pod_name, pod['spec']['nodeName'], {'name': 'HOSTED_ON'}, relation_data)
+            self.relation(instance_key, pod_name, pod['spec']['nodeName'], {'name': 'PLACED_ON'}, relation_data)
 
             if 'containerStatuses' in pod['status'].keys():
                 self._extract_containers(instance_key, pod_name, pod['status']['podIP'], pod['status']['hostIP'], pod['spec']['nodeName'], pod['status']['containerStatuses'])
