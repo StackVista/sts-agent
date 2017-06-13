@@ -179,3 +179,13 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(len(instances[0]['components']), 68)
         self.assertEqual(len(instances[1]['relations']), 95)
         self.assertEqual(len(instances[1]['components']), 68)
+
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_json_auth',side_effect=...)
+    @mock.patch('utils.kubernetes.KubeUtil.get_auth_token',side_effect=lambda: "DummyToken")
+    def test_kube_retrieve_json(self, *args):
+
+        # Set configuration to true
+        self.run_check({'instances': [{}]})
+
+
+

@@ -34,6 +34,7 @@ class KubeUtil:
     DEFAULT_MASTER_METHOD = 'https'
     DEFAULT_MASTER_PORT = 443
     DEFAULT_MASTER_NAME = 'kubernetes'  # DNS name to reach the master from a pod.
+    DEFAULT_USE_KUBE_AUTH = True  # DNS name to reach the master from a pod.
     CA_CRT_PATH = '/run/secrets/kubernetes.io/serviceaccount/ca.crt'
     AUTH_TOKEN_PATH = '/run/secrets/kubernetes.io/serviceaccount/token'
     DEFAULT_TIMEOUT_SECONDS = 10
@@ -68,6 +69,7 @@ class KubeUtil:
         self.master_method = instance.get('master_method', KubeUtil.DEFAULT_MASTER_METHOD)
         self.master_name = instance.get('master_name', KubeUtil.DEFAULT_MASTER_NAME)
         self.master_port = instance.get('master_port', KubeUtil.DEFAULT_MASTER_PORT)
+        self.use_kube_auth = instance.get('use_kube_auth', KubeUtil.DEFAULT_USE_KUBE_AUTH)
 
         self.kubelet_api_url = '%s://%s:%d' % (self.method, self.host, self.kubelet_port)
         self.cadvisor_url = '%s://%s:%d' % (self.method, self.host, self.cadvisor_port)
@@ -148,7 +150,7 @@ class KubeUtil:
 
         TODO: the list of pods could be cached with some policy to be decided.
         """
-        return retrieve_json(url=self.pods_list_url, timeout=self.timeoutSeconds)
+        return self.retrieve_json_with_optional_auth(url=self.pods_list_url)
 
     def retrieve_endpoints_list(self):
         """
@@ -156,31 +158,38 @@ class KubeUtil:
 
         TODO: the list of endpoints could be cached with some policy to be decided.
         """
-        return retrieve_json(url=self.endpoints_list_url, timeout=self.timeoutSeconds)
+        return self.retrieve_json_with_optional_auth(url=self.endpoints_list_url)
 
     def retrieve_machine_info(self):
         """
         Retrieve machine info from Cadvisor.
         """
-        return retrieve_json(url=self.machine_info_url, timeout=self.timeoutSeconds)
+        return self.retrieve_json_with_optional_auth(url=self.machine_info_url)
 
     def retrieve_metrics(self):
         """
         Retrieve metrics from Cadvisor.
         """
-        return retrieve_json(url=self.metrics_url, timeout=self.timeoutSeconds)
+        return self.retrieve_json_with_optional_auth(url=self.metrics_url)
 
     def retrieve_nodes_list(self):
         """
         Retrieve the list of nodes for this cluster querying the kublet API.
         """
-        return retrieve_json(self.nodes_list_url, timeout=self.timeoutSeconds)
+        return self.retrieve_json_with_optional_auth(self.nodes_list_url)
 
     def retrieve_services_list(self):
         """
         Retrieve the list of services for this cluster querying the kublet API.
         """
-        return retrieve_json(url=self.services_list_url, timeout=self.timeoutSeconds)
+        return self.retrieve_json_with_optional_auth(url=self.services_list_url)
+
+    def retrieve_json_with_optional_auth(self, url):
+        if self.use_kube_auth:
+            return self.retrieve_json_auth(url=url, auth_token=self.get_auth_token(), timeout=self.timeoutSeconds)
+        else:
+            return retrieve_json(url=url, timeout=self.timeoutSeconds)
+
 
     def filter_pods_list(self, pods_list, host_ip):
         """
