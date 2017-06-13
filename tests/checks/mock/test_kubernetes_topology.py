@@ -207,7 +207,7 @@ class TestKubernetesTopology(AgentCheckTest):
     def test_kube_retrieve_json(self, *args):
 
         # Set configuration to true
-        self.run_check({'instances': [{}]})
+        self.run_check({'instances': [{ 'use_kube_auth': True, 'host': 'foo' }]})
 
         self.assertEqual(TestKubernetesTopologyMocks.json_auth_urls, [
             "https://kubernetes:443/api/v1/services/",
