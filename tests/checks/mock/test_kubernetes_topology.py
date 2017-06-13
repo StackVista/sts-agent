@@ -31,7 +31,7 @@ class TestKubernetesTopology(AgentCheckTest):
             'type': 'kubernetes',
             'url': 'http://kubernetes'
         })
-        # print instances[0]['relations']
+
         self.assertEqual(len(instances[0]['relations']), 95)
 
         pod_name_client = 'client-3129927420-r90fc'
