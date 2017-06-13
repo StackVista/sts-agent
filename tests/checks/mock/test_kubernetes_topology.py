@@ -74,6 +74,7 @@ class TestKubernetesTopology(AgentCheckTest):
         service = instances[0]['components'][first_service]
         self.assertEqual(service['type'], {'name': 'KUBERNETES_SERVICE'})
         self.assertEqual(service['data']['type'], 'NodePort')
+        self.assertEqual(service['data']['ports'], [{u'nodePort': 30285, u'port': 8082, u'protocol': u'TCP', u'targetPort': 8082}])
         self.assertEqual(service['data']['cluster_ip'], '10.3.0.149')
         self.assertEqual(service['data']['labels'],
             [u'kube_k8s-app:heapster',u'kube_kubernetes.io/cluster-service:true',u'kube_kubernetes.io/name:Heapster'])

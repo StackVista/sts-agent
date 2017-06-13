@@ -55,6 +55,7 @@ class KubernetesTopology(AgentCheck):
         for service in kubeutil.retrieve_services_list()['items']:
             data = dict()
             data['type'] = service['spec']['type']
+            data['ports'] = service['spec']['ports']
             data['labels'] = self._flatten_dict(kubeutil.extract_metadata_labels(service['metadata']))
             if 'clusterIP' in service['spec'].keys():
                 data['cluster_ip'] = service['spec']['clusterIP']
