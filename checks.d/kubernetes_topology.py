@@ -84,7 +84,8 @@ class KubernetesTopology(AgentCheck):
             self.component(instance_key, externalId, {'name': 'KUBERNETES_DEPLOYMENT'}, data)
 
     def _extract_pods(self, kubeutil, instance_key):
-        replicasets = defaultdict(list)
+        replicasets_to_pods = defaultdict(list)
+        replicaset_to_data = dict()
         for pod in kubeutil.retrieve_pods_list()['items']:
             data = dict()
             pod_name = pod['metadata']['name']
@@ -105,11 +106,16 @@ class KubernetesTopology(AgentCheck):
                     if reference['kind'] == 'ReplicaSet':
                         data = dict()
                         data['name'] = pod_name
-                        replicasets[reference['name']].append(data)
+                        replicasets_to_pods[reference['name']].append(data)
+                        if reference['name'] not in replicaset_to_data:
+                            replicaset_data = dict()
+                            replicaset_data['labels'] = self._flatten_dict(kubeutil.extract_metadata_labels(pod['metadata']))
+                            replicaset_data['namespace'] = pod['metadata']['namespace']
+                            replicaset_to_data[reference['name']] = replicaset_data
 
-        for replicaset_name in replicasets:
-            self.component(instance_key, replicaset_name, {'name': 'KUBERNETES_REPLICASET'}, dict())
-            for pod in replicasets[replicaset_name]:
+        for replicaset_name in replicasets_to_pods:
+            self.component(instance_key, replicaset_name, {'name': 'KUBERNETES_REPLICASET'}, replicaset_to_data[replicaset_name])
+            for pod in replicasets_to_pods[replicaset_name]:
                 self.relation(instance_key, replicaset_name, pod['name'], {'name': 'CONTROLS'}, dict())
 
     def _extract_containers(self, instance_key, pod_name, pod_ip, host_ip, host_name, namespace, statuses):

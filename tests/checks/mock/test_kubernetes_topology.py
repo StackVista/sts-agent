@@ -123,6 +123,12 @@ class TestKubernetesTopology(AgentCheckTest):
         first_replicaset = first_pod + 51
         replicaset = instances[0]['components'][first_replicaset]
         self.assertEqual(replicaset['type'], {'name': 'KUBERNETES_REPLICASET'})
+        self.assertEqual(replicaset['data'], {
+            'labels': [u'kube_k8s-app:heapster',
+                       u'kube_pod-template-hash:4088228293',
+                       u'kube_version:v1.2.0'],
+            'namespace': u'kube-system'
+        })
 
         first_deployment = len(instances[0]['components']) - 4
         deployment = instances[0]['components'][first_deployment]
