@@ -22,6 +22,8 @@ class TestKubernetesTopology(AgentCheckTest):
                 side_effect=lambda: json.loads(Fixtures.read_file("pods_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_endpoints_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("endpoints_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_deployments_list',
+                side_effect=lambda: json.loads(Fixtures.read_file("deployments_list.json", string_escape=False)))
     def test_kube_topo(self, *args):
         self.run_check({'instances': [{'host': 'foo'}]})
 
@@ -65,17 +67,18 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(podToService['targetId'], pod_name_service)
 
         podToReplicaSet = instances[0]['relations'][84]
-        self.assertEqual(podToReplicaSet['type'], {'name': 'CONTROLLED_BY'})
-        self.assertEqual(podToReplicaSet['sourceId'], pod_name_client)
-        self.assertEqual(podToReplicaSet['targetId'], 'client-3129927420')
+        self.assertEqual(podToReplicaSet['type'], {'name': 'CONTROLS'})
+        self.assertEqual(podToReplicaSet['sourceId'], 'client-3129927420')
+        self.assertEqual(podToReplicaSet['targetId'], pod_name_client)
 
-        self.assertEqual(len(instances[0]['components']), 68)
+        self.assertEqual(len(instances[0]['components']), 72)
         first_service = 0
         service = instances[0]['components'][first_service]
         self.assertEqual(service['type'], {'name': 'KUBERNETES_SERVICE'})
         self.assertEqual(service['data']['type'], 'NodePort')
         self.assertEqual(service['data']['ports'], [{u'nodePort': 30285, u'port': 8082, u'protocol': u'TCP', u'targetPort': 8082}])
         self.assertEqual(service['data']['cluster_ip'], '10.3.0.149')
+        self.assertEqual(service['data']['namespace'], 'default')
         self.assertEqual(service['data']['labels'],
             [u'kube_k8s-app:heapster',u'kube_kubernetes.io/cluster-service:true',u'kube_kubernetes.io/name:Heapster'])
 
@@ -102,6 +105,7 @@ class TestKubernetesTopology(AgentCheckTest):
             'labels': [u'kube_app:client',
                        u'kube_pod-template-hash:3129927420',
                        u'kube_version:1'],
+            'namespace': 'default',
             'uid': u'6771158d-f826-11e6-ae06-020c94063ecf'
         })
 
@@ -112,7 +116,8 @@ class TestKubernetesTopology(AgentCheckTest):
             'docker': {
                 'container_id': u'docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359',
                 'image': u'raboof/client:1'
-            }
+            },
+            'namespace': 'default'
         })
 
         first_replicaset = first_pod + 51
@@ -157,6 +162,8 @@ class TestKubernetesTopology(AgentCheckTest):
                 side_effect=lambda: json.loads(Fixtures.read_file("nodes_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_services_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("services_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_deployments_list',
+                side_effect=lambda: json.loads(Fixtures.read_file("deployments_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_pods_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("pods_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_endpoints_list',
@@ -177,6 +184,6 @@ class TestKubernetesTopology(AgentCheckTest):
         })
 
         self.assertEqual(len(instances[0]['relations']), 95)
-        self.assertEqual(len(instances[0]['components']), 68)
+        self.assertEqual(len(instances[0]['components']), 72)
         self.assertEqual(len(instances[1]['relations']), 95)
-        self.assertEqual(len(instances[1]['components']), 68)
+        self.assertEqual(len(instances[1]['components']), 72)

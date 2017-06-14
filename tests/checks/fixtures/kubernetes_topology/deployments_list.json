@@ -1,0 +1,570 @@
+{
+  "kind": "DeploymentList",
+  "apiVersion": "extensions/v1beta1",
+  "metadata": {
+    "selfLink": "/apis/extensions/v1beta1/deployments",
+    "resourceVersion": "1226054"
+  },
+  "items": [
+    {
+      "metadata": {
+        "name": "nginxapp",
+        "namespace": "default",
+        "selfLink": "/apis/extensions/v1beta1/namespaces/default/deployments/nginxapp",
+        "uid": "892cebce-4aaf-11e7-8bc5-0221a2098232",
+        "resourceVersion": "1219487",
+        "generation": 2,
+        "creationTimestamp": "2017-06-06T11:59:03Z",
+        "labels": {
+          "app": "nginxapp"
+        },
+        "annotations": {
+          "deployment.kubernetes.io/revision": "1"
+        }
+      },
+      "spec": {
+        "replicas": 2,
+        "selector": {
+          "matchLabels": {
+            "app": "nginxapp"
+          }
+        },
+        "template": {
+          "metadata": {
+            "name": "nginxapp",
+            "creationTimestamp": null,
+            "labels": {
+              "app": "nginxapp"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "nginxapp",
+                "image": "nginx",
+                "resources": {},
+                "terminationMessagePath": "/dev/termination-log",
+                "imagePullPolicy": "Always",
+                "securityContext": {
+                  "privileged": false
+                }
+              }
+            ],
+            "restartPolicy": "Always",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "ClusterFirst",
+            "securityContext": {}
+          }
+        },
+        "strategy": {
+          "type": "RollingUpdate",
+          "rollingUpdate": {
+            "maxUnavailable": 1,
+            "maxSurge": 1
+          }
+        }
+      },
+      "status": {
+        "observedGeneration": 2,
+        "replicas": 2,
+        "updatedReplicas": 2,
+        "availableReplicas": 2,
+        "conditions": [
+          {
+            "type": "Available",
+            "status": "True",
+            "lastUpdateTime": "2017-06-06T11:59:03Z",
+            "lastTransitionTime": "2017-06-06T11:59:03Z",
+            "reason": "MinimumReplicasAvailable",
+            "message": "Deployment has minimum availability."
+          }
+        ]
+      }
+    },
+    {
+      "metadata": {
+        "name": "heapster-v1.2.0",
+        "namespace": "kube-system",
+        "selfLink": "/apis/extensions/v1beta1/namespaces/kube-system/deployments/heapster-v1.2.0",
+        "uid": "0056b365-46db-11e7-8bc5-0221a2098232",
+        "resourceVersion": "994",
+        "generation": 2,
+        "creationTimestamp": "2017-06-01T15:00:07Z",
+        "labels": {
+          "k8s-app": "heapster",
+          "kubernetes.io/cluster-service": "true",
+          "version": "v1.2.0"
+        },
+        "annotations": {
+          "deployment.kubernetes.io/revision": "2"
+        }
+      },
+      "spec": {
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "k8s-app": "heapster",
+            "version": "v1.2.0"
+          }
+        },
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "k8s-app": "heapster",
+              "version": "v1.2.0"
+            },
+            "annotations": {
+              "scheduler.alpha.kubernetes.io/critical-pod": "",
+              "scheduler.alpha.kubernetes.io/tolerations": "[{\"key\":\"CriticalAddonsOnly\", \"operator\":\"Exists\"}]"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "heapster",
+                "image": "gcr.io/google_containers/heapster:v1.2.0",
+                "command": [
+                  "/heapster",
+                  "--source=kubernetes.summary_api:''"
+                ],
+                "resources": {
+                  "limits": {
+                    "cpu": "144m",
+                    "memory": "264Mi"
+                  },
+                  "requests": {
+                    "cpu": "144m",
+                    "memory": "264Mi"
+                  }
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": 8082,
+                    "scheme": "HTTP"
+                  },
+                  "initialDelaySeconds": 180,
+                  "timeoutSeconds": 5,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "failureThreshold": 3
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "imagePullPolicy": "IfNotPresent"
+              },
+              {
+                "name": "heapster-nanny",
+                "image": "gcr.io/google_containers/addon-resizer:1.6",
+                "command": [
+                  "/pod_nanny",
+                  "--cpu=80m",
+                  "--extra-cpu=4m",
+                  "--memory=200Mi",
+                  "--extra-memory=4Mi",
+                  "--threshold=5",
+                  "--deployment=heapster-v1.2.0",
+                  "--container=heapster",
+                  "--poll-period=300000",
+                  "--estimator=exponential"
+                ],
+                "env": [
+                  {
+                    "name": "MY_POD_NAME",
+                    "valueFrom": {
+                      "fieldRef": {
+                        "apiVersion": "v1",
+                        "fieldPath": "metadata.name"
+                      }
+                    }
+                  },
+                  {
+                    "name": "MY_POD_NAMESPACE",
+                    "valueFrom": {
+                      "fieldRef": {
+                        "apiVersion": "v1",
+                        "fieldPath": "metadata.namespace"
+                      }
+                    }
+                  }
+                ],
+                "resources": {
+                  "limits": {
+                    "cpu": "50m",
+                    "memory": "90Mi"
+                  },
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "90Mi"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "imagePullPolicy": "IfNotPresent"
+              }
+            ],
+            "restartPolicy": "Always",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "ClusterFirst",
+            "securityContext": {}
+          }
+        },
+        "strategy": {
+          "type": "RollingUpdate",
+          "rollingUpdate": {
+            "maxUnavailable": 1,
+            "maxSurge": 1
+          }
+        }
+      },
+      "status": {
+        "observedGeneration": 2,
+        "replicas": 1,
+        "updatedReplicas": 1,
+        "availableReplicas": 1,
+        "conditions": [
+          {
+            "type": "Available",
+            "status": "True",
+            "lastUpdateTime": "2017-06-01T15:00:07Z",
+            "lastTransitionTime": "2017-06-01T15:00:07Z",
+            "reason": "MinimumReplicasAvailable",
+            "message": "Deployment has minimum availability."
+          }
+        ]
+      }
+    },
+    {
+      "metadata": {
+        "name": "kube-dns",
+        "namespace": "kube-system",
+        "selfLink": "/apis/extensions/v1beta1/namespaces/kube-system/deployments/kube-dns",
+        "uid": "004f149a-46db-11e7-8bc5-0221a2098232",
+        "resourceVersion": "1032",
+        "generation": 2,
+        "creationTimestamp": "2017-06-01T15:00:07Z",
+        "labels": {
+          "k8s-app": "kube-dns",
+          "kubernetes.io/cluster-service": "true"
+        },
+        "annotations": {
+          "deployment.kubernetes.io/revision": "1"
+        }
+      },
+      "spec": {
+        "replicas": 2,
+        "selector": {
+          "matchLabels": {
+            "k8s-app": "kube-dns"
+          }
+        },
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "k8s-app": "kube-dns"
+            },
+            "annotations": {
+              "scheduler.alpha.kubernetes.io/critical-pod": "",
+              "scheduler.alpha.kubernetes.io/tolerations": "[{\"key\":\"CriticalAddonsOnly\", \"operator\":\"Exists\"}]"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "kubedns",
+                "image": "gcr.io/google_containers/kubedns-amd64:1.9",
+                "args": [
+                  "--domain=cluster.local.",
+                  "--dns-port=10053",
+                  "--config-map=kube-dns",
+                  "--v=2"
+                ],
+                "ports": [
+                  {
+                    "name": "dns-local",
+                    "containerPort": 10053,
+                    "protocol": "UDP"
+                  },
+                  {
+                    "name": "dns-tcp-local",
+                    "containerPort": 10053,
+                    "protocol": "TCP"
+                  },
+                  {
+                    "name": "metrics",
+                    "containerPort": 10055,
+                    "protocol": "TCP"
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "PROMETHEUS_PORT",
+                    "value": "10055"
+                  }
+                ],
+                "resources": {
+                  "limits": {
+                    "memory": "170Mi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "70Mi"
+                  }
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/healthz-kubedns",
+                    "port": 8080,
+                    "scheme": "HTTP"
+                  },
+                  "initialDelaySeconds": 60,
+                  "timeoutSeconds": 5,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "failureThreshold": 5
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/readiness",
+                    "port": 8081,
+                    "scheme": "HTTP"
+                  },
+                  "initialDelaySeconds": 3,
+                  "timeoutSeconds": 5,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "failureThreshold": 3
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "imagePullPolicy": "IfNotPresent"
+              },
+              {
+                "name": "dnsmasq",
+                "image": "gcr.io/google_containers/kube-dnsmasq-amd64:1.4",
+                "args": [
+                  "--cache-size=1000",
+                  "--no-resolv",
+                  "--server=127.0.0.1#10053",
+                  "--log-facility=-"
+                ],
+                "ports": [
+                  {
+                    "name": "dns",
+                    "containerPort": 53,
+                    "protocol": "UDP"
+                  },
+                  {
+                    "name": "dns-tcp",
+                    "containerPort": 53,
+                    "protocol": "TCP"
+                  }
+                ],
+                "resources": {
+                  "requests": {
+                    "cpu": "150m",
+                    "memory": "10Mi"
+                  }
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/healthz-dnsmasq",
+                    "port": 8080,
+                    "scheme": "HTTP"
+                  },
+                  "initialDelaySeconds": 60,
+                  "timeoutSeconds": 5,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "failureThreshold": 5
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "imagePullPolicy": "IfNotPresent"
+              },
+              {
+                "name": "dnsmasq-metrics",
+                "image": "gcr.io/google_containers/dnsmasq-metrics-amd64:1.0",
+                "args": [
+                  "--v=2",
+                  "--logtostderr"
+                ],
+                "ports": [
+                  {
+                    "name": "metrics",
+                    "containerPort": 10054,
+                    "protocol": "TCP"
+                  }
+                ],
+                "resources": {
+                  "requests": {
+                    "memory": "10Mi"
+                  }
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/metrics",
+                    "port": 10054,
+                    "scheme": "HTTP"
+                  },
+                  "initialDelaySeconds": 60,
+                  "timeoutSeconds": 5,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "failureThreshold": 5
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "imagePullPolicy": "IfNotPresent"
+              },
+              {
+                "name": "healthz",
+                "image": "gcr.io/google_containers/exechealthz-amd64:1.2",
+                "args": [
+                  "--cmd=nslookup kubernetes.default.svc.cluster.local 127.0.0.1 \u003e/dev/null",
+                  "--url=/healthz-dnsmasq",
+                  "--cmd=nslookup kubernetes.default.svc.cluster.local 127.0.0.1:10053 \u003e/dev/null",
+                  "--url=/healthz-kubedns",
+                  "--port=8080",
+                  "--quiet"
+                ],
+                "ports": [
+                  {
+                    "containerPort": 8080,
+                    "protocol": "TCP"
+                  }
+                ],
+                "resources": {
+                  "limits": {
+                    "memory": "50Mi"
+                  },
+                  "requests": {
+                    "cpu": "10m",
+                    "memory": "50Mi"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "imagePullPolicy": "IfNotPresent"
+              }
+            ],
+            "restartPolicy": "Always",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "Default",
+            "securityContext": {}
+          }
+        },
+        "strategy": {
+          "type": "RollingUpdate",
+          "rollingUpdate": {
+            "maxUnavailable": 0,
+            "maxSurge": "10%"
+          }
+        }
+      },
+      "status": {
+        "observedGeneration": 2,
+        "replicas": 2,
+        "updatedReplicas": 2,
+        "availableReplicas": 2,
+        "conditions": [
+          {
+            "type": "Available",
+            "status": "True",
+            "lastUpdateTime": "2017-06-01T15:07:22Z",
+            "lastTransitionTime": "2017-06-01T15:07:22Z",
+            "reason": "MinimumReplicasAvailable",
+            "message": "Deployment has minimum availability."
+          }
+        ]
+      }
+    },
+    {
+      "metadata": {
+        "name": "kube-dns-autoscaler",
+        "namespace": "kube-system",
+        "selfLink": "/apis/extensions/v1beta1/namespaces/kube-system/deployments/kube-dns-autoscaler",
+        "uid": "0053e240-46db-11e7-8bc5-0221a2098232",
+        "resourceVersion": "899",
+        "generation": 1,
+        "creationTimestamp": "2017-06-01T15:00:07Z",
+        "labels": {
+          "k8s-app": "kube-dns-autoscaler",
+          "kubernetes.io/cluster-service": "true"
+        },
+        "annotations": {
+          "deployment.kubernetes.io/revision": "1"
+        }
+      },
+      "spec": {
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "k8s-app": "kube-dns-autoscaler"
+          }
+        },
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "k8s-app": "kube-dns-autoscaler"
+            },
+            "annotations": {
+              "scheduler.alpha.kubernetes.io/critical-pod": "",
+              "scheduler.alpha.kubernetes.io/tolerations": "[{\"key\":\"CriticalAddonsOnly\", \"operator\":\"Exists\"}]"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "autoscaler",
+                "image": "gcr.io/google_containers/cluster-proportional-autoscaler-amd64:1.0.0",
+                "command": [
+                  "/cluster-proportional-autoscaler",
+                  "--namespace=kube-system",
+                  "--configmap=kube-dns-autoscaler",
+                  "--mode=linear",
+                  "--target=Deployment/kube-dns",
+                  "--default-params={\"linear\":{\"coresPerReplica\":256,\"nodesPerReplica\":16,\"min\":2}}",
+                  "--logtostderr=true",
+                  "--v=2"
+                ],
+                "resources": {
+                  "requests": {
+                    "cpu": "20m",
+                    "memory": "10Mi"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "imagePullPolicy": "IfNotPresent"
+              }
+            ],
+            "restartPolicy": "Always",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "ClusterFirst",
+            "securityContext": {}
+          }
+        },
+        "strategy": {
+          "type": "RollingUpdate",
+          "rollingUpdate": {
+            "maxUnavailable": 1,
+            "maxSurge": 1
+          }
+        }
+      },
+      "status": {
+        "observedGeneration": 1,
+        "replicas": 1,
+        "updatedReplicas": 1,
+        "availableReplicas": 1,
+        "conditions": [
+          {
+            "type": "Available",
+            "status": "True",
+            "lastUpdateTime": "2017-06-01T15:00:07Z",
+            "lastTransitionTime": "2017-06-01T15:00:07Z",
+            "reason": "MinimumReplicasAvailable",
+            "message": "Deployment has minimum availability."
+          }
+        ]
+      }
+    }
+  ]
+}

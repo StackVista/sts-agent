@@ -50,11 +50,13 @@ class KubernetesTopology(AgentCheck):
         self._extract_nodes(kubeutil, instance_key)
         self._extract_pods(kubeutil, instance_key)
         self._link_pods_to_services(kubeutil, instance_key)
+        self._extract_deployments(kubeutil, instance_key)
 
     def _extract_services(self, kubeutil, instance_key):
         for service in kubeutil.retrieve_services_list()['items']:
             data = dict()
             data['type'] = service['spec']['type']
+            data['namespace'] = service['metadata']['namespace']
             data['ports'] = service['spec']['ports']
             data['labels'] = self._flatten_dict(kubeutil.extract_metadata_labels(service['metadata']))
             if 'clusterIP' in service['spec'].keys():
@@ -72,12 +74,21 @@ class KubernetesTopology(AgentCheck):
             data['hostname'] = addresses['Hostname']
             self.component(instance_key, node['metadata']['name'], {'name': 'KUBERNETES_NODE'}, data)
 
+    def _extract_deployments(self, kubeutil, instance_key):
+        for deployment in kubeutil.retrieve_deployments_list()['items']:
+            data = dict()
+            data['namespace'] = deployment['metadata']['namespace']
+            data['labels'] = self._flatten_dict(kubeutil.extract_metadata_labels(deployment['metadata']))
+            externalId = "deployments: %s" % deployment['metadata']['name']
+            self.component(instance_key, externalId, {'name': 'KUBERNETES_DEPLOYMENT'}, data)
+
     def _extract_pods(self, kubeutil, instance_key):
         replicasets = defaultdict(list)
         for pod in kubeutil.retrieve_pods_list()['items']:
             data = dict()
             pod_name = pod['metadata']['name']
             data['uid'] = pod['metadata']['uid']
+            data['namespace'] = pod['metadata']['namespace']
             data['labels'] = self._flatten_dict(kubeutil.extract_metadata_labels(pod['metadata']))
 
             self.component(instance_key, pod_name, {'name': 'KUBERNETES_POD'}, data)
@@ -86,7 +97,7 @@ class KubernetesTopology(AgentCheck):
             self.relation(instance_key, pod_name, pod['spec']['nodeName'], {'name': 'PLACED_ON'}, relation_data)
 
             if 'containerStatuses' in pod['status'].keys():
-                self._extract_containers(instance_key, pod_name, pod['status']['podIP'], pod['status']['hostIP'], pod['spec']['nodeName'], pod['status']['containerStatuses'])
+                self._extract_containers(instance_key, pod_name, pod['status']['podIP'], pod['status']['hostIP'], pod['spec']['nodeName'], pod['metadata']['namespace'], pod['status']['containerStatuses'])
 
             if 'ownerReferences' in pod['metadata'].keys():
                 for reference in pod['metadata']['ownerReferences']:
@@ -98,13 +109,14 @@ class KubernetesTopology(AgentCheck):
         for replicaset_name in replicasets:
             self.component(instance_key, replicaset_name, {'name': 'KUBERNETES_REPLICASET'}, dict())
             for pod in replicasets[replicaset_name]:
-                self.relation(instance_key, pod['name'], replicaset_name, {'name': 'CONTROLLED_BY'}, dict())
+                self.relation(instance_key, replicaset_name, pod['name'], {'name': 'CONTROLS'}, dict())
 
-    def _extract_containers(self, instance_key, pod_name, pod_ip, host_ip, host_name, statuses):
+    def _extract_containers(self, instance_key, pod_name, pod_ip, host_ip, host_name, namespace, statuses):
         for containerStatus in statuses:
             container_id = containerStatus['containerID']
             data = dict()
             data['ip_addresses'] = [pod_ip, host_ip]
+            data['namespace'] = namespace
             data['docker'] = {
                 'image': containerStatus['image'],
                 'container_id': container_id
