@@ -33,7 +33,7 @@ class KubeUtil:
     DEFAULT_MASTER_METHOD = 'https'
     DEFAULT_MASTER_PORT = 443
     DEFAULT_MASTER_NAME = 'kubernetes'  # DNS name to reach the master from a pod.
-    DEFAULT_USE_KUBE_AUTH = False  # DNS name to reach the master from a pod.
+    DEFAULT_USE_KUBE_AUTH = False
     CA_CRT_PATH = '/run/secrets/kubernetes.io/serviceaccount/ca.crt'
     AUTH_TOKEN_PATH = '/run/secrets/kubernetes.io/serviceaccount/token'
     DEFAULT_TIMEOUT_SECONDS = 10
