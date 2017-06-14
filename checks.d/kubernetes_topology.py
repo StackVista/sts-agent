@@ -58,7 +58,7 @@ class KubernetesTopology(AgentCheck):
             data['type'] = service['spec']['type']
             data['namespace'] = service['metadata']['namespace']
             data['ports'] = service['spec']['ports']
-            data['labels'] = self._flatten_dict(kubeutil.extract_metadata_labels(service['metadata']))
+            data['labels'] = self._make_labels(kubeutil, service['metadata'])
             if 'clusterIP' in service['spec'].keys():
                 data['cluster_ip'] = service['spec']['clusterIP']
             self.component(instance_key, service['metadata']['name'], {'name': 'KUBERNETES_SERVICE'}, data)
@@ -67,7 +67,7 @@ class KubernetesTopology(AgentCheck):
         for node in kubeutil.retrieve_nodes_list()['items']:
             data = dict()
             addresses = {item['type']: item['address'] for item in node['status']['addresses']}
-            data['labels'] = self._flatten_dict(kubeutil.extract_metadata_labels(node['metadata']))
+            data['labels'] = self._make_labels(kubeutil, node['metadata'])
             data['internal_ip'] = addresses['InternalIP']
             data['legacy_host_ip'] = addresses['LegacyHostIP']
             data['external_ip'] = addresses['ExternalIP']
@@ -77,10 +77,19 @@ class KubernetesTopology(AgentCheck):
     def _extract_deployments(self, kubeutil, instance_key):
         for deployment in kubeutil.retrieve_deployments_list()['items']:
             data = dict()
+            externalId = "deployment: %s" % deployment['metadata']['name']
             data['namespace'] = deployment['metadata']['namespace']
             data['name'] = deployment['metadata']['name']
-            data['labels'] = self._flatten_dict(kubeutil.extract_metadata_labels(deployment['metadata']))
-            externalId = "deployment: %s" % deployment['metadata']['name']
+            data['labels'] = self._make_labels(kubeutil, deployment['metadata'])
+
+            deployment_template = deployment['spec']['template']
+            if deployment_template and deployment_template['metadata']['labels']:
+                data['template_labels'] = self._make_labels(kubeutil, deployment_template['metadata'])
+                replicasets = kubeutil.retrieve_replicaset_filtered_list(deployment['metadata']['namespace'], deployment_template['metadata']['labels'])
+                if replicasets['items']:
+                    for replicaset in replicasets['items']:
+                        self.relation(instance_key, externalId, replicaset['metadata']['name'], {'name': 'CREATED'}, dict())
+
             self.component(instance_key, externalId, {'name': 'KUBERNETES_DEPLOYMENT'}, data)
 
     def _extract_pods(self, kubeutil, instance_key):
@@ -91,7 +100,7 @@ class KubernetesTopology(AgentCheck):
             pod_name = pod['metadata']['name']
             data['uid'] = pod['metadata']['uid']
             data['namespace'] = pod['metadata']['namespace']
-            data['labels'] = self._flatten_dict(kubeutil.extract_metadata_labels(pod['metadata']))
+            data['labels'] = self._make_labels(kubeutil, pod['metadata'])
 
             self.component(instance_key, pod_name, {'name': 'KUBERNETES_POD'}, data)
 
@@ -109,7 +118,7 @@ class KubernetesTopology(AgentCheck):
                         replicasets_to_pods[reference['name']].append(data)
                         if reference['name'] not in replicaset_to_data:
                             replicaset_data = dict()
-                            replicaset_data['labels'] = self._flatten_dict(kubeutil.extract_metadata_labels(pod['metadata']))
+                            replicaset_data['labels'] = self._make_labels(kubeutil, pod['metadata'])
                             replicaset_data['namespace'] = pod['metadata']['namespace']
                             replicaset_to_data[reference['name']] = replicaset_data
 
@@ -143,6 +152,12 @@ class KubernetesTopology(AgentCheck):
                         data = dict()
                         pod_name = address['targetRef']['name']
                         self.relation(instance_key, service_name, pod_name, {'name': 'EXPOSES'}, data)
+
+    def _make_labels(self, kubeutil, metadata):
+        original_labels = self._flatten_dict(kubeutil.extract_metadata_labels(metadata))
+        if 'namespace' in metadata:
+            original_labels.append("namespace:%s" % metadata['namespace'])
+        return original_labels
 
     def _flatten_dict(self, dict_of_list):
         from itertools import chain

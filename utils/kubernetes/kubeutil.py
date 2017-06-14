@@ -26,6 +26,7 @@ class KubeUtil:
     MACHINE_INFO_PATH = '/api/v1.3/machine/'
     METRICS_PATH = '/api/v1.3/subcontainers/'
     DEPLOYMENTS_LIST_PATH = 'deployments/'
+    REPLICASETS_LIST_PATH = 'replicasets/'
     PODS_LIST_PATH = 'pods/'
     SERVICES_LIST_PATH = 'services/'
     NODES_LIST_PATH = 'nodes/'
@@ -83,6 +84,7 @@ class KubeUtil:
         self.endpoints_list_url = urljoin(self.kubernetes_api_url, KubeUtil.ENDPOINTS_LIST_PATH)
         self.pods_list_url = urljoin(self.kubernetes_api_url, KubeUtil.PODS_LIST_PATH)
         self.deployments_list_url = urljoin(self.kubernetes_api_extension_url, KubeUtil.DEPLOYMENTS_LIST_PATH)
+
         self.kube_health_url = urljoin(self.kubelet_api_url, 'healthz')
 
         # keep track of the latest k8s event we collected and posted
@@ -190,6 +192,29 @@ class KubeUtil:
         Retrieve the list of deployments for this cluster querying the kublet API extensions.
         """
         return retrieve_json(url=self.deployments_list_url, timeout=self.timeoutSeconds)
+
+    def retrieve_replicaset_filtered_list(self, namespace = None, labels_dict = None):
+        """
+        Retrieve the list of replicasets for given parameters, namespace and labels selector.
+        """
+        if labels_dict and len(labels_dict) > 0:
+            params = "?labelSelector=%s" % self._to_label_selector(labels_dict)
+        else:
+            params = ""
+
+        if namespace:
+            fetch_url = "%snamespaces/%s/%s%s" % (self.kubernetes_api_extension_url, namespace, KubeUtil.REPLICASETS_LIST_PATH, params)
+        else:
+            fetch_url = "%s%s%s" % (self.kubernetes_api_extension_url, KubeUtil.REPLICASETS_LIST_PATH, params)
+
+        return self._retrieve_replicaset_list(fetch_url)
+
+    def _retrieve_replicaset_list(self, fetch_url):
+        return retrieve_json(url=fetch_url, timeout=self.timeoutSeconds)
+
+    def _to_label_selector(self, labels_dict):
+        labels = ["%s%%3D%s" % (name, value) for name, value in labels_dict.items()]
+        return ",".join(labels)
 
     def filter_pods_list(self, pods_list, host_ip):
         """

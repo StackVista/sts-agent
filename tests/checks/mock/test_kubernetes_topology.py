@@ -20,6 +20,8 @@ class TestKubernetesTopology(AgentCheckTest):
                 side_effect=lambda: json.loads(Fixtures.read_file("services_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_pods_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("pods_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil._retrieve_replicaset_list',
+                side_effect=lambda url: json.loads(Fixtures.read_file("replicaset_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_endpoints_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("endpoints_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_deployments_list',
@@ -34,7 +36,7 @@ class TestKubernetesTopology(AgentCheckTest):
             'url': 'http://kubernetes'
         })
 
-        self.assertEqual(len(instances[0]['relations']), 95)
+        self.assertEqual(len(instances[0]['relations']), 99)
 
         pod_name_client = 'client-3129927420-r90fc'
         pod_name_service = 'raboof1-1475403310-kc380'
@@ -80,7 +82,7 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(service['data']['cluster_ip'], '10.3.0.149')
         self.assertEqual(service['data']['namespace'], 'default')
         self.assertEqual(service['data']['labels'],
-            [u'kube_k8s-app:heapster',u'kube_kubernetes.io/cluster-service:true',u'kube_kubernetes.io/name:Heapster'])
+            [u'kube_k8s-app:heapster',u'kube_kubernetes.io/cluster-service:true',u'kube_kubernetes.io/name:Heapster',u'namespace:default'])
 
         first_node = 6
         node = instances[0]['components'][first_node]
@@ -104,7 +106,8 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(pod['data'], {
             'labels': [u'kube_app:client',
                        u'kube_pod-template-hash:3129927420',
-                       u'kube_version:1'],
+                       u'kube_version:1',
+                       u'namespace:default'],
             'namespace': 'default',
             'uid': u'6771158d-f826-11e6-ae06-020c94063ecf'
         })
@@ -126,7 +129,8 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(replicaset['data'], {
             'labels': [u'kube_k8s-app:heapster',
                        u'kube_pod-template-hash:4088228293',
-                       u'kube_version:v1.2.0'],
+                       u'kube_version:v1.2.0',
+                       u'namespace:kube-system'],
             'namespace': u'kube-system'
         })
 
@@ -134,9 +138,10 @@ class TestKubernetesTopology(AgentCheckTest):
         deployment = instances[0]['components'][first_deployment]
         self.assertEqual(deployment['type'], {'name': 'KUBERNETES_DEPLOYMENT'})
         self.assertEqual(deployment['data'], {
-            'labels': [u'kube_app:nginxapp'],
+            'namespace': u'default',
+            'labels': [u'kube_app:nginxapp', u'namespace:default'],
             'name': u'nginxapp',
-            'namespace': u'default'
+            'template_labels': [u'kube_app:nginxapp']
         })
 
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_services_list',
@@ -179,6 +184,8 @@ class TestKubernetesTopology(AgentCheckTest):
                 side_effect=lambda: json.loads(Fixtures.read_file("services_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_deployments_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("deployments_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil._retrieve_replicaset_list',
+                side_effect=lambda url: json.loads(Fixtures.read_file("replicaset_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_pods_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("pods_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_endpoints_list',
@@ -198,7 +205,7 @@ class TestKubernetesTopology(AgentCheckTest):
             'url': 'http://bar'
         })
 
-        self.assertEqual(len(instances[0]['relations']), 95)
+        self.assertEqual(len(instances[0]['relations']), 99)
         self.assertEqual(len(instances[0]['components']), 72)
-        self.assertEqual(len(instances[1]['relations']), 95)
+        self.assertEqual(len(instances[1]['relations']), 99)
         self.assertEqual(len(instances[1]['components']), 72)
