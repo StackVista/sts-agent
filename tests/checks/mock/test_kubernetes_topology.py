@@ -124,6 +124,20 @@ class TestKubernetesTopology(AgentCheckTest):
         replicaset = instances[0]['components'][first_replicaset]
         self.assertEqual(replicaset['type'], {'name': 'KUBERNETES_REPLICASET'})
 
+        first_deployment = len(instances[0]['components']) - 4
+        deployment = instances[0]['components'][first_deployment]
+        self.assertEqual(deployment['type'], {'name': 'KUBERNETES_DEPLOYMENT'})
+        self.assertEqual(deployment['data'], {
+            'labels': [u'kube_app:nginxapp'],
+            'name': u'nginxapp',
+            'namespace': u'default'
+        })
+
+        {'data': {'labels': [u'kube_app:nginxapp'],
+                                   'namespace': u'default'},
+                          'externalId': u'deployments: nginxapp',
+                          'type': {'name': 'KUBERNETES_DEPLOYMENT'}}
+
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_services_list',
                 side_effect=requests.exceptions.ReadTimeout())
     def test_kube_timeout_exception(self, *args):

@@ -78,8 +78,9 @@ class KubernetesTopology(AgentCheck):
         for deployment in kubeutil.retrieve_deployments_list()['items']:
             data = dict()
             data['namespace'] = deployment['metadata']['namespace']
+            data['name'] = deployment['metadata']['name']
             data['labels'] = self._flatten_dict(kubeutil.extract_metadata_labels(deployment['metadata']))
-            externalId = "deployments: %s" % deployment['metadata']['name']
+            externalId = "deployment: %s" % deployment['metadata']['name']
             self.component(instance_key, externalId, {'name': 'KUBERNETES_DEPLOYMENT'}, data)
 
     def _extract_pods(self, kubeutil, instance_key):
