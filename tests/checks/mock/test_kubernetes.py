@@ -369,17 +369,17 @@ class TestKubeutil(unittest.TestCase):
     @mock.patch('utils.kubernetes.kubeutil.retrieve_json')
     def test_retrieve_pods_list(self, retrieve_json):
         self.kubeutil.retrieve_pods_list()
-        retrieve_json.assert_called_once_with(self.kubeutil.pods_list_url)
+        retrieve_json.assert_called_once_with(timeout=10, url=self.kubeutil.pods_list_url)
 
     @mock.patch('utils.kubernetes.kubeutil.retrieve_json')
     def test_retrieve_machine_info(self, retrieve_json):
         self.kubeutil.retrieve_machine_info()
-        retrieve_json.assert_called_once_with(self.kubeutil.machine_info_url)
+        retrieve_json.assert_called_once_with(timeout=10, url=self.kubeutil.machine_info_url)
 
     @mock.patch('utils.kubernetes.kubeutil.retrieve_json')
     def test_retrieve_metrics(self, retrieve_json):
         self.kubeutil.retrieve_metrics()
-        retrieve_json.assert_called_once_with(self.kubeutil.metrics_url)
+        retrieve_json.assert_called_once_with(timeout=10, url=self.kubeutil.metrics_url)
 
     def test_filter_pods_list(self):
         """
@@ -415,6 +415,7 @@ class TestKubeutil(unittest.TestCase):
 
     def test_get_node_info(self):
         with mock.patch('utils.kubernetes.KubeUtil._fetch_host_data') as f:
+            self.kubeutil._node_ip = self.kubeutil._node_name = None
             self.kubeutil.get_node_info()
             f.assert_called_once()
 

@@ -4,9 +4,31 @@ import requests
 
 
 # project
+from utils.kubernetes import KubeUtil
 from tests.checks.common import Fixtures, AgentCheckTest
 
 import mock
+
+class TestKubernetesTopologyMocks:
+
+    json_auth_urls = []
+
+    @staticmethod
+    def assure_retrieve_json_auth_called(_self, url, auth_token, timeout):
+        TestKubernetesTopologyMocks.json_auth_urls.append(url)
+        assert auth_token == "DummyToken"
+
+        if url.endswith(KubeUtil.NODES_LIST_PATH):
+            return json.loads(Fixtures.read_file("nodes_list.json", string_escape=False))
+        elif url.endswith(KubeUtil.PODS_LIST_PATH):
+            return json.loads(Fixtures.read_file("pods_list.json", string_escape=False))
+        elif url.endswith(KubeUtil.SERVICES_LIST_PATH):
+            return json.loads(Fixtures.read_file("services_list.json", string_escape=False))
+        elif url.endswith(KubeUtil.ENDPOINTS_LIST_PATH):
+            return json.loads(Fixtures.read_file("endpoints_list.json", string_escape=False))
+        else:
+            raise Exception("No matching mock data for URL: %s" % url)
+
 
 class TestKubernetesTopology(AgentCheckTest):
 
@@ -218,3 +240,17 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(len(instances[0]['components']), 72)
         self.assertEqual(len(instances[1]['relations']), 99)
         self.assertEqual(len(instances[1]['components']), 72)
+
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_json_auth',side_effect=TestKubernetesTopologyMocks.assure_retrieve_json_auth_called,autospec=True)
+    @mock.patch('utils.kubernetes.KubeUtil.get_auth_token',side_effect=lambda: "DummyToken")
+    def test_kube_retrieve_json(self, *args):
+
+        # Set configuration to true
+        self.run_check({'instances': [{'use_kube_auth': True, 'host': 'foo'}]})
+
+        self.assertEqual(TestKubernetesTopologyMocks.json_auth_urls, [
+            "https://kubernetes:443/api/v1/services/",
+            "https://kubernetes:443/api/v1/nodes/",
+            "https://kubernetes:443/api/v1/pods/",
+            "https://kubernetes:443/api/v1/endpoints/",
+        ])

@@ -10,6 +10,7 @@ instances:
   #
   # To override, e.g. in the case of a standalone instance, use the following:
   #
- - master_method: http
-   master_name: localhost
-   master_port: 8080
+ - master_method: https
+   master_name: kubernetes
+   master_port: 443
+   use_kube_auth: true
