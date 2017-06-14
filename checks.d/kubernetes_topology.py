@@ -133,6 +133,7 @@ class KubernetesTopology(AgentCheck):
             data = dict()
             data['ip_addresses'] = [pod_ip, host_ip]
             data['namespace'] = namespace
+            data['labels'] = ["namespace:%s" % namespace]
             data['docker'] = {
                 'image': containerStatus['image'],
                 'container_id': container_id

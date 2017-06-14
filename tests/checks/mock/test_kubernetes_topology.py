@@ -42,6 +42,8 @@ class TestKubernetesTopology(AgentCheckTest):
         pod_name_service = 'raboof1-1475403310-kc380'
         node_name = 'ip-10-0-0-198.eu-west-1.compute.internal'
         service_name = 'raboof1'
+        deployment_nginx = 'deployment: nginxapp'
+        replicaset_nginx = 'nginx-1308548177-tq2xl'
 
         podToNode = instances[0]['relations'][0]
         self.assertEqual(podToNode['type'], {'name': 'PLACED_ON'})
@@ -72,6 +74,12 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(podToReplicaSet['type'], {'name': 'CONTROLS'})
         self.assertEqual(podToReplicaSet['sourceId'], 'client-3129927420')
         self.assertEqual(podToReplicaSet['targetId'], pod_name_client)
+
+        first_created = len(instances[0]['relations']) - 4
+        created = instances[0]['relations'][first_created]
+        self.assertEqual(created['type'], {'name': 'CREATED'})
+        self.assertEqual(created['sourceId'], deployment_nginx)
+        self.assertEqual(created['targetId'], replicaset_nginx)
 
         self.assertEqual(len(instances[0]['components']), 72)
         first_service = 0
@@ -120,6 +128,7 @@ class TestKubernetesTopology(AgentCheckTest):
                 'container_id': u'docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359',
                 'image': u'raboof/client:1'
             },
+            'labels': ['namespace:default'],
             'namespace': 'default'
         })
 
