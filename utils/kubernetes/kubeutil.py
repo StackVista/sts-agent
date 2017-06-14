@@ -9,7 +9,6 @@ from urlparse import urljoin
 from util import check_yaml
 from utils.checkfiles import get_conf_path
 from utils.http import retrieve_json
-from utils.singleton import Singleton
 from utils.dockerutil import DockerUtil
 
 import requests
