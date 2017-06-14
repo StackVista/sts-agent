@@ -139,11 +139,6 @@ class TestKubernetesTopology(AgentCheckTest):
             'namespace': u'default'
         })
 
-        {'data': {'labels': [u'kube_app:nginxapp'],
-                                   'namespace': u'default'},
-                          'externalId': u'deployments: nginxapp',
-                          'type': {'name': 'KUBERNETES_DEPLOYMENT'}}
-
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_services_list',
                 side_effect=requests.exceptions.ReadTimeout())
     def test_kube_timeout_exception(self, *args):
