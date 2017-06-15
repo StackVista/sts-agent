@@ -23,6 +23,8 @@ class KubeUtil:
     DEFAULT_METHOD = 'http'
     MACHINE_INFO_PATH = '/api/v1.3/machine/'
     METRICS_PATH = '/api/v1.3/subcontainers/'
+    DEPLOYMENTS_LIST_PATH = 'deployments/'
+    REPLICASETS_LIST_PATH = 'replicasets/'
     PODS_LIST_PATH = 'pods/'
     SERVICES_LIST_PATH = 'services/'
     NODES_LIST_PATH = 'nodes/'
@@ -73,6 +75,7 @@ class KubeUtil:
         self.cadvisor_url = '%s://%s:%d' % (self.method, self.host, self.cadvisor_port)
         self.master_host = os.environ.get('KUBERNETES_SERVICE_HOST') or ('%s:%d' % (self.master_name, self.master_port))
         self.kubernetes_api_url = '%s://%s/api/v1/' % (self.master_method, self.master_host)
+        self.kubernetes_api_extension_url = '%s://%s/apis/extensions/v1beta1/' % (self.master_method, self.master_host)
 
         self.metrics_url = urljoin(self.cadvisor_url, KubeUtil.METRICS_PATH)
         self.machine_info_url = urljoin(self.cadvisor_url, KubeUtil.MACHINE_INFO_PATH)
@@ -80,6 +83,8 @@ class KubeUtil:
         self.services_list_url = urljoin(self.kubernetes_api_url, KubeUtil.SERVICES_LIST_PATH)
         self.endpoints_list_url = urljoin(self.kubernetes_api_url, KubeUtil.ENDPOINTS_LIST_PATH)
         self.pods_list_url = urljoin(self.kubernetes_api_url, KubeUtil.PODS_LIST_PATH)
+        self.deployments_list_url = urljoin(self.kubernetes_api_extension_url, KubeUtil.DEPLOYMENTS_LIST_PATH)
+
         self.kube_health_url = urljoin(self.kubelet_api_url, 'healthz')
 
         # keep track of the latest k8s event we collected and posted
@@ -188,6 +193,47 @@ class KubeUtil:
         else:
             return retrieve_json(url=url, timeout=self.timeoutSeconds)
 
+    def retrieve_deployments_list(self):
+        """
+        Retrieve the list of deployments for this cluster querying the kublet API extensions.
+        https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+        """
+        return self.retrieve_json_with_optional_auth(url=self.deployments_list_url)
+
+    def retrieve_replicaset_filtered_list(self, namespace = None, labels_dict = None):
+        """
+        Retrieve the list of replicasets for given parameters, namespace and labels selector.
+        https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+
+        The replicaset filter is very similar to how it is implemented in kubernetes dashboard:
+        https://github.com/kubernetes/dashboard/blob/master/src/app/backend/resource/deployment/detail.go
+        https://github.com/kubernetes/dashboard/blob/master/src/app/backend/resource/common/resourcechannels.go
+        """
+        if labels_dict and len(labels_dict) > 0:
+            params = "?labelSelector=%s" % self._to_label_selector(labels_dict)
+        else:
+            params = ""
+
+        if namespace:
+            fetch_url = "%snamespaces/%s/%s%s" % (self.kubernetes_api_extension_url, namespace, KubeUtil.REPLICASETS_LIST_PATH, params)
+        else:
+            fetch_url = "%s%s%s" % (self.kubernetes_api_extension_url, KubeUtil.REPLICASETS_LIST_PATH, params)
+
+        return self._retrieve_replicaset_list(fetch_url=fetch_url)
+
+    def _retrieve_replicaset_list(self, fetch_url):
+        """
+        Retrieve the list of replicasets for given parameters, namespace and labels selector.
+        https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+        """
+        return self.retrieve_json_with_optional_auth(url=fetch_url)
+
+    def _to_label_selector(self, labels_dict):
+        """
+        Render labels dict {'app': 'nginxapp', 'pod-template-hash': 275046495} to a label selector in a form "app%3Dnginxapp,pod-template-hash%3D275046495"
+        """
+        labels = ["%s%%3D%s" % (name, value) for name, value in labels_dict.items()]
+        return ",".join(labels)
 
     def filter_pods_list(self, pods_list, host_ip):
         """

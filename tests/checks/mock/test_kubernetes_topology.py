@@ -26,6 +26,10 @@ class TestKubernetesTopologyMocks:
             return json.loads(Fixtures.read_file("services_list.json", string_escape=False))
         elif url.endswith(KubeUtil.ENDPOINTS_LIST_PATH):
             return json.loads(Fixtures.read_file("endpoints_list.json", string_escape=False))
+        elif url.endswith(KubeUtil.DEPLOYMENTS_LIST_PATH):
+            return json.loads(Fixtures.read_file("deployments_list.json", string_escape=False))
+        elif KubeUtil.REPLICASETS_LIST_PATH in url:
+            return json.loads(Fixtures.read_file("replicaset_list.json", string_escape=False))
         else:
             raise Exception("No matching mock data for URL: %s" % url)
 
@@ -42,8 +46,12 @@ class TestKubernetesTopology(AgentCheckTest):
                 side_effect=lambda: json.loads(Fixtures.read_file("services_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_pods_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("pods_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil._retrieve_replicaset_list',
+                side_effect=lambda fetch_url: json.loads(Fixtures.read_file("replicaset_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_endpoints_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("endpoints_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_deployments_list',
+                side_effect=lambda: json.loads(Fixtures.read_file("deployments_list.json", string_escape=False)))
     def test_kube_topo(self, *args):
         self.run_check({'instances': [{'host': 'foo'}]})
 
@@ -54,15 +62,17 @@ class TestKubernetesTopology(AgentCheckTest):
             'url': 'http://kubernetes'
         })
 
-        self.assertEqual(len(instances[0]['relations']), 95)
+        self.assertEqual(len(instances[0]['relations']), 99)
 
         pod_name_client = 'client-3129927420-r90fc'
         pod_name_service = 'raboof1-1475403310-kc380'
         node_name = 'ip-10-0-0-198.eu-west-1.compute.internal'
         service_name = 'raboof1'
+        deployment_nginx = 'deployment: nginxapp'
+        replicaset_nginx = 'nginx-1308548177-tq2xl'
 
         podToNode = instances[0]['relations'][0]
-        self.assertEqual(podToNode['type'], {'name': 'HOSTED_ON'})
+        self.assertEqual(podToNode['type'], {'name': 'PLACED_ON'})
         self.assertEqual(podToNode['sourceId'], pod_name_client)
         self.assertEqual(podToNode['targetId'], node_name)
 
@@ -77,7 +87,7 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(containerToNode['targetId'], node_name)
 
         podToNode = instances[0]['relations'][12]
-        self.assertEqual(podToNode['type'], {'name': 'HOSTED_ON'})
+        self.assertEqual(podToNode['type'], {'name': 'PLACED_ON'})
         self.assertEqual(podToNode['sourceId'], pod_name_service)
         self.assertEqual(podToNode['targetId'], node_name)
 
@@ -87,18 +97,26 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(podToService['targetId'], pod_name_service)
 
         podToReplicaSet = instances[0]['relations'][84]
-        self.assertEqual(podToReplicaSet['type'], {'name': 'CONTROLLED_BY'})
-        self.assertEqual(podToReplicaSet['sourceId'], pod_name_client)
-        self.assertEqual(podToReplicaSet['targetId'], 'client-3129927420')
+        self.assertEqual(podToReplicaSet['type'], {'name': 'CONTROLS'})
+        self.assertEqual(podToReplicaSet['sourceId'], 'client-3129927420')
+        self.assertEqual(podToReplicaSet['targetId'], pod_name_client)
 
-        self.assertEqual(len(instances[0]['components']), 68)
+        first_created = len(instances[0]['relations']) - 4
+        created = instances[0]['relations'][first_created]
+        self.assertEqual(created['type'], {'name': 'CREATED'})
+        self.assertEqual(created['sourceId'], deployment_nginx)
+        self.assertEqual(created['targetId'], replicaset_nginx)
+
+        self.assertEqual(len(instances[0]['components']), 72)
         first_service = 0
         service = instances[0]['components'][first_service]
         self.assertEqual(service['type'], {'name': 'KUBERNETES_SERVICE'})
         self.assertEqual(service['data']['type'], 'NodePort')
+        self.assertEqual(service['data']['ports'], [{u'nodePort': 30285, u'port': 8082, u'protocol': u'TCP', u'targetPort': 8082}])
         self.assertEqual(service['data']['cluster_ip'], '10.3.0.149')
+        self.assertEqual(service['data']['namespace'], 'default')
         self.assertEqual(service['data']['labels'],
-            [u'kube_k8s-app:heapster',u'kube_kubernetes.io/cluster-service:true',u'kube_kubernetes.io/name:Heapster'])
+            [u'kube_k8s-app:heapster',u'kube_kubernetes.io/cluster-service:true',u'kube_kubernetes.io/name:Heapster',u'namespace:default'])
 
         first_node = 6
         node = instances[0]['components'][first_node]
@@ -122,7 +140,9 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(pod['data'], {
             'labels': [u'kube_app:client',
                        u'kube_pod-template-hash:3129927420',
-                       u'kube_version:1'],
+                       u'kube_version:1',
+                       u'namespace:default'],
+            'namespace': 'default',
             'uid': u'6771158d-f826-11e6-ae06-020c94063ecf'
         })
 
@@ -133,12 +153,33 @@ class TestKubernetesTopology(AgentCheckTest):
             'docker': {
                 'container_id': u'docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359',
                 'image': u'raboof/client:1'
-            }
+            },
+            'labels': ['namespace:default'],
+            'namespace': 'default'
         })
 
         first_replicaset = first_pod + 51
         replicaset = instances[0]['components'][first_replicaset]
         self.assertEqual(replicaset['type'], {'name': 'KUBERNETES_REPLICASET'})
+        self.assertEqual(replicaset['data'], {
+            'labels': [u'kube_k8s-app:heapster',
+                       u'kube_pod-template-hash:4088228293',
+                       u'kube_version:v1.2.0',
+                       u'namespace:kube-system'],
+            'namespace': u'kube-system'
+        })
+
+        first_deployment = len(instances[0]['components']) - 4
+        deployment = instances[0]['components'][first_deployment]
+        self.assertEqual(deployment['type'], {'name': 'KUBERNETES_DEPLOYMENT'})
+        self.assertEqual(deployment['data'], {
+            'namespace': u'default',
+            'labels': [u'kube_app:nginxapp', u'namespace:default'],
+            'name': u'nginxapp',
+            'template_labels': [u'kube_app:nginxapp']
+        })
+
+        self.assertEquals(len(self.service_checks), 0, "no errors expected")
 
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_services_list',
                 side_effect=requests.exceptions.ReadTimeout())
@@ -178,6 +219,10 @@ class TestKubernetesTopology(AgentCheckTest):
                 side_effect=lambda: json.loads(Fixtures.read_file("nodes_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_services_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("services_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_deployments_list',
+                side_effect=lambda: json.loads(Fixtures.read_file("deployments_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil._retrieve_replicaset_list',
+                side_effect=lambda fetch_url: json.loads(Fixtures.read_file("replicaset_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_pods_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("pods_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_endpoints_list',
@@ -197,10 +242,10 @@ class TestKubernetesTopology(AgentCheckTest):
             'url': 'http://bar'
         })
 
-        self.assertEqual(len(instances[0]['relations']), 95)
-        self.assertEqual(len(instances[0]['components']), 68)
-        self.assertEqual(len(instances[1]['relations']), 95)
-        self.assertEqual(len(instances[1]['components']), 68)
+        self.assertEqual(len(instances[0]['relations']), 99)
+        self.assertEqual(len(instances[0]['components']), 72)
+        self.assertEqual(len(instances[1]['relations']), 99)
+        self.assertEqual(len(instances[1]['components']), 72)
 
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_json_auth',side_effect=TestKubernetesTopologyMocks.assure_retrieve_json_auth_called,autospec=True)
     @mock.patch('utils.kubernetes.KubeUtil.get_auth_token',side_effect=lambda: "DummyToken")
@@ -214,4 +259,11 @@ class TestKubernetesTopology(AgentCheckTest):
             "https://kubernetes:443/api/v1/nodes/",
             "https://kubernetes:443/api/v1/pods/",
             "https://kubernetes:443/api/v1/endpoints/",
+            "https://kubernetes:443/apis/extensions/v1beta1/deployments/",
+            "https://kubernetes:443/apis/extensions/v1beta1/namespaces/default/replicasets/?labelSelector=app%3Dnginxapp",
+            "https://kubernetes:443/apis/extensions/v1beta1/namespaces/kube-system/replicasets/?labelSelector=k8s-app%3Dheapster,version%3Dv1.2.0",
+            "https://kubernetes:443/apis/extensions/v1beta1/namespaces/kube-system/replicasets/?labelSelector=k8s-app%3Dkube-dns",
+            "https://kubernetes:443/apis/extensions/v1beta1/namespaces/kube-system/replicasets/?labelSelector=k8s-app%3Dkube-dns-autoscaler"
         ])
+
+        self.assertEquals(len(self.service_checks), 0, "no check errors expected")
