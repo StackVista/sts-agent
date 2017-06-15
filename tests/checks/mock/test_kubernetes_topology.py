@@ -26,6 +26,10 @@ class TestKubernetesTopologyMocks:
             return json.loads(Fixtures.read_file("services_list.json", string_escape=False))
         elif url.endswith(KubeUtil.ENDPOINTS_LIST_PATH):
             return json.loads(Fixtures.read_file("endpoints_list.json", string_escape=False))
+        elif url.endswith(KubeUtil.DEPLOYMENTS_LIST_PATH):
+            return json.loads(Fixtures.read_file("deployments_list.json", string_escape=False))
+        elif KubeUtil.REPLICASETS_LIST_PATH in url:
+            return json.loads(Fixtures.read_file("replicaset_list.json", string_escape=False))
         else:
             raise Exception("No matching mock data for URL: %s" % url)
 
@@ -43,7 +47,7 @@ class TestKubernetesTopology(AgentCheckTest):
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_pods_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("pods_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil._retrieve_replicaset_list',
-                side_effect=lambda url: json.loads(Fixtures.read_file("replicaset_list.json", string_escape=False)))
+                side_effect=lambda fetch_url: json.loads(Fixtures.read_file("replicaset_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_endpoints_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("endpoints_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_deployments_list',
@@ -175,6 +179,8 @@ class TestKubernetesTopology(AgentCheckTest):
             'template_labels': [u'kube_app:nginxapp']
         })
 
+        self.assertEquals(len(self.service_checks), 0, "no errors expected")
+
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_services_list',
                 side_effect=requests.exceptions.ReadTimeout())
     def test_kube_timeout_exception(self, *args):
@@ -216,7 +222,7 @@ class TestKubernetesTopology(AgentCheckTest):
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_deployments_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("deployments_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil._retrieve_replicaset_list',
-                side_effect=lambda url: json.loads(Fixtures.read_file("replicaset_list.json", string_escape=False)))
+                side_effect=lambda fetch_url: json.loads(Fixtures.read_file("replicaset_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_pods_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("pods_list.json", string_escape=False)))
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_endpoints_list',
@@ -253,4 +259,11 @@ class TestKubernetesTopology(AgentCheckTest):
             "https://kubernetes:443/api/v1/nodes/",
             "https://kubernetes:443/api/v1/pods/",
             "https://kubernetes:443/api/v1/endpoints/",
+            "https://kubernetes:443/apis/extensions/v1beta1/deployments/",
+            "https://kubernetes:443/apis/extensions/v1beta1/namespaces/default/replicasets/?labelSelector=app%3Dnginxapp",
+            "https://kubernetes:443/apis/extensions/v1beta1/namespaces/kube-system/replicasets/?labelSelector=k8s-app%3Dheapster,version%3Dv1.2.0",
+            "https://kubernetes:443/apis/extensions/v1beta1/namespaces/kube-system/replicasets/?labelSelector=k8s-app%3Dkube-dns",
+            "https://kubernetes:443/apis/extensions/v1beta1/namespaces/kube-system/replicasets/?labelSelector=k8s-app%3Dkube-dns-autoscaler"
         ])
+
+        self.assertEquals(len(self.service_checks), 0, "no check errors expected")

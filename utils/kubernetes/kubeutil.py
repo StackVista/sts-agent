@@ -193,16 +193,21 @@ class KubeUtil:
         else:
             return retrieve_json(url=url, timeout=self.timeoutSeconds)
 
-
     def retrieve_deployments_list(self):
         """
         Retrieve the list of deployments for this cluster querying the kublet API extensions.
+        https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
         """
-        return retrieve_json(url=self.deployments_list_url, timeout=self.timeoutSeconds)
+        return self.retrieve_json_with_optional_auth(url=self.deployments_list_url)
 
     def retrieve_replicaset_filtered_list(self, namespace = None, labels_dict = None):
         """
         Retrieve the list of replicasets for given parameters, namespace and labels selector.
+        https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+
+        The replicaset filter is very similar to how it is implemented in kubernetes dashboard:
+        https://github.com/kubernetes/dashboard/blob/master/src/app/backend/resource/deployment/detail.go
+        https://github.com/kubernetes/dashboard/blob/master/src/app/backend/resource/common/resourcechannels.go
         """
         if labels_dict and len(labels_dict) > 0:
             params = "?labelSelector=%s" % self._to_label_selector(labels_dict)
@@ -214,12 +219,19 @@ class KubeUtil:
         else:
             fetch_url = "%s%s%s" % (self.kubernetes_api_extension_url, KubeUtil.REPLICASETS_LIST_PATH, params)
 
-        return self._retrieve_replicaset_list(fetch_url)
+        return self._retrieve_replicaset_list(fetch_url=fetch_url)
 
     def _retrieve_replicaset_list(self, fetch_url):
-        return retrieve_json(url=fetch_url, timeout=self.timeoutSeconds)
+        """
+        Retrieve the list of replicasets for given parameters, namespace and labels selector.
+        https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+        """
+        return self.retrieve_json_with_optional_auth(url=fetch_url)
 
     def _to_label_selector(self, labels_dict):
+        """
+        Render labels dict {'app': 'nginxapp', 'pod-template-hash': 275046495} to a label selector in a form "app%3Dnginxapp,pod-template-hash%3D275046495"
+        """
         labels = ["%s%%3D%s" % (name, value) for name, value in labels_dict.items()]
         return ",".join(labels)
 
