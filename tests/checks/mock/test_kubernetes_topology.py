@@ -267,3 +267,125 @@ class TestKubernetesTopology(AgentCheckTest):
         ])
 
         self.assertEquals(len(self.service_checks), 0, "no check errors expected")
+
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_json_auth')
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_machine_info')
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_nodes_list',
+                side_effect=lambda: json.loads(Fixtures.read_file("min.node_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_services_list',
+                side_effect=lambda: json.loads(Fixtures.read_file("min.service_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_pods_list',
+                side_effect=lambda: json.loads(Fixtures.read_file("min.pod_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil._retrieve_replicaset_list',
+                side_effect=lambda fetch_url: json.loads(Fixtures.read_file("min.replicaset_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_endpoints_list',
+                side_effect=lambda: json.loads(Fixtures.read_file("min.endpoint_list.json", string_escape=False)))
+    @mock.patch('utils.kubernetes.KubeUtil.retrieve_deployments_list',
+                side_effect=lambda: json.loads(Fixtures.read_file("min.deployment_list.json", string_escape=False)))
+    def test_kube_topology_minimal(self, *args):
+        self.run_check({'instances': [{'host': 'foo'}]})
+
+        instances = self.check.get_topology_instances()
+        self.assertEqual(len(instances), 1)
+        self.assertEqual(instances[0]['instance'], {
+            'type': 'kubernetes',
+            'url': 'http://kubernetes'
+        })
+
+        self.assertEqual(len(instances[0]['relations']), 6)
+        self.assertEqual(len(instances[0]['components']), 6)
+
+        service_idx = 0
+        node_idx = 1
+        pod_idx = 2
+        container_idx = 3
+        replicaset_idx = 4
+        deployment_idx = 5
+
+        node = instances[0]['components'][node_idx]
+        pod = instances[0]['components'][pod_idx]
+        container = instances[0]['components'][container_idx]
+        service = instances[0]['components'][service_idx]
+        replicaset = instances[0]['components'][replicaset_idx]
+        deployment = instances[0]['components'][deployment_idx]
+
+        self.assertEqual(service['type'], {'name': 'KUBERNETES_SERVICE'})
+        self.assertEqual(service['data'], {
+            'labels': [u'namespace:default'],
+            'namespace': u'default',
+            'ports': [{
+                u'name': u'tcp-80-80-kf5p1',
+                u'port': 80,
+                u'protocol': u'TCP',
+                u'targetPort': 80},{
+                u'targetPort': 90}],
+            'type': u'ClusterIP'
+        })
+
+        self.assertEqual(node['type'], {'name': 'KUBERNETES_NODE'})
+        self.assertEqual(node['data'], {
+            'internal_ip': None,
+            'legacy_host_ip': None,
+            'external_ip': None,
+            'hostname': None,
+            'labels': []
+        })
+
+        self.assertEqual(pod['type'], {'name': 'KUBERNETES_POD'})
+        self.assertEqual(pod['data'], {
+            'labels': [u'namespace:default'],
+            'namespace': u'default',
+            'uid': u'6771158d-f826-11e6-ae06-020c94063ecf'
+        })
+
+        self.assertEqual(container['type'], {'name': 'KUBERNETES_CONTAINER'})
+        self.assertEqual(container['data'], {
+            'docker': {
+                'container_id': u'docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359',
+                'image': u'raboof/client:1'
+            },
+            'ip_addresses': [],
+            'labels': [u'namespace:default'],
+            'namespace': u'default'
+        })
+
+        self.assertEqual(replicaset['type'], {'name': 'KUBERNETES_REPLICASET'})
+        self.assertEqual(replicaset['data'], {'labels': [u'namespace:default'], 'namespace': u'default'})
+
+        self.assertEqual(deployment['type'], {'name': 'KUBERNETES_DEPLOYMENT'})
+        self.assertEqual(deployment['data'], {'labels': [u'namespace:default'],
+            'name': u'nginxapp',
+            'namespace': u'default',
+            'template_labels': [u'kube_app:nginx']
+        })
+
+
+        pod_to_node = instances[0]['relations'][0]
+        self.assertEqual(pod_to_node['type'], {'name': 'PLACED_ON'})
+        self.assertEqual(pod_to_node['sourceId'], "nginx")
+        self.assertEqual(pod_to_node['targetId'], "ip-10-0-0-198.eu-west-1.compute.internal")
+
+        pod_to_container = instances[0]['relations'][1]
+        self.assertEqual(pod_to_container['type'], {'name': 'CONSISTS_OF'})
+        self.assertEqual(pod_to_container['sourceId'], "nginx")
+        self.assertEqual(pod_to_container['targetId'], "docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359")
+
+        container_to_node = instances[0]['relations'][2]
+        self.assertEqual(container_to_node['type'], {'name': 'HOSTED_ON'})
+        self.assertEqual(container_to_node['sourceId'], "docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359")
+        self.assertEqual(container_to_node['targetId'], "ip-10-0-0-198.eu-west-1.compute.internal")
+
+        replicaset_to_node = instances[0]['relations'][3]
+        self.assertEqual(replicaset_to_node['type'], {'name': 'CONTROLS'})
+        self.assertEqual(replicaset_to_node['sourceId'], "nginx-3129927420")
+        self.assertEqual(replicaset_to_node['targetId'], "nginx")
+
+        service_to_pod = instances[0]['relations'][4]
+        self.assertEqual(service_to_pod['type'], {'name': 'EXPOSES'})
+        self.assertEqual(service_to_pod['sourceId'], "raboof1")
+        self.assertEqual(service_to_pod['targetId'], "nginx")
+
+        deployment_to_replicaset = instances[0]['relations'][5]
+        self.assertEqual(deployment_to_replicaset['type'], {'name': 'CREATED'})
+        self.assertEqual(deployment_to_replicaset['sourceId'], "deployment: nginxapp")
+        self.assertEqual(deployment_to_replicaset['targetId'], "nginx-3129927420")

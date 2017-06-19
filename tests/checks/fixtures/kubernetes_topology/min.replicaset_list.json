@@ -1,0 +1,27 @@
+{
+  "kind": "DeploymentList",
+  "apiVersion": "extensions/v1beta1",
+  "metadata": {
+    "selfLink": "/apis/extensions/v1beta1/deployments/",
+    "resourceVersion": "1276973"
+  },
+  "items": [
+    {
+      "metadata": {
+        "name": "nginx-3129927420",
+        "namespace": "default",
+        "uid": "892cebce-4aaf-11e7-8bc5-0221a2098232"
+      },
+      "spec": {
+        "template": {
+          "metadata": {
+            "name": "nginxapp",
+            "labels": {
+              "app": "nginxapp"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

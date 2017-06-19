@@ -1,0 +1,34 @@
+{
+  "kind": "EndpointsList",
+  "apiVersion": "v1",
+  "metadata": {
+    "selfLink": "/api/v1/endpoints",
+    "resourceVersion": "1771628"
+  },
+  "items": [
+    {
+      "metadata": {
+        "name": "raboof1",
+        "namespace": "default",
+        "uid": "6123cd60-f81f-11e6-ae06-020c94063ecf",
+        "labels": {
+          "app": "raboof1"
+        }
+      },
+      "subsets": [
+        {
+          "addresses": [
+            {
+              "targetRef": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "nginx",
+                "uid": "611f6c99-f81f-11e6-ae06-020c94063ecf"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

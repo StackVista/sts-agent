@@ -1,0 +1,37 @@
+{
+  "kind": "PodList",
+  "apiVersion": "v1",
+  "metadata": {
+    "selfLink": "/api/v1/pods",
+    "resourceVersion": "1748896"
+  },
+  "items": [
+    {
+      "metadata": {
+        "name": "nginx",
+        "namespace": "default",
+        "uid": "6771158d-f826-11e6-ae06-020c94063ecf",
+        "ownerReferences": [
+          {
+            "kind": "ReplicaSet",
+            "name": "nginx-3129927420",
+            "uid": "676f20d9-f826-11e6-ae06-020c94063ecf"
+          }
+        ]
+
+      },
+      "spec": {
+        "nodeName": "ip-10-0-0-198.eu-west-1.compute.internal"
+      },
+      "status": {
+        "containerStatuses": [
+          {
+            "name": "client",
+            "image": "raboof/client:1",
+            "containerID": "docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359"
+          }
+        ]
+      }
+    }
+  ]
+}
