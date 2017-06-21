@@ -115,16 +115,17 @@ class KubernetesTopology(AgentCheck):
                 if 'nodeName' in pod['spec']:
                     pod_node_name = pod['spec']['nodeName']
 
-                    ip_addresses = []
                     if 'podIP' in pod['status']:
-                        ip_addresses.append(pod['status']['podIP'])
+                        pod_ip = pod['status']['podIP']
+                    else:
+                        pod_ip = None
 
                     if 'hostIP' in pod['status']:
                         host_ip = pod['status']['hostIP']
                     else:
                         host_ip = None
 
-                    self._extract_containers(instance_key, pod_name, ip_addresses, host_ip, pod_node_name, pod['metadata']['namespace'], pod['status']['containerStatuses'])
+                    self._extract_containers(instance_key, pod_name, pod_ip, host_ip, pod_node_name, pod['metadata']['namespace'], pod['status']['containerStatuses'])
 
             if 'ownerReferences' in pod['metadata'].keys():
                 for reference in pod['metadata']['ownerReferences']:
@@ -143,11 +144,11 @@ class KubernetesTopology(AgentCheck):
             for pod in replicasets_to_pods[replicaset_name]:
                 self.relation(instance_key, replicaset_name, pod['name'], {'name': 'CONTROLS'}, dict())
 
-    def _extract_containers(self, instance_key, pod_name, ip_addresses, host_ip, host_name, namespace, statuses):
+    def _extract_containers(self, instance_key, pod_name, pod_ip, host_ip, host_name, namespace, statuses):
         for containerStatus in statuses:
             container_id = containerStatus['containerID']
             data = dict()
-            data['ip_addresses'] = ip_addresses
+            data['pod_ip'] = pod_ip
             data['host_ip'] = host_ip
             data['namespace'] = namespace
             data['labels'] = ["namespace:%s" % namespace]

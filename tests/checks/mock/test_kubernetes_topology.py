@@ -150,7 +150,7 @@ class TestKubernetesTopology(AgentCheckTest):
         container = instances[0]['components'][first_pod_with_container+1]
         self.assertEqual(container['type'], {'name': 'KUBERNETES_CONTAINER'})
         self.assertEqual(container['data'], {
-            'ip_addresses': ['10.2.24.36'],
+            'pod_ip': '10.2.24.36',
             'docker': {
                 'container_id': u'docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359',
                 'image': u'raboof/client:1'
@@ -346,8 +346,8 @@ class TestKubernetesTopology(AgentCheckTest):
                 'container_id': u'docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359',
                 'image': u'raboof/client:1'
             },
-            'ip_addresses': [],
             'host_ip': None,
+            'pod_ip': None,
             'labels': [u'namespace:default'],
             'namespace': u'default'
         })
