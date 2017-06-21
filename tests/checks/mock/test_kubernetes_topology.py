@@ -53,6 +53,7 @@ class TestKubernetesTopology(AgentCheckTest):
     @mock.patch('utils.kubernetes.KubeUtil.retrieve_deployments_list',
                 side_effect=lambda: json.loads(Fixtures.read_file("deployments_list.json", string_escape=False)))
     def test_kube_topo(self, *args):
+        self.maxDiff = None
         self.run_check({'instances': [{'host': 'foo'}]})
 
         instances = self.check.get_topology_instances()
@@ -149,11 +150,12 @@ class TestKubernetesTopology(AgentCheckTest):
         container = instances[0]['components'][first_pod_with_container+1]
         self.assertEqual(container['type'], {'name': 'KUBERNETES_CONTAINER'})
         self.assertEqual(container['data'], {
-            'ip_addresses': ['10.2.24.36', u'10.0.0.198'],
+            'pod_ip': '10.2.24.36',
             'docker': {
                 'container_id': u'docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359',
                 'image': u'raboof/client:1'
             },
+            'host_ip': u'10.0.0.198',
             'labels': ['namespace:default'],
             'namespace': 'default'
         })
@@ -344,7 +346,8 @@ class TestKubernetesTopology(AgentCheckTest):
                 'container_id': u'docker://b56714f49305d648543fdad8b1ba23414cac516ac83b032f2b912d3ad7039359',
                 'image': u'raboof/client:1'
             },
-            'ip_addresses': [],
+            'host_ip': None,
+            'pod_ip': None,
             'labels': [u'namespace:default'],
             'namespace': u'default'
         })
