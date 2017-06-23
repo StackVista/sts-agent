@@ -117,7 +117,7 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(service['data']['cluster_ip'], '10.3.0.149')
         self.assertEqual(service['data']['namespace'], 'default')
         self.assertEqual(service['data']['labels'],
-            [u'kube_k8s-app:heapster',u'kube_kubernetes.io/cluster-service:true',u'kube_kubernetes.io/name:Heapster',u'namespace:default'])
+            [u'k8s-app:heapster',u'kubernetes.io/cluster-service:true',u'kubernetes.io/name:Heapster',u'namespace:default'])
 
         first_node = 6
         node = instances[0]['components'][first_node]
@@ -127,21 +127,21 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(node['data']['external_ip'], '54.171.163.96')
         self.assertEqual(node['data']['hostname'], 'ip-10-0-0-107.eu-west-1.compute.internal')
         self.assertEqual(node['data']['labels'],
-            [u'kube_beta.kubernetes.io/arch:amd64',
-             u'kube_beta.kubernetes.io/instance-type:t2.medium',
-             u'kube_beta.kubernetes.io/os:linux',
-             u'kube_failure-domain.beta.kubernetes.io/region:eu-west-1',
-             u'kube_failure-domain.beta.kubernetes.io/zone:eu-west-1a',
-             u'kube_kubernetes.io/hostname:ip-10-0-0-107.eu-west-1.compute.internal'])
+            [u'beta.kubernetes.io/arch:amd64',
+             u'beta.kubernetes.io/instance-type:t2.medium',
+             u'beta.kubernetes.io/os:linux',
+             u'failure-domain.beta.kubernetes.io/region:eu-west-1',
+             u'failure-domain.beta.kubernetes.io/zone:eu-west-1a',
+             u'kubernetes.io/hostname:ip-10-0-0-107.eu-west-1.compute.internal'])
 
         first_pod = first_node + 3
         first_pod_with_container = first_pod
         pod = instances[0]['components'][first_pod_with_container]
         self.assertEqual(pod['type'], {'name': 'KUBERNETES_POD'})
         self.assertEqual(pod['data'], {
-            'labels': [u'kube_app:client',
-                       u'kube_pod-template-hash:3129927420',
-                       u'kube_version:1',
+            'labels': [u'app:client',
+                       u'pod-template-hash:3129927420',
+                       u'version:1',
                        u'namespace:default'],
             'namespace': 'default',
             'uid': u'6771158d-f826-11e6-ae06-020c94063ecf'
@@ -164,9 +164,9 @@ class TestKubernetesTopology(AgentCheckTest):
         replicaset = instances[0]['components'][first_replicaset]
         self.assertEqual(replicaset['type'], {'name': 'KUBERNETES_REPLICASET'})
         self.assertEqual(replicaset['data'], {
-            'labels': [u'kube_k8s-app:heapster',
-                       u'kube_pod-template-hash:4088228293',
-                       u'kube_version:v1.2.0',
+            'labels': [u'k8s-app:heapster',
+                       u'pod-template-hash:4088228293',
+                       u'version:v1.2.0',
                        u'namespace:kube-system'],
             'namespace': u'kube-system'
         })
@@ -176,9 +176,9 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(deployment['type'], {'name': 'KUBERNETES_DEPLOYMENT'})
         self.assertEqual(deployment['data'], {
             'namespace': u'default',
-            'labels': [u'kube_app:nginxapp', u'namespace:default'],
+            'labels': [u'app:nginxapp', u'namespace:default'],
             'name': u'nginxapp',
-            'template_labels': [u'kube_app:nginxapp']
+            'template_labels': [u'app:nginxapp']
         })
 
         self.assertEquals(len(self.service_checks), 0, "no errors expected")
@@ -359,7 +359,7 @@ class TestKubernetesTopology(AgentCheckTest):
         self.assertEqual(deployment['data'], {'labels': [u'namespace:default'],
             'name': u'nginxapp',
             'namespace': u'default',
-            'template_labels': [u'kube_app:nginx']
+            'template_labels': [u'app:nginx']
         })
 
 

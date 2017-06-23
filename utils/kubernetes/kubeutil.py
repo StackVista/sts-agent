@@ -110,7 +110,7 @@ class KubeUtil:
 
         return kube_labels
 
-    def extract_metadata_labels(self, metadata, excluded_keys={}):
+    def extract_metadata_labels(self, metadata, excluded_keys={}, add_kube_prefix=True):
         """
         Extract labels from metadata section coming from the kubelet API.
         """
@@ -127,8 +127,10 @@ class KubeUtil:
             for k, v in labels.iteritems():
                 if k in excluded_keys:
                     continue
-
-                kube_labels[key].append(u"kube_%s:%s" % (k, v))
+                if add_kube_prefix:
+                    kube_labels[key].append(u"kube_%s:%s" % (k, v))
+                else:
+                    kube_labels[key].append(u"%s:%s" % (k, v))
         return kube_labels
 
     def extract_meta(self, pods_list, field_name):
