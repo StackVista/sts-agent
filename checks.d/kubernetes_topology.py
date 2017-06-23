@@ -175,7 +175,7 @@ class KubernetesTopology(AgentCheck):
                                 self.relation(instance_key, service_name, pod_name, {'name': 'EXPOSES'}, data)
 
     def _make_labels(self, kubeutil, metadata):
-        original_labels = self._flatten_dict(kubeutil.extract_metadata_labels(metadata))
+        original_labels = self._flatten_dict(kubeutil.extract_metadata_labels(metadata=metadata, add_kube_prefix=False))
         if 'namespace' in metadata:
             original_labels.append("namespace:%s" % metadata['namespace'])
         return original_labels
