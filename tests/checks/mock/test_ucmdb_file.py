@@ -56,3 +56,12 @@ class TestUcmdbCIParser(TestCase):
             ])
         self.assertEquals(len(relations), 1)
         self.assertEquals(relations, [{'source_id': 'dab1c91cdc7a6d808b0642cb02ea22f0', 'type': 'containment', 'target_id': '6c01ec45816a40eb866400ff143f4968', 'data': {'DiscoveryID2': '6c01ec45816a40eb866400ff143f4968', 'DiscoveryID1': 'dab1c91cdc7a6d808b0642cb02ea22f0'}, 'external_id': 'a9247f4296601c507064ae599bec177e'}])
+
+    def test_parse_empty(self):
+        self.maxDiff = None
+        parser = UcmdbCIParser("tests/checks/fixtures/ucmdb/tql_export_empty.xml")
+        parser.parse()
+        components = parser.get_components()
+        relations = parser.get_relations()
+        self.assertEquals(len(components), 0)
+        self.assertEquals(len(relations), 0)

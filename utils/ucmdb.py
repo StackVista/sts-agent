@@ -44,21 +44,23 @@ class UcmdbCIParser:
                         attribute_value = elem.text
                         current_element['data'][attribute_name] = attribute_value
                 elif elem.tag == 'object':
-                    if elem.attrib['operation'] == 'add':
-                        current_element['type'] = elem.attrib['name']
-                        current_element['external_id'] = elem.attrib['ucmdb_id']
-                        self.components.append(current_element)
+                    if 'operation' in elem.attrib and elem.attrib['operation'] == 'add':
+                        if 'name' in elem.attrib and 'ucmdb_id' in elem.attrib:
+                            current_element['type'] = elem.attrib['name']
+                            current_element['external_id'] = elem.attrib['ucmdb_id']
+                            self.components.append(current_element)
                     current_element = dict()
                     current_element['data'] = dict()
                 elif elem.tag == 'link':
-                    if elem.attrib['operation'] == 'add':
-                        current_element['type'] = elem.attrib['name']
-                        current_element['external_id'] = elem.attrib['ucmdb_id']
-                        if 'DiscoveryID1' in current_element['data']:
-                            current_element['source_id'] = current_element['data']['DiscoveryID1']
-                        if 'DiscoveryID2' in current_element['data']:
-                            current_element['target_id'] = current_element['data']['DiscoveryID2']
-                        self.relations.append(current_element)
+                    if 'operation' in elem.attrib and elem.attrib['operation'] == 'add':
+                        if 'name' in elem.attrib and 'ucmdb_id' in elem.attrib:
+                            current_element['type'] = elem.attrib['name']
+                            current_element['external_id'] = elem.attrib['ucmdb_id']
+                            if 'DiscoveryID1' in current_element['data']:
+                                current_element['source_id'] = current_element['data']['DiscoveryID1']
+                            if 'DiscoveryID2' in current_element['data']:
+                                current_element['target_id'] = current_element['data']['DiscoveryID2']
+                            self.relations.append(current_element)
                     current_element = dict()
                     current_element['data'] = dict()
             elem.clear()
