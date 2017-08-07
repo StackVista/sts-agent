@@ -1,9 +1,4 @@
 # 3rd party
-import time
-from urllib import quote
-
-from checks.check_status import CheckData
-from checks import AgentCheck, CheckException
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
