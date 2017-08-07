@@ -1,0 +1,25 @@
+{
+	"preview": false,
+	"init_offset": 0,
+	"messages": [],
+	"fields": [],
+	"results": [{
+        "value": 1,
+        "metric": "metric_name",
+        "hostname": "myhost",
+        "some": "tag",
+		"_bkt": "main~2~60326C78-E9E8-45CD-90C3-CF75DB894977",
+		"_cd": "2:49",
+		"_time": "2017-03-08T18:29:56.000+00:00"
+	}, {
+        "value": 1,
+        "metric": "metric_name",
+        "hostname": 123,
+        "device_name": 123,
+        "some": 123,
+		"_bkt": "main~2~60326C78-E9E8-45CD-90C3-CF75DB894977",
+		"_cd": "2:40",
+		"_time": "2017-03-08T18:29:57.000+00:00"
+	}],
+	"highlighted": {}
+}
