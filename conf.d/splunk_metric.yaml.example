@@ -1,0 +1,67 @@
+# Splunk metric intake uses basic authentication
+
+init_config:
+  # time before a HTTP request times out
+  default_request_timeout_seconds: 10
+
+  # a search on a saved search does not immediately return results, one has to retry until data is received,
+  # search_max_retry_count specifies the number of retries in which it expects results to be available.
+  # Between each retry some time is waited before retrying, specified by search_seconds_between_retries.
+  default_search_max_retry_count: 5
+  default_search_seconds_between_retries: 1
+
+  default_verify_ssl_certificate: false
+
+  # The number of saved searches to dispatch and await for results simultaneously.
+  default_saved_searches_parallel: 3
+
+  # How many results should we request per request to splunk
+  default_batch_size: 1000
+
+  # The amount of time (in seconds) to go in the past for an initial query when the agent starts up.
+  # Warning: can cause metrics to be reported twice if the agent is start/stopped
+  default_initial_history_time_seconds: 0
+
+  # Maximum amount of history recovered after a restart (1 day)
+  default_max_restart_history_seconds: 86400
+
+  # Maximum size of chunks when querying historical data from splunk
+  default_max_query_chunk_seconds: 3600
+
+  # Delay before starting polling metrics after starting
+  # default_initial_delay_seconds: 600
+
+# Currently it is not possible to specify multiple instances with the same url.
+# It is possible to specify multiple saved_searches on a single instance.
+instances:
+  - url: "https://localhost:8089"
+    # verify_ssl_certificate: false
+    username: "admin"
+    password: "admin"
+    # saved_searches_parallel: 3
+    # initial_delay_seconds: 600 // 10 minutes
+    saved_searches:
+      # Splunk name of the saved search
+      - name: "metrics"
+        # metric_name_field: "name"
+        # The metric value field should contain numerical data in the splunk results
+        # metric_value_field: "value"
+        # Wildcard match to find metric queries, can be used instead of name
+        # match: "metrics.*"
+        # request_timeout_seconds: 10
+        # search_max_retry_count: 5
+        # search_seconds_between_retries: 1
+        # batch_size: 1000
+        # initial_history_time_seconds: 0
+        # max_restart_history_seconds: 86400
+        # max_query_chunk_seconds: 3600
+
+        # Additional parameters for the splunk saved search query
+        parameters:
+          # These parameters make sure the query refreshes.
+          force_dispatch: true
+          dispatch.now: true
+
+    # tags:
+    #      - optional_tag1
+    #      - optional_tag2
