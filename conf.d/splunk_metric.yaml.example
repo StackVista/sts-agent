@@ -31,6 +31,10 @@ init_config:
   # Delay before starting polling metrics after starting
   # default_initial_delay_seconds: 600
 
+  # default_metric_name_field: "metric"
+  # The metric value field should contain numerical data in the splunk results
+  # default_metric_value_field: "value"
+
 # Currently it is not possible to specify multiple instances with the same url.
 # It is possible to specify multiple saved_searches on a single instance.
 instances:
@@ -43,7 +47,7 @@ instances:
     saved_searches:
       # Splunk name of the saved search
       - name: "metrics"
-        # metric_name_field: "name"
+        # metric_name_field: "metric"
         # The metric value field should contain numerical data in the splunk results
         # metric_value_field: "value"
         # Wildcard match to find metric queries, can be used instead of name
