@@ -60,7 +60,7 @@ class InstanceConfig(SplunkInstanceConfig):
         self.default_initial_delay_seconds = int(init_config.get('default_initial_delay_seconds', 0))
 
 
-class Instance:
+class Instance(object):
     INSTANCE_NAME = "splunk_event"
 
     def __init__(self, current_time, instance, init_config):

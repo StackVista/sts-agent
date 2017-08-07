@@ -1,5 +1,5 @@
 """
-    Events as generic events from splunk. StackState.
+    Metrics from splunk. StackState.
 """
 
 # 3rd party
@@ -11,25 +11,37 @@ from checks import AgentCheck, CheckException
 from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field, take_optional_field, chunks, SavedSearches, time_to_seconds, get_utc_time
 
 
-class SavedSearch(SplunkSavedSearch):
-    last_events_at_epoch_time = set()
+class MetricSavedSearch(SplunkSavedSearch):
+    last_observed_telemetry = set()
+
+    # a list of required fields with the default values when not defined in the config of
+    # neither saved search itself, nor at a higher level for all saved searches
+    field_name_in_config = {
+        'metric': 'metric_name_field',
+        'value': 'metric_value_field',
+    }
 
     def __init__(self, instance_config, saved_search_instance):
-        super(SavedSearch, self).__init__(instance_config, saved_search_instance)
+        super(MetricSavedSearch, self).__init__(instance_config, saved_search_instance)
 
         self.initial_history_time_seconds = int(saved_search_instance.get('initial_history_time_seconds', instance_config.default_initial_history_time_seconds))
         self.max_restart_history_seconds = int(saved_search_instance.get('max_restart_history_seconds', instance_config.default_max_restart_history_seconds))
         self.max_query_chunk_seconds = int(saved_search_instance.get('max_query_chunk_seconds', instance_config.default_max_query_chunk_seconds))
 
-        # Up until which timestamp did we get with the data?
-        self.last_event_time_epoch_seconds = 0
+        self.required_fields = {
+            field_name: saved_search_instance.get(MetricSavedSearch.field_name_in_config[field_name], instance_config.getDefaultValue(MetricSavedSearch.field_name_in_config[field_name]))
+            for field_name in ['metric', 'value']
+        }
+
+        # Up until which timestamp (in epoch seconds) did we get with the data?
+        self.last_observed_timestamp = 0
 
         # End of the last recovery time window. When this is None recovery is done. 0 signifies uninitialized.
         # Any value above zero signifies until what time we recovered.
         self.last_recover_latest_time_epoch_seconds = 0
 
         # We keep track of the events that were reported for the last timestamp, to deduplicate them when we get a new query
-        self.last_events_at_epoch_time = set()
+        self.last_observed_telemetry = set()
 
     def get_status(self):
         """
@@ -37,13 +49,18 @@ class SavedSearch(SplunkSavedSearch):
         """
         if self.last_recover_latest_time_epoch_seconds is None:
             # If there is not catching up to do, the status is as far as the last event time
-            return self.last_event_time_epoch_seconds, False
+            return self.last_observed_timestamp, False
         else:
             # If we are still catching up, we got as far as the last finish time. We report as inclusive bound (hence the -1)
             return self.last_recover_latest_time_epoch_seconds - 1, True
 
 
 class InstanceConfig(SplunkInstanceConfig):
+    defaults = {
+        "default_metric_name_field": "metric",
+        "default_metric_value_field": "value",
+    }
+
     def __init__(self, instance, init_config):
         super(InstanceConfig, self).__init__(instance, init_config, {
             'default_request_timeout_seconds': 5,
@@ -51,18 +68,23 @@ class InstanceConfig(SplunkInstanceConfig):
             'default_search_seconds_between_retries': 1,
             'default_verify_ssl_certificate': False,
             'default_batch_size': 1000,
-            'default_saved_searches_parallel': 3
+            'default_saved_searches_parallel': 3,
         })
-
         self.default_initial_history_time_seconds = init_config.get('default_initial_history_time_seconds', 0)
         self.default_max_restart_history_seconds = init_config.get('default_max_restart_history_seconds', 86400)
         self.default_max_query_chunk_seconds = init_config.get('default_max_query_chunk_seconds', 3600)
         self.default_initial_delay_seconds = int(init_config.get('default_initial_delay_seconds', 0))
+        self.init_config = init_config
+
+    def getDefaultValue(self, field_name):
+        field = "default_" + field_name
+        value = self.init_config.get(field)
+        if value is None:
+            return InstanceConfig.defaults.get(field)
+        return value
 
 
-class Instance:
-    INSTANCE_NAME = "splunk_event"
-
+class Instance(object):
     def __init__(self, current_time, instance, init_config):
         self.instance_config = InstanceConfig(instance, init_config)
 
@@ -70,8 +92,8 @@ class Instance:
         if not isinstance(instance['saved_searches'], list):
             instance['saved_searches'] = []
 
-        self.saved_searches = SavedSearches([SavedSearch(self.instance_config, saved_search_instance)
-                               for saved_search_instance in instance['saved_searches']])
+        self.saved_searches = SavedSearches([MetricSavedSearch(self.instance_config, saved_search_instance)
+                                             for saved_search_instance in instance['saved_searches']])
 
         self.saved_searches_parallel = int(instance.get('saved_searches_parallel', self.instance_config.default_saved_searches_parallel))
 
@@ -110,23 +132,24 @@ class Instance:
             last_committed = self.get_search_data(data, saved_search.name)
             if saved_search.last_recover_latest_time_epoch_seconds is not None or last_committed is None:
                 if last_committed is None:  # Is this the first time we start?
-                    saved_search.last_event_time_epoch_seconds = current_time - saved_search.initial_history_time_seconds
+                    saved_search.last_observed_timestamp = current_time - saved_search.initial_history_time_seconds
                 else:  # Continue running or restarting, add one to not duplicate the last events.
-                    saved_search.last_event_time_epoch_seconds = last_committed + 1
-                    if current_time - saved_search.last_event_time_epoch_seconds > saved_search.max_restart_history_seconds:
-                        saved_search.last_event_time_epoch_seconds = current_time - saved_search.max_restart_history_seconds
+                    saved_search.last_observed_timestamp = last_committed + 1
+                    if current_time - saved_search.last_observed_timestamp > saved_search.max_restart_history_seconds:
+                        saved_search.last_observed_timestamp = current_time - saved_search.max_restart_history_seconds
             else:
-                saved_search.last_event_time_epoch_seconds = last_committed
+                saved_search.last_observed_timestamp = last_committed
 
 
-class SplunkMetric(AgentCheck):
-    SERVICE_CHECK_NAME = "splunk.event_information"
-    basic_default_fields = set(['host', 'index', 'linecount', 'punct', 'source', 'sourcetype', 'splunk_server', 'timestamp'])
-    date_default_fields = set(['date_hour', 'date_mday', 'date_minute', 'date_month', 'date_second', 'date_wday', 'date_year', 'date_zone'])
+class SplunkTelemetry(AgentCheck):
+    SERVICE_CHECK_NAME = "splunk.metric_information"
+    basic_default_fields = {'host', 'index', 'linecount', 'punct', 'source', 'sourcetype', 'splunk_server', 'timestamp'}
+    date_default_fields = {'date_hour', 'date_mday', 'date_minute', 'date_month', 'date_second', 'date_wday', 'date_year', 'date_zone'}
     TIME_FMT = "%Y-%m-%dT%H:%M:%S.%f%z"
+    PERSISTENCE_FILE_NAME = "splunk_metric"
 
     def __init__(self, name, init_config, agentConfig, instances=None):
-        super(SplunkMetric, self).__init__(name, init_config, agentConfig, instances)
+        super(SplunkTelemetry, self).__init__(name, init_config, agentConfig, instances)
         # Data to keep over check runs, keyed by instance url
         self.instance_data = dict()
         self.splunkHelper = SplunkHelper()
@@ -172,52 +195,56 @@ class SplunkMetric(AgentCheck):
             self.log.debug("Processing saved search: %s." % saved_search.name)
             self._process_saved_search(sid, saved_search, instance, start_time)
 
-    def _extract_events(self, saved_search, instance, result, sent_events):
-
+    def _extract_telemetry(self, saved_search, instance, result, sent_already):
         for data in result["results"]:
-
             # We need a unique identifier for splunk events, according to https://answers.splunk.com/answers/334613/is-there-a-unique-event-id-for-each-event-in-the-i.html
             # this can be (server, index, _cd)
-            # I use (_bkt, _cd) because we only process data form 1 server in a check, and _bkt contains the index
-            event_id = (data["_bkt"], data["_cd"])
+            # I use (_bkt, _cd) because we only process data from 1 server in a check, and _bkt contains the index
+            current_id = (data["_bkt"], data["_cd"])
             _time = take_required_field("_time", data)
             timestamp = time_to_seconds(_time)
 
-            if timestamp > saved_search.last_event_time_epoch_seconds:
-                saved_search.last_events_at_epoch_time = set()
-                saved_search.last_events_at_epoch_time.add(event_id)
-                saved_search.last_event_time_epoch_seconds = timestamp
-            elif timestamp == saved_search.last_event_time_epoch_seconds:
-                saved_search.last_events_at_epoch_time.add(event_id)
+            if timestamp > saved_search.last_observed_timestamp:
+                saved_search.last_observed_telemetry = {current_id}  # make a new set
+                saved_search.last_observed_timestamp = timestamp
+            elif timestamp == saved_search.last_observed_timestamp:
+                saved_search.last_observed_telemetry.add(current_id)
 
-            if event_id in sent_events:
+            if current_id in sent_already:
                 continue
 
+            telemetry = {}
+
             # Required fields
-            event_type = take_optional_field("event_type", data)
-            source_type = take_optional_field("_sourcetype", data)
-            msg_title = take_optional_field("msg_title", data)
-            msg_text = take_optional_field("msg_text", data)
+            if saved_search.required_fields:
+                telemetry.update({
+                    field: take_required_field(field_column, data)
+                    for field, field_column in saved_search.required_fields.iteritems()
+                })
+
+            # Optional fields
+            if saved_search.optional_fields:
+                telemetry.update({
+                    take_optional_field(field, data)
+                    for field in saved_search.optional_fields
+                })
 
             tags_data = self._filter_fields(data)
 
             event_tags = self._convert_dict_to_tags(tags_data)
             event_tags.extend(instance.tags)
 
-            self.event({
-                "timestamp": timestamp,
-                "event_type": event_type,
-                "source_type_name": source_type,
-                "msg_title": msg_title,
-                "msg_text": msg_text,
-                "tags": event_tags
-            })
+            telemetry.update({"tags": event_tags, "timestamp": timestamp})
+            yield telemetry
+
+    def _apply(self, **kwargs):
+        self.gauge(**kwargs)  # for metrics
 
     def _process_saved_search(self, search_id, saved_search, instance, start_time):
         count = 0
 
-        sent_events = saved_search.last_events_at_epoch_time
-        saved_search.last_events_at_epoch_time = set()
+        sent_events = saved_search.last_observed_telemetry
+        saved_search.last_observed_telemetry = set()
 
         for response in self._search(search_id, saved_search, instance):
             for message in response['messages']:
@@ -225,7 +252,9 @@ class SplunkMetric(AgentCheck):
                     self.log.info("Received unhandled message, got: " + str(message))
 
             count += len(response["results"])
-            self._extract_events(saved_search, instance, response, sent_events)
+            for data_point in self._extract_telemetry(saved_search, instance, response, sent_events):
+                self._apply(**data_point)
+
         self.log.debug("Save search done: %s in time %d with results %d" % (saved_search.name, time.time() - start_time, count))
 
     def _search(self, search_id, saved_search, instance):
@@ -233,11 +262,11 @@ class SplunkMetric(AgentCheck):
 
     def _filter_fields(self, data):
         # We remove default basic fields, default date fields and internal fields that start with "_"
-        result = dict()
-        for key, value in data.iteritems():
-            if key not in self.basic_default_fields and key not in self.date_default_fields and not key.startswith('_'):
-                result[key] = value
-        return result
+        return {
+            key: value
+            for key, value in data.iteritems()
+            if self._include_as_tag(key)
+         }
 
     @staticmethod
     def _convert_dict_to_tags(data):
@@ -254,7 +283,7 @@ class SplunkMetric(AgentCheck):
         instance = self.instance_data[instance["url"]]
         status_dict, continue_after_commit = instance.get_status()
         self.status.data[instance.instance_config.base_url] = status_dict
-        self.status.persist(Instance.INSTANCE_NAME)
+        self.status.persist(SplunkMetric.PERSISTENCE_FILE_NAME)
         return continue_after_commit
 
     def commit_failed(self, instance):
@@ -277,7 +306,7 @@ class SplunkMetric(AgentCheck):
         # json output_mode is mandatory for response parsing
         parameters["output_mode"] = "json"
 
-        earliest_epoch_datetime = get_utc_time(saved_search.last_event_time_epoch_seconds)
+        earliest_epoch_datetime = get_utc_time(saved_search.last_observed_timestamp)
 
         parameters["dispatch.time_format"] = self.TIME_FMT
         parameters["dispatch.earliest_time"] = earliest_epoch_datetime.strftime(self.TIME_FMT)
@@ -287,7 +316,7 @@ class SplunkMetric(AgentCheck):
 
         # See whether we should recover events from the past
         if saved_search.last_recover_latest_time_epoch_seconds is not None:
-            latest_time_epoch = saved_search.last_event_time_epoch_seconds + saved_search.max_query_chunk_seconds
+            latest_time_epoch = saved_search.last_observed_timestamp + saved_search.max_query_chunk_seconds
             current_time = self._current_time_seconds()
 
             if latest_time_epoch >= current_time:
@@ -315,10 +344,19 @@ class SplunkMetric(AgentCheck):
         """
         This function is only used form test code to act as if the check is running for the first time
         """
-        CheckData.remove_latest_status(Instance.INSTANCE_NAME)
+        CheckData.remove_latest_status(SplunkMetric.PERSISTENCE_FILE_NAME)
         self.load_status()
 
     def load_status(self):
-        self.status = CheckData.load_latest_status(Instance.INSTANCE_NAME)
+        self.status = CheckData.load_latest_status(SplunkMetric.PERSISTENCE_FILE_NAME)
         if self.status is None:
             self.status = CheckData()
+
+    def _include_as_tag(self, key):
+        return not key.startswith('_') and key not in self.basic_default_fields.union(self.date_default_fields)
+
+
+class SplunkMetric(SplunkTelemetry):
+    def __init__(self, name, init_config, agentConfig, instances=None):
+        required_fields = []
+        super(SplunkMetric, self).__init__(name, init_config, agentConfig, instances)

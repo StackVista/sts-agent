@@ -24,6 +24,9 @@ class SplunkSavedSearch(object):
         else:
             raise Exception("Neither 'name' or 'match' should be defined for saved search.")
 
+        self.required_fields = None
+        self.optional_fields = None
+
         self.parameters = saved_search_instance['parameters']
 
         self.request_timeout_seconds = int(saved_search_instance.get('request_timeout_seconds', instance_config.default_request_timeout_seconds))
