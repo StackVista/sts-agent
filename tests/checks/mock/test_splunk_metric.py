@@ -119,8 +119,8 @@ class TestSplunkMinimalMetrics(AgentCheckTest):
         })
 
         self.assertEqual(len(self.metrics), 2)
-        self.assertEqual(self.metrics[0], ('metric_name', 1488974400.0, 1, dict()))
-        self.assertEqual(self.metrics[1], ('metric_name', 1488974400.0, 2, dict()))
+        self.assertEqual(self.metrics[0], ('metric_name', 1488974400.0, 1.0, dict()))
+        self.assertEqual(self.metrics[1], ('metric_name', 1488974400.0, 1, dict()))
 
 
 class TestSplunkFullMetrics(AgentCheckTest):
