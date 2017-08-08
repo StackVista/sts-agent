@@ -14,7 +14,6 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class SplunkSavedSearch(object):
     def __init__(self, instance_config, saved_search_instance):
-
         if "name" in saved_search_instance:
             self.name = saved_search_instance['name']
             self.match = None
@@ -24,8 +23,9 @@ class SplunkSavedSearch(object):
         else:
             raise Exception("Neither 'name' or 'match' should be defined for saved search.")
 
-        self.required_fields = None
-        self.optional_fields = None
+        self.critical_fields = None  # if absent, then fail the search
+        self.required_fields = None  # if absent, then drop the item and continue with other items in this search
+        self.optional_fields = None  # allowed to be absent
 
         self.parameters = saved_search_instance['parameters']
 
@@ -33,6 +33,33 @@ class SplunkSavedSearch(object):
         self.search_max_retry_count = int(saved_search_instance.get('search_max_retry_count', instance_config.default_search_max_retry_count))
         self.search_seconds_between_retries = int(saved_search_instance.get('search_seconds_between_retries', instance_config.default_search_seconds_between_retries))
         self.batch_size = int(saved_search_instance.get('batch_size', instance_config.default_batch_size))
+
+    def retrieve_fields(self, data):
+        telemetry = {}
+
+        # Critical fields - escalate any exceptions if missing a field
+        if self.critical_fields:
+            telemetry.update({
+                field: take_required_field(field_column, data)
+                for field, field_column in self.critical_fields.iteritems()
+            })
+
+        # Required fields - catch exceptions if missing a field
+        try:
+            if self.required_fields:
+                telemetry.update({
+                    field: take_required_field(field_column, data)
+                    for field, field_column in self.required_fields.iteritems()
+                })
+        except CheckException as e:
+            raise LookupError(e)  # drop this item, but continue with next
+
+        # Optional fields
+        if self.optional_fields:
+            telemetry.update({
+                take_optional_field(field, data)
+                for field in self.optional_fields
+            })
 
 
 class SplunkInstanceConfig(object):

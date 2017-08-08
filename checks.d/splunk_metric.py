@@ -8,7 +8,7 @@ from urllib import quote
 
 from checks.check_status import CheckData
 from checks import AgentCheck, CheckException
-from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field, take_optional_field, chunks, SavedSearches, time_to_seconds, get_utc_time
+from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field, chunks, SavedSearches, time_to_seconds, get_utc_time
 
 
 class MetricSavedSearch(SplunkSavedSearch):
@@ -195,51 +195,6 @@ class SplunkTelemetry(AgentCheck):
             self.log.debug("Processing saved search: %s." % saved_search.name)
             self._process_saved_search(sid, saved_search, instance, start_time)
 
-    def _extract_telemetry(self, saved_search, instance, result, sent_already):
-        for data in result["results"]:
-            # We need a unique identifier for splunk events, according to https://answers.splunk.com/answers/334613/is-there-a-unique-event-id-for-each-event-in-the-i.html
-            # this can be (server, index, _cd)
-            # I use (_bkt, _cd) because we only process data from 1 server in a check, and _bkt contains the index
-            current_id = (data["_bkt"], data["_cd"])
-            _time = take_required_field("_time", data)
-            timestamp = time_to_seconds(_time)
-
-            if timestamp > saved_search.last_observed_timestamp:
-                saved_search.last_observed_telemetry = {current_id}  # make a new set
-                saved_search.last_observed_timestamp = timestamp
-            elif timestamp == saved_search.last_observed_timestamp:
-                saved_search.last_observed_telemetry.add(current_id)
-
-            if current_id in sent_already:
-                continue
-
-            telemetry = {}
-
-            # Required fields
-            if saved_search.required_fields:
-                telemetry.update({
-                    field: take_required_field(field_column, data)
-                    for field, field_column in saved_search.required_fields.iteritems()
-                })
-
-            # Optional fields
-            if saved_search.optional_fields:
-                telemetry.update({
-                    take_optional_field(field, data)
-                    for field in saved_search.optional_fields
-                })
-
-            tags_data = self._filter_fields(data)
-
-            event_tags = self._convert_dict_to_tags(tags_data)
-            event_tags.extend(instance.tags)
-
-            telemetry.update({"tags": event_tags, "timestamp": timestamp})
-            yield telemetry
-
-    def _apply(self, **kwargs):
-        self.gauge(**kwargs)  # for metrics
-
     def _process_saved_search(self, search_id, saved_search, instance, start_time):
         count = 0
 
@@ -257,6 +212,40 @@ class SplunkTelemetry(AgentCheck):
 
         self.log.debug("Save search done: %s in time %d with results %d" % (saved_search.name, time.time() - start_time, count))
 
+    def _extract_telemetry(self, saved_search, instance, result, sent_already):
+        for data in result["results"]:
+            # We need a unique identifier for splunk events, according to https://answers.splunk.com/answers/334613/is-there-a-unique-event-id-for-each-event-in-the-i.html
+            # this can be (server, index, _cd)
+            # I use (_bkt, _cd) because we only process data from 1 server in a check, and _bkt contains the index
+            current_id = (data["_bkt"], data["_cd"])
+            timestamp = time_to_seconds(take_required_field("_time", data))
+
+            if timestamp > saved_search.last_observed_timestamp:
+                saved_search.last_observed_telemetry = {current_id}  # make a new set
+                saved_search.last_observed_timestamp = timestamp
+            elif timestamp == saved_search.last_observed_timestamp:
+                saved_search.last_observed_telemetry.add(current_id)
+
+            if current_id in sent_already:
+                continue
+
+            try:
+                telemetry = saved_search.retrieve_fields(data)
+                event_tags = [
+                    "%s:%s" % (key, value)
+                    for key, value in self._filter_fields(data).iteritems()
+                ]
+                event_tags.extend(instance.tags)
+                telemetry.update({"tags": event_tags, "timestamp": timestamp})
+                yield telemetry
+            except LookupError as e:
+                # Error in retrieving fields, skip this item and continue with next item in results
+                self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.WARNING, tags=instance.tags, message=str(e))
+
+
+    def _apply(self, **kwargs):
+        self.gauge(**kwargs)  # for metrics
+
     def _search(self, search_id, saved_search, instance):
         return self.splunkHelper.saved_search_results(search_id, saved_search, instance.instance_config)
 
@@ -267,13 +256,6 @@ class SplunkTelemetry(AgentCheck):
             for key, value in data.iteritems()
             if self._include_as_tag(key)
          }
-
-    @staticmethod
-    def _convert_dict_to_tags(data):
-        result = []
-        for key, value in data.iteritems():
-            result.extend(["%s:%s" % (key, value)])
-        return result
 
     @staticmethod
     def _current_time_seconds():
@@ -331,14 +313,11 @@ class SplunkTelemetry(AgentCheck):
 
         self.log.debug("Dispatching saved search: %s starting at %s." % (saved_search.name, parameters["dispatch.earliest_time"]))
 
-        response_body = self._do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
+        response_body = self.splunkHelper.do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
         return response_body['sid']
 
     def _saved_searches(self, instance_config):
         return self.splunkHelper.saved_searches(instance_config)
-
-    def _do_post(self, url, auth, payload, timeout, verify_ssl):
-        return self.splunkHelper.do_post(url, auth, payload, timeout, verify_ssl)
 
     def clear_status(self):
         """
