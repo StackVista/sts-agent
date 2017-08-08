@@ -29,20 +29,21 @@ class EventSavedSearch(SplunkSavedSearch):
         }
 
         self.optional_fields = {
-            field_name: saved_search_instance.get(name_in_config, instance_config.get_or_default("default_"+name_in_config))
-            for field_name in ["event_type", "_sourcetype", "msg_title", "msg_text"]
-            for name_in_config in [EventSavedSearch.field_name_in_config.get(field_name, field_name)]
+            "event_type": "event_type",
+            "source_type_name": "_sourcetype",
+            "msg_title": "msg_title",
+            "msg_text": "msg_text",
         }
 
         # Up until which timestamp did we get with the data?
-        self.last_event_time_epoch_seconds = 0
+        self.last_observed_timestamp = 0
 
         # End of the last recovery time window. When this is None recovery is done. 0 signifies uninitialized.
         # Any value above zero signifies until what time we recovered.
         self.last_recover_latest_time_epoch_seconds = 0
 
         # We keep track of the events that were reported for the last timestamp, to deduplicate them when we get a new query
-        self.last_events_at_epoch_time = set()
+        self.last_observed_telemetry = set()
 
     def get_status(self):
         """
@@ -50,7 +51,7 @@ class EventSavedSearch(SplunkSavedSearch):
         """
         if self.last_recover_latest_time_epoch_seconds is None:
             # If there is not catching up to do, the status is as far as the last event time
-            return self.last_event_time_epoch_seconds, False
+            return self.last_observed_timestamp, False
         else:
             # If we are still catching up, we got as far as the last finish time. We report as inclusive bound (hence the -1)
             return self.last_recover_latest_time_epoch_seconds - 1, True
@@ -73,8 +74,6 @@ class SplunkEvent(SplunkTelemetryBase):
             'default_verify_ssl_certificate': False,
             'default_batch_size': 1000,
             'default_saved_searches_parallel': 3,
-            "default_metric_name_field": "metric",
-            "default_metric_value_field": "value",
             'default_initial_history_time_seconds': 0,
             'default_max_restart_history_seconds': 86400,
             'default_max_query_chunk_seconds': 3600,
