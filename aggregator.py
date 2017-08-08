@@ -63,15 +63,15 @@ class Raw(Metric):
 
     def flush(self, timestamp, interval):
         metrics = [self.formatter(
-                metric=self.name,
-                timestamp=timestamp or self.timestamp,
-                value=value,
-                tags=self.tags,
-                hostname=self.hostname,
-                device_name=self.device_name,
-                metric_type=MetricTypes.RAW,
-                interval=interval,
-            ) for (value, timestamp) in self.values]
+            metric=self.name,
+            timestamp=sample_timestamp or timestamp,
+            value=value,
+            tags=self.tags,
+            hostname=self.hostname,
+            device_name=self.device_name,
+            metric_type=MetricTypes.RAW,
+            interval=interval,
+        ) for (value, sample_timestamp) in self.values]
         self.values = []
         return metrics
 

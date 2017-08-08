@@ -1,7 +1,6 @@
 # stdlib
 import json
 
-from utils.hostname import get_hostname
 from utils.splunk.splunk import time_to_seconds
 from tests.checks.common import AgentCheckTest, Fixtures
 from checks import CheckException
@@ -97,8 +96,6 @@ class TestSplunkMinimalMetrics(AgentCheckTest):
     def test_checks(self):
         self.maxDiff = None
 
-        hostname = get_hostname()
-
         config = {
             'init_config': {},
             'instances': [
@@ -171,9 +168,9 @@ class TestSplunkFullMetrics(AgentCheckTest):
             time=1488997796.0,
             value=1,
             tags=[
-              'hostname:myhost',
-              'some:tag',
-              'checktag:checktagvalue'
+                'hostname:myhost',
+                'some:tag',
+                'checktag:checktagvalue'
             ])
         self.assertMetric(
             'metric_name',
