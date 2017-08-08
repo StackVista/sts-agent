@@ -69,7 +69,7 @@ class Raw(Metric):
                 tags=self.tags,
                 hostname=self.hostname,
                 device_name=self.device_name,
-                metric_type=MetricTypes.GAUGE,
+                metric_type=MetricTypes.RAW,
                 interval=interval,
             ) for (value, timestamp) in self.values]
         self.values = []
@@ -935,7 +935,7 @@ class MetricsAggregator(Aggregator):
             self.metrics[context] = metric_class(self.formatter, name, tags,
                 hostname, device_name, self.metric_config.get(metric_class))
         cur_time = time()
-        if timestamp is not None and cur_time - int(timestamp) > self.recent_point_threshold:
+        if mtype is not "r" and timestamp is not None and cur_time - int(timestamp) > self.recent_point_threshold:
             log.debug("Discarding %s - ts = %s , current ts = %s " % (name, timestamp, cur_time))
             self.num_discarded_old_points += 1
         else:

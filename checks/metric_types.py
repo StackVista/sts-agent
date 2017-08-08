@@ -5,3 +5,4 @@ class MetricTypes(object):
     COUNTER = 'counter'
     RATE = 'rate'
     COUNT = 'count'
+    RAW = 'raw'

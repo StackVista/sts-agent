@@ -1,6 +1,7 @@
 # stdlib
 import json
 
+from utils.hostname import get_hostname
 from utils.splunk import time_to_seconds
 from tests.checks.common import AgentCheckTest, Fixtures
 from checks import CheckException
@@ -96,6 +97,8 @@ class TestSplunkMinimalMetrics(AgentCheckTest):
     def test_checks(self):
         self.maxDiff = None
 
+        hostname = get_hostname()
+
         config = {
             'init_config': {},
             'instances': [
@@ -119,8 +122,16 @@ class TestSplunkMinimalMetrics(AgentCheckTest):
         })
 
         self.assertEqual(len(self.metrics), 2)
-        self.assertEqual(self.metrics[0], ('metric_name', 1488974400.0, 1.0, dict()))
-        self.assertEqual(self.metrics[1], ('metric_name', 1488974400.0, 1, dict()))
+        self.assertMetric(
+            'metric_name',
+            time=1488974400.0,
+            value=1.0,
+            tags=[])
+        self.assertMetric(
+            'metric_name',
+            time=1488974400.0,
+            value=1,
+            tags=[])
 
 
 class TestSplunkFullMetrics(AgentCheckTest):
@@ -155,25 +166,25 @@ class TestSplunkFullMetrics(AgentCheckTest):
         })
 
         self.assertEqual(len(self.metrics), 2)
-        self.assertEqual(self.metrics[0],
-                 ('metric_name',
-                  1488997796.0,
-                  1, {'tags': [
-                      'hostname:myhost',
-                      'some:tag',
-                      'checktag:checktagvalue'
-                  ]}
-                  ))
-        self.assertEqual(self.metrics[1],
-                         ('metric_name',
-                          1488997797.0,
-                          1, {'tags': [
-                              'hostname:123',
-                              'device_name:123',
-                              'some:123',
-                              'checktag:checktagvalue'
-                          ]}
-                          ))
+        self.assertMetric(
+            'metric_name',
+            time=1488997796.0,
+            value=1,
+            tags=[
+              'hostname:myhost',
+              'some:tag',
+              'checktag:checktagvalue'
+            ])
+        self.assertMetric(
+            'metric_name',
+            time=1488997797.0,
+            value=1,
+            tags=[
+                'hostname:123',
+                'some:123',
+                'device_name:123',
+                'checktag:checktagvalue'
+            ])
 
 
 class TestSplunkAlternativeFieldsMetrics(AgentCheckTest):
@@ -210,8 +221,16 @@ class TestSplunkAlternativeFieldsMetrics(AgentCheckTest):
         })
 
         self.assertEqual(len(self.metrics), 2)
-        self.assertEqual(self.metrics[0], ('metric_name', 1488974400.0, 1.0, dict()))
-        self.assertEqual(self.metrics[1], ('metric_name', 1488974400.0, 2.0, dict()))
+        self.assertMetric(
+            'metric_name',
+            time=1488974400.0,
+            value=1.0,
+            tags=[])
+        self.assertMetric(
+            'metric_name',
+            time=1488974400.0,
+            value=2.0,
+            tags=[])
 
 
 class TestSplunkWarningOnMissingFields(AgentCheckTest):
@@ -280,8 +299,16 @@ class TestSplunkSameDataMetrics(AgentCheckTest):
         })
 
         self.assertEqual(len(self.metrics), 2)
-        self.assertEqual(self.metrics[0], ('metric_name', 1488974400.0, 1, dict()))
-        self.assertEqual(self.metrics[1], ('metric_name', 1488974400.0, 1, dict()))
+        self.assertMetric(
+            'metric_name',
+            time=1488974400.0,
+            value=1,
+            tags=[])
+        self.assertMetric(
+            'metric_name',
+            time=1488974400.0,
+            value=1,
+            tags=[])
 
 
 class TestSplunkEarliestTimeAndDuplicates(AgentCheckTest):
