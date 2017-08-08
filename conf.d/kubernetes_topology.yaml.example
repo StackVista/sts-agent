@@ -14,3 +14,5 @@ instances:
    master_name: kubernetes
    master_port: 443
    use_kube_auth: true
+
+   
