@@ -1,4 +1,5 @@
 # stdlib
+import sys
 import logging
 from time import time
 
@@ -43,6 +44,38 @@ class Metric(object):
         raise NotImplementedError()
 
 
+class Raw(Metric):
+    """ A metric that tracks a value at particular points in time and does not aggregate in any way """
+
+    def __init__(self, formatter, name, tags, hostname, device_name, extra_config=None):
+        self.formatter = formatter
+        self.name = name
+        self.values = []
+        self.tags = tags
+        self.hostname = hostname
+        self.device_name = device_name
+        # Never throw away raw metrics
+        self.last_sample_time = sys.maxint
+        self.timestamp = time()
+
+    def sample(self, value, sample_rate, timestamp=None):
+        self.values.append((value, timestamp))
+
+    def flush(self, timestamp, interval):
+        metrics = [self.formatter(
+                metric=self.name,
+                timestamp=timestamp or self.timestamp,
+                value=value,
+                tags=self.tags,
+                hostname=self.hostname,
+                device_name=self.device_name,
+                metric_type=MetricTypes.GAUGE,
+                interval=interval,
+            ) for (value, timestamp) in self.values]
+        self.values = []
+        return metrics
+
+
 class Gauge(Metric):
     """ A metric that tracks a value at particular points in time. """
 
@@ -61,7 +94,6 @@ class Gauge(Metric):
         self.last_sample_time = time()
         self.timestamp = timestamp
 
-
     def flush(self, timestamp, interval):
         if self.value is not None:
             res = [self.formatter(
@@ -78,6 +110,7 @@ class Gauge(Metric):
             return res
 
         return []
+
 
 class BucketGauge(Gauge):
     """ A metric that tracks a value at particular points in time.
@@ -743,6 +776,7 @@ class MetricsBucketAggregator(Aggregator):
             'h': Histogram,
             'ms': Histogram,
             's': Set,
+            'r': Raw
         }
 
     def calculate_bucket_start(self, timestamp):
@@ -882,6 +916,7 @@ class MetricsAggregator(Aggregator):
             'ms': Histogram,
             's': Set,
             '_dd-r': Rate,
+            'r': Raw,
         }
 
     def submit_metric(self, name, value, mtype, tags=None, hostname=None,
@@ -905,6 +940,9 @@ class MetricsAggregator(Aggregator):
             self.num_discarded_old_points += 1
         else:
             self.metrics[context].sample(value, sample_rate, timestamp)
+
+    def raw(self, name, value, tags=None, hostname=None, device_name=None, timestamp=None):
+        self.submit_metric(name, value, 'r', tags, hostname, device_name, timestamp)
 
     def gauge(self, name, value, tags=None, hostname=None, device_name=None, timestamp=None):
         self.submit_metric(name, value, 'g', tags, hostname, device_name, timestamp)

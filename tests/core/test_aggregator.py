@@ -18,7 +18,7 @@ class TestMetricsAggregator(unittest.TestCase):
     @staticmethod
     def sort_metrics(metrics):
         def sort_by(m):
-            return (m['metric'], m['host'], m['device_name'], ','.join(m['tags'] or []))
+            return (m['metric'], m['host'], m['device_name'], ','.join(m['tags'] or []), m['points'])
         return sorted(metrics, key=sort_by)
 
     @staticmethod
@@ -249,6 +249,52 @@ class TestMetricsAggregator(unittest.TestCase):
         nt.assert_equals(first['metric'], 'my.first.gauge')
         nt.assert_equals(first['points'][0][1], 5)
         nt.assert_equals(first['host'], 'myhost')
+
+    def test_raw(self):
+        stats = MetricsAggregator('myhost')
+
+        # Track some counters.
+        stats.submit_packets('my.first.raw:1|r')
+        stats.submit_packets('my.first.raw:5|r')
+        stats.submit_packets('my.second.raw:1.5|r')
+
+        # Ensure that gauges roll up correctly.
+        metrics = self.sort_metrics(stats.flush())
+        assert len(metrics) == 3
+
+        first, second, third = metrics
+
+        nt.assert_equals(first['metric'], 'my.first.raw')
+        nt.assert_equals(first['points'][0][1], 1)
+        nt.assert_equals(first['host'], 'myhost')
+
+        nt.assert_equals(second['metric'], 'my.first.raw')
+        nt.assert_equals(second['points'][0][1], 5)
+        nt.assert_equals(second['host'], 'myhost')
+
+        nt.assert_equals(third['metric'], 'my.second.raw')
+        nt.assert_equals(third['points'][0][1], 1.5)
+
+        # Ensure that old gauges get dropped due to flush
+        stats.raw('my.first.raw', 2)
+        stats.raw('my.first.raw', 6)
+        stats.raw('my.second.raw', 2.5)
+
+        metrics = self.sort_metrics(stats.flush())
+        assert len(metrics) == 3
+
+        first, second, third = metrics
+
+        nt.assert_equals(first['metric'], 'my.first.raw')
+        nt.assert_equals(first['points'][0][1], 2)
+        nt.assert_equals(first['host'], 'myhost')
+
+        nt.assert_equals(second['metric'], 'my.first.raw')
+        nt.assert_equals(second['points'][0][1], 6)
+        nt.assert_equals(second['host'], 'myhost')
+
+        nt.assert_equals(third['metric'], 'my.second.raw')
+        nt.assert_equals(third['points'][0][1], 2.5)
 
     def test_sets(self):
         stats = MetricsAggregator('myhost')
