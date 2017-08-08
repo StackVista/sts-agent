@@ -2,7 +2,7 @@
 import json
 
 from utils.hostname import get_hostname
-from utils.splunk import time_to_seconds
+from utils.splunk.splunk import time_to_seconds
 from tests.checks.common import AgentCheckTest, Fixtures
 from checks import CheckException
 
