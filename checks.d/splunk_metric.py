@@ -4,12 +4,12 @@
 
 # 3rd party
 
-from utils.splunk.splunk import SplunkSavedSearch, SplunkInstanceConfig, SavedSearches
-from utils.splunk.splunk_telemetry import SplunkTelemetryInstance
+from utils.splunk.splunk import SplunkInstanceConfig, SavedSearches
+from utils.splunk.splunk_telemetry import SplunkTelemetryInstance, SplunkTelemetrySavedSearch
 from utils.splunk.splunk_telemetry_base import SplunkTelemetryBase
 
 
-class MetricSavedSearch(SplunkSavedSearch):
+class MetricSavedSearch(SplunkTelemetrySavedSearch):
     last_observed_telemetry = set()
 
     # how fields are to be specified in the config
@@ -21,38 +21,11 @@ class MetricSavedSearch(SplunkSavedSearch):
     def __init__(self, instance_config, saved_search_instance):
         super(MetricSavedSearch, self).__init__(instance_config, saved_search_instance)
 
-        self.config = {
-            field_name: saved_search_instance.get(name_in_config, instance_config.get_or_default("default_" + name_in_config))
-            for field_name in ['initial_history_time_seconds', 'max_restart_history_seconds', 'max_query_chunk_seconds']
-            for name_in_config in [MetricSavedSearch.field_name_in_config.get(field_name, field_name)]
-        }
-
         self.required_fields = {
             field_name: saved_search_instance.get(name_in_config, instance_config.get_or_default("default_"+name_in_config))
             for field_name in ['metric', 'value']
             for name_in_config in [MetricSavedSearch.field_name_in_config.get(field_name, field_name)]
         }
-
-        # Up until which timestamp (in epoch seconds) did we get with the data?
-        self.last_observed_timestamp = 0
-
-        # End of the last recovery time window. When this is None recovery is done. 0 signifies uninitialized.
-        # Any value above zero signifies until what time we recovered.
-        self.last_recover_latest_time_epoch_seconds = 0
-
-        # We keep track of the events that were reported for the last timestamp, to deduplicate them when we get a new query
-        self.last_observed_telemetry = set()
-
-    def get_status(self):
-        """
-        :return: Return a tuple of the last time until which the query was ran, and whether this was based on history
-        """
-        if self.last_recover_latest_time_epoch_seconds is None:
-            # If there is not catching up to do, the status is as far as the last event time
-            return self.last_observed_timestamp, False
-        else:
-            # If we are still catching up, we got as far as the last finish time. We report as inclusive bound (hence the -1)
-            return self.last_recover_latest_time_epoch_seconds - 1, True
 
 
 class SplunkMetric(SplunkTelemetryBase):
