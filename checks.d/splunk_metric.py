@@ -255,7 +255,7 @@ class SplunkTelemetry(AgentCheck):
             key: value
             for key, value in data.iteritems()
             if self._include_as_tag(key)
-         }
+        }
 
     @staticmethod
     def _current_time_seconds():
@@ -310,11 +310,13 @@ class SplunkTelemetry(AgentCheck):
                 parameters["dispatch.latest_time"] = latest_epoch_datetime.strftime(self.TIME_FMT)
                 self.log.warn("Catching up with old splunk data from %s to %s " % (parameters["dispatch.earliest_time"],parameters["dispatch.latest_time"]))
 
-
         self.log.debug("Dispatching saved search: %s starting at %s." % (saved_search.name, parameters["dispatch.earliest_time"]))
 
-        response_body = self.splunkHelper.do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
+        response_body = self._do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
         return response_body['sid']
+
+    def _do_post(self, url, auth, payload, timeout, verify_ssl):
+        return self.splunkHelper.do_post(url, auth, payload, timeout, verify_ssl)
 
     def _saved_searches(self, instance_config):
         return self.splunkHelper.saved_searches(instance_config)
@@ -337,5 +339,4 @@ class SplunkTelemetry(AgentCheck):
 
 class SplunkMetric(SplunkTelemetry):
     def __init__(self, name, init_config, agentConfig, instances=None):
-        required_fields = []
         super(SplunkMetric, self).__init__(name, init_config, agentConfig, instances)

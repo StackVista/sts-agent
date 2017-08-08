@@ -57,9 +57,11 @@ class SplunkSavedSearch(object):
         # Optional fields
         if self.optional_fields:
             telemetry.update({
-                take_optional_field(field, data)
-                for field in self.optional_fields
+                field: take_optional_field(field_column, data)
+                for field, field_column in self.optional_fields.iteritems()
             })
+
+        return telemetry
 
 
 class SplunkInstanceConfig(object):
