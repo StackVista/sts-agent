@@ -1,6 +1,3 @@
-from utils.splunk.splunk import SavedSearches
-
-
 class SplunkTelemetryInstance(object):
     def __init__(self, current_time, instance, instance_config, saved_searches):
         self.instance_config = instance_config
@@ -55,4 +52,3 @@ class SplunkTelemetryInstance(object):
                         saved_search.last_observed_timestamp = current_time - saved_search.config['max_restart_history_seconds']
             else:
                 saved_search.last_observed_timestamp = last_committed
-

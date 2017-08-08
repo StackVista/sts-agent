@@ -3,11 +3,7 @@
 """
 
 # 3rd party
-import time
-from urllib import quote
 
-from checks.check_status import CheckData
-from checks import AgentCheck, CheckException
 from utils.splunk.splunk import SplunkSavedSearch, SplunkInstanceConfig, SavedSearches
 from utils.splunk.splunk_telemetry import SplunkTelemetryInstance
 from utils.splunk.splunk_telemetry_base import SplunkTelemetryBase

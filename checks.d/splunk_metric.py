@@ -84,5 +84,3 @@ class SplunkMetric(SplunkTelemetryBase):
             for saved_search_instance in instance['saved_searches']
         ])
         return SplunkTelemetryInstance(current_time, instance, metric_instance_config, metric_saved_searches)
-
-
