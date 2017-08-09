@@ -34,8 +34,8 @@ class SplunkMetric(SplunkTelemetryBase):
     def __init__(self, name, init_config, agentConfig, instances=None):
         super(SplunkMetric, self).__init__(name, init_config, agentConfig, "splunk_metric", instances)
 
-    def _apply(self, **kwargs):
-        self.raw(**kwargs)
+    def _apply(self, metric, value, **kwargs):
+        self.raw(metric, float(value), **kwargs)
 
     def get_instance(self, instance, current_time):
         metric_instance_config = SplunkInstanceConfig(instance, self.init_config, {

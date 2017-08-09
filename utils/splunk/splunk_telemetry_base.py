@@ -115,6 +115,7 @@ class SplunkTelemetryBase(AgentCheck):
                 self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.WARNING, tags=instance.tags, message=str(e))
 
     def _apply(self, **kwargs):
+        """ How the telemetry info should be sent by the check, e.g., as event, guage, etc. """
         raise NotImplementedError
 
     def _filter_fields(self, data):

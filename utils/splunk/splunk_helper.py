@@ -1,8 +1,9 @@
 import time
 import requests
 
-from checks import CheckException
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+from checks import CheckException
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -77,7 +78,6 @@ class SplunkHelper(object):
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
-
         resp = requests.post(url, headers=headers, data=payload, auth=auth, timeout=request_timeout_seconds, verify=verify_ssl_certificate)
         resp.raise_for_status()
         return resp
