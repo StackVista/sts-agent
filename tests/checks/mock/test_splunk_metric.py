@@ -127,7 +127,7 @@ class TestSplunkMinimalMetrics(AgentCheckTest):
         self.assertMetric(
             'metric_name',
             time=1488974400.0,
-            value=1,
+            value=2,
             tags=[])
 
 
