@@ -230,6 +230,52 @@ class TestSplunkAlternativeFieldsMetrics(AgentCheckTest):
             tags=[])
 
 
+class TestSplunkFixedMetricNAme(AgentCheckTest):
+    """
+    Splunk metrics check should be able to have a fixed check name
+    """
+    CHECK_NAME = 'splunk_metric'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:13001',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches': [{
+                        "name": "alternative_fields_metrics",
+                        "metric_name": "custommetric",
+                        "metric_value_field": "myvalue",
+                        "parameters": {}
+                    }],
+                    'tags': []
+                }
+            ]
+        }
+
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_search,
+            '_saved_searches': _mocked_saved_searches
+        })
+
+        self.assertEqual(len(self.metrics), 2)
+        self.assertMetric(
+            'custommetric',
+            time=1488974400.0,
+            value=1.0,
+            tags=["mymetric:metric_name"])
+        self.assertMetric(
+            'custommetric',
+            time=1488974400.0,
+            value=2.0,
+            tags=["mymetric:metric_name"])
+
+
 class TestSplunkWarningOnMissingFields(AgentCheckTest):
     """
     Splunk metric check should produce a service check upon a missing value or metric name field

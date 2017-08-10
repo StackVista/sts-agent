@@ -11,7 +11,7 @@ from utils.splunk.splunk_helper import SplunkHelper
 class SplunkTelemetryBase(AgentCheck):
     SERVICE_CHECK_NAME = None  # must be set in the subclasses
     basic_default_fields = {'host', 'index', 'linecount', 'punct', 'source', 'sourcetype', 'splunk_server', 'timestamp'}
-    date_default_fields = {'date_hour', 'date_mday', 'date_minute', 'date_month', 'date_second', 'date_wday', 'date_year', 'date_zone'}
+    date_default_fields = {'date_hour', 'date_mday', 'date_minute', 'date_month', 'date_second', 'date_wday', 'date_year', 'date_zone', 'timestartpos', 'timeendpos'}
     TIME_FMT = "%Y-%m-%dT%H:%M:%S.%f%z"
 
     def __init__(self, name, init_config, agentConfig, persistence_check_name, instances=None):

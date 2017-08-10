@@ -21,9 +21,19 @@ class MetricSavedSearch(SplunkTelemetrySavedSearch):
     def __init__(self, instance_config, saved_search_instance):
         super(MetricSavedSearch, self).__init__(instance_config, saved_search_instance)
 
+        required_base_fields = ['value']
+
+        if 'metric_name' in saved_search_instance:
+            if 'metric_name_field' in saved_search_instance:
+                raise Exception("Cannot set both metric_name and metric_name_field")
+
+            self.fixed_fields = {'metric': saved_search_instance.get('metric_name')}
+        else:
+            required_base_fields.append('metric')
+
         self.required_fields = {
             field_name: saved_search_instance.get(name_in_config, instance_config.get_or_default("default_"+name_in_config))
-            for field_name in ['metric', 'value']
+            for field_name in required_base_fields
             for name_in_config in [MetricSavedSearch.field_name_in_config.get(field_name, field_name)]
         }
 

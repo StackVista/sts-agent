@@ -22,6 +22,7 @@ class SplunkSavedSearch(object):
         self.critical_fields = None  # if absent, then fail the search
         self.required_fields = None  # if absent, then drop the item and continue with other items in this search
         self.optional_fields = None  # allowed to be absent
+        self.fixed_fields = None  # fields that are filled in by the check
 
         self.parameters = saved_search_instance['parameters']
 
@@ -56,6 +57,10 @@ class SplunkSavedSearch(object):
                 field: take_optional_field(field_column, data)
                 for field, field_column in self.optional_fields.iteritems()
             })
+
+        # Fixed fields
+        if self.fixed_fields:
+            telemetry.update(self.fixed_fields)
 
         return telemetry
 
