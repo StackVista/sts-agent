@@ -4,7 +4,8 @@ from unittest import TestCase
 
 import logging
 
-from utils.splunk import SplunkHelper, SplunkSavedSearch, SplunkInstanceConfig, SavedSearches
+from utils.splunk.splunk import SplunkSavedSearch, SplunkInstanceConfig, SavedSearches
+from utils.splunk.splunk_helper import SplunkHelper
 
 
 class TestUtilsSplunk(TestCase):

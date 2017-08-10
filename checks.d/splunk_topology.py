@@ -8,7 +8,8 @@ import time
 from urllib import quote
 
 from checks import AgentCheck, CheckException
-from utils.splunk import SplunkInstanceConfig, SplunkSavedSearch, SplunkHelper, take_required_field, SavedSearches, chunks
+from utils.splunk.splunk import SplunkSavedSearch, SplunkInstanceConfig, SavedSearches, chunks, take_required_field
+from utils.splunk.splunk_helper import SplunkHelper
 
 
 class SavedSearch(SplunkSavedSearch):

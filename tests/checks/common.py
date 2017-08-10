@@ -338,10 +338,12 @@ WARNINGS
             raise
 
     def assertMetric(self, metric_name, value=None, tags=None, count=None,
-                     at_least=1, hostname=None, device_name=None, metric_type=None):
+                     at_least=1, hostname=None, device_name=None, metric_type=None, time=None):
         candidates = []
         for m_name, ts, val, mdata in self.metrics:
             if m_name == metric_name:
+                if time is not None and ts != time:
+                    continue
                 if value is not None and val != value:
                     continue
                 if tags is not None and sorted(tags) != sorted(mdata.get("tags", [])):
