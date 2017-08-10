@@ -10,29 +10,49 @@ class TestUcmdbCIParser(TestCase):
         components = parser.get_components()
         relations = parser.get_relations()
 
-        self.assertEquals(len(components), 2)
-        self.assertEquals(components, [{'type': 'business_application',
-            'external_id': 'dab1c91cdc7a6d808b0642cb02ea22f0',
-            'data': {
-                'display_label': 'CRMI (MQCODE)',
+        self.assertEquals(len(components), 3)
+        self.assertEquals(components, [{'ucmdb_id': 'dab1c91cdc7a6d808b0642cb02ea22f0',
+            'operation': 'add',
+            'data': {'display_label': 'CRMI (MQCODE)',
                 'name': 'CRMI (MQCODE)',
                 'global_id': 'dab1c91cdc7a6d808b0642cb02ea22f0',
-                'root_class': 'business_application'}},
-            {'type': 'business_application',
-            'data': {'display_label': 'ISSUER LOADBALANCER-SSL-OFFLOADER', 'name': 'ISSUER LOADBALANCER-SSL-OFFLOADER', 'global_id': 'ba21d9dfb1c2ebf4ee951589a3b4ec62', 'root_class': 'business_application'}, 'external_id': 'ba21d9dfb1c2ebf4ee951589a3b4ec62'}])
-        self.assertEquals(len(relations), 1)
-        self.assertEquals(relations, [{
-            'source_id': 'dab1c91cdc7a6d808b0642cb02ea22f0',
-            'type': 'containment',
+                'root_class': 'business_application'},
+            'name': 'business_application'},
+            {'ucmdb_id': 'ba21d9dfb1c2ebf4ee951589a3b4ec62',
+            'operation': 'add',
+            'data': {'display_label': 'ISSUER LOADBALANCER-SSL-OFFLOADER',
+                'name': 'ISSUER LOADBALANCER-SSL-OFFLOADER',
+                'global_id': 'ba21d9dfb1c2ebf4ee951589a3b4ec62',
+                'root_class': 'business_application'},
+            'name': 'business_application'},
+            {'ucmdb_id': 'ba21d9dfb1c2ebf4ee951589a3b4ec62',
+            'operation': 'remove',
+            'data': {'display_label': 'ISSUER LOADBALANCER-SSL-OFFLOADER',
+                'name': 'ISSUER LOADBALANCER-SSL-OFFLOADER',
+                'global_id': 'ba21d9dfb1c2ebf4ee951589a3b4ec62',
+                'root_class': 'business_application'},
+            'name': 'business_application'}])
+        self.assertEquals(len(relations), 2)
+        self.assertEquals(relations, [{'name': 'containment',
             'target_id': '6c01ec45816a40eb866400ff143f4968',
-            'data': {
-                'DiscoveryID2': '6c01ec45816a40eb866400ff143f4968',
+            'ucmdb_id': 'a9247f4296601c507064ae599bec177e',
+            'source_id': 'dab1c91cdc7a6d808b0642cb02ea22f0',
+            'operation': 'add',
+            'data': {'DiscoveryID2': '6c01ec45816a40eb866400ff143f4968',
                 'DiscoveryID1': 'dab1c91cdc7a6d808b0642cb02ea22f0',
                 'display_label': 'Containment',
                 'end1Id': 'UCMDB%0ARB_BusinessFunction%0A1%0Ainternal_id%3DSTRING%3Ddab1c91cdc7a6d808b0642cb02ea22f0%0A',
-                'end2Id': 'UCMDB%0ARB_BusinessChannel%0A1%0Ainternal_id%3DSTRING%3Dba21d9dfb1c2ebf4ee951589a3b4ec62%0A'
-            },
-            'external_id': 'a9247f4296601c507064ae599bec177e'}])
+                'end2Id': 'UCMDB%0ARB_BusinessChannel%0A1%0Ainternal_id%3DSTRING%3Dba21d9dfb1c2ebf4ee951589a3b4ec62%0A'}},
+            {'name': 'containment',
+            'target_id': '6c01ec45816a40eb866400ff143f4968',
+            'ucmdb_id': 'a9247f4296601c507064ae599bec177e',
+            'source_id': 'dab1c91cdc7a6d808b0642cb02ea22f0',
+            'operation': 'remove',
+            'data': {'DiscoveryID2': '6c01ec45816a40eb866400ff143f4968',
+                'DiscoveryID1': 'dab1c91cdc7a6d808b0642cb02ea22f0',
+                'display_label': 'Containment',
+                'end1Id': 'UCMDB%0ARB_BusinessFunction%0A1%0Ainternal_id%3DSTRING%3Ddab1c91cdc7a6d808b0642cb02ea22f0%0A',
+                'end2Id': 'UCMDB%0ARB_BusinessChannel%0A1%0Ainternal_id%3DSTRING%3Dba21d9dfb1c2ebf4ee951589a3b4ec62%0A'}}])
 
     def test_parse_minimal(self):
         self.maxDiff = None
@@ -42,10 +62,16 @@ class TestUcmdbCIParser(TestCase):
         relations = parser.get_relations()
         self.assertEquals(len(components), 2)
         self.assertEquals(components, [
-            {'type': 'business_service', 'data': {}, 'external_id': 'dab1c91cdc7a6d808b0642cb02ea22f0'},
-            {'data': {}, 'external_id': 'ba21d9dfb1c2ebf4ee951589a3b4ec62', 'type': 'business_service'}])
+            {'ucmdb_id': 'dab1c91cdc7a6d808b0642cb02ea22f0', 'operation': 'add', 'data': {}, 'name': 'business_service'},
+            {'ucmdb_id': 'ba21d9dfb1c2ebf4ee951589a3b4ec62', 'operation': 'add', 'data': {}, 'name': 'business_service'}])
         self.assertEquals(len(relations), 1)
-        self.assertEquals(relations, [{'source_id': 'dab1c91cdc7a6d808b0642cb02ea22f0', 'type': 'containment', 'target_id': '6c01ec45816a40eb866400ff143f4968', 'data': {'DiscoveryID2': '6c01ec45816a40eb866400ff143f4968', 'DiscoveryID1': 'dab1c91cdc7a6d808b0642cb02ea22f0'}, 'external_id': 'a9247f4296601c507064ae599bec177e'}])
+        self.assertEquals(relations, [{'name': 'containment',
+            'target_id': '6c01ec45816a40eb866400ff143f4968',
+            'ucmdb_id': 'a9247f4296601c507064ae599bec177e',
+            'source_id': 'dab1c91cdc7a6d808b0642cb02ea22f0',
+            'operation': 'add',
+            'data': {'DiscoveryID2': '6c01ec45816a40eb866400ff143f4968',
+                'DiscoveryID1': 'dab1c91cdc7a6d808b0642cb02ea22f0'}}])
 
     def test_parse_empty(self):
         self.maxDiff = None

@@ -29,36 +29,43 @@ class UcmdbCIParser:
 
     def parse(self):
         tree = ET.iterparse(self.file)
-        current_element = dict()
-        current_element['data'] = dict()
+        current_element = self.new_element()
         for event, elem in tree:
             if event == 'end':
                 if elem.tag == 'attribute':
-                    if 'name' in elem.attrib:
-                        attribute_name = elem.attrib['name']
-                        attribute_value = elem.text
-                        current_element['data'][attribute_name] = attribute_value
+                    self.attribute_text_to_data(elem, current_element)
                 elif elem.tag == 'object':
-                    if 'operation' in elem.attrib and elem.attrib['operation'] == 'add':
-                        if 'name' in elem.attrib and 'ucmdb_id' in elem.attrib:
-                            current_element['type'] = elem.attrib['name']
-                            current_element['external_id'] = elem.attrib['ucmdb_id']
-                            self.components.append(current_element)
-                    current_element = dict()
-                    current_element['data'] = dict()
+                    if 'operation' in elem.attrib:
+                        current_element['operation'] = elem.attrib['operation']
+                    if 'name' in elem.attrib and 'ucmdb_id' in elem.attrib:
+                        current_element['name'] = elem.attrib['name']
+                        current_element['ucmdb_id'] = elem.attrib['ucmdb_id']
+                        self.components.append(current_element)
+                    current_element = self.new_element()
                 elif elem.tag == 'link':
-                    if 'operation' in elem.attrib and elem.attrib['operation'] == 'add':
-                        if 'name' in elem.attrib and 'ucmdb_id' in elem.attrib:
-                            current_element['type'] = elem.attrib['name']
-                            current_element['external_id'] = elem.attrib['ucmdb_id']
-                            if 'DiscoveryID1' in current_element['data']:
-                                current_element['source_id'] = current_element['data']['DiscoveryID1']
-                            if 'DiscoveryID2' in current_element['data']:
-                                current_element['target_id'] = current_element['data']['DiscoveryID2']
-                            self.relations.append(current_element)
-                    current_element = dict()
-                    current_element['data'] = dict()
+                    if 'operation' in elem.attrib:
+                        current_element['operation'] = elem.attrib['operation']
+                    if 'name' in elem.attrib and 'ucmdb_id' in elem.attrib:
+                        current_element['name'] = elem.attrib['name']
+                        current_element['ucmdb_id'] = elem.attrib['ucmdb_id']
+                        if 'DiscoveryID1' in current_element['data']:
+                            current_element['source_id'] = current_element['data']['DiscoveryID1']
+                        if 'DiscoveryID2' in current_element['data']:
+                            current_element['target_id'] = current_element['data']['DiscoveryID2']
+                        self.relations.append(current_element)
+                    current_element = self.new_element()
             elem.clear()
+
+    def attribute_text_to_data(self, tag_elem, element):
+        if 'name' in tag_elem.attrib:
+            attribute_name = tag_elem.attrib['name']
+            attribute_value = tag_elem.text
+            element['data'][attribute_name] = attribute_value
+
+    def new_element(self):
+        element = dict()
+        element['data'] = dict()
+        return element
 
     def get_components(self):
         return self.components

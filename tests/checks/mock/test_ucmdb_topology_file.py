@@ -31,6 +31,7 @@ class TestUcmdbTopologyFull(AgentCheckTest):
             'instances': [
                 {
                     'location': 'tests/checks/fixtures/ucmdb/tql_export_full.xml',
+                    'tag_attributes': ['root_class','name'],
                     'tags': ['mytag']
                 }
             ]
@@ -46,7 +47,7 @@ class TestUcmdbTopologyFull(AgentCheckTest):
             'global_id': 'dab1c91cdc7a6d808b0642cb02ea22f0',
             'name': 'CRMI (MQCODE)',
             'root_class': 'business_application',
-            'tags': ['mytag']},
+            'tags': ['business_application', 'CRMI (MQCODE)', 'mytag']},
             'externalId': 'dab1c91cdc7a6d808b0642cb02ea22f0',
             'type': {'name': 'business_application'}})
 
@@ -55,7 +56,7 @@ class TestUcmdbTopologyFull(AgentCheckTest):
             'global_id': 'ba21d9dfb1c2ebf4ee951589a3b4ec62',
             'name': 'ISSUER LOADBALANCER-SSL-OFFLOADER',
             'root_class': 'business_application',
-            'tags': ['mytag']},
+            'tags': ['business_application','ISSUER LOADBALANCER-SSL-OFFLOADER','mytag']},
             'externalId': 'ba21d9dfb1c2ebf4ee951589a3b4ec62',
             'type': {'name': 'business_application'}})
 
