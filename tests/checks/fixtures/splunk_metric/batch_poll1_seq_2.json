@@ -1,0 +1,29 @@
+[{
+	"preview": false,
+	"init_offset": 0,
+	"messages": [],
+	"fields": [],
+	"results": [{
+      "_time": "2017-03-08T18:29:59.000+00:00",
+      "_bkt": "2",
+      "_cd": "2",
+      "metric": "name",
+      "value": 22
+    }, {
+		"_time": "2017-03-08T18:30:00.000+00:00",
+		"_bkt": "3",
+		"_cd": "1",
+        "metric": "name",
+        "value": 31
+	}],
+	"highlighted": {}
+},
+{
+  "preview": false,
+  "init_offset": 0,
+  "messages": [],
+  "fields": [],
+  "results": [],
+  "highlighted": {}
+}]
+

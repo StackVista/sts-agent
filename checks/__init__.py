@@ -436,6 +436,20 @@ class AgentCheck(object):
         """ Return the number of instances that are configured for this check. """
         return len(self.instances)
 
+    def raw(self, metric, value, tags=None, hostname=None, device_name=None, timestamp=None):
+        """
+        Record the value of a metric, with optional tags, hostname and device
+        name. No aggregation will be done.
+
+        :param metric: The name of the metric
+        :param value: The value of the gauge
+        :param tags: (optional) A list of tags for this metric
+        :param hostname: (optional) A hostname for this metric. Defaults to the current hostname.
+        :param device_name: (optional) The device name for this metric
+        :param timestamp: (optional) The timestamp for this metric value
+        """
+        self.aggregator.raw(metric, value, tags, hostname, device_name, timestamp)
+
     def gauge(self, metric, value, tags=None, hostname=None, device_name=None, timestamp=None):
         """
         Record the value of a gauge, with optional tags, hostname and device

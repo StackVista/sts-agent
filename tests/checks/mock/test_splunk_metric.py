@@ -8,11 +8,20 @@ from checks import CheckException
 def _mocked_saved_searches(*args, **kwargs):
     return []
 
+def _mocked_dispatch_saved_search(*args, **kwargs):
+    # Sid is equal to search name
+    return args[1].name
+
+def _mocked_search(*args, **kwargs):
+    # sid is set to saved search name
+    sid = args[0]
+    return [json.loads(Fixtures.read_file("%s.json" % sid))]
+
 class TestSplunkErrorResponse(AgentCheckTest):
     """
-    Splunk event check should handle a FATAL message response
+    Splunk metric check should handle a FATAL message response
     """
-    CHECK_NAME = 'splunk_event'
+    CHECK_NAME = 'splunk_metric'
 
     def test_checks(self):
         self.maxDiff = None
@@ -46,11 +55,11 @@ class TestSplunkErrorResponse(AgentCheckTest):
         self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
 
 
-class TestSplunkEmptyEvents(AgentCheckTest):
+class TestSplunkEmptyMetrics(AgentCheckTest):
     """
-    Splunk event check should process empty response correctly
+    Splunk metric check should process empty response correctly
     """
-    CHECK_NAME = 'splunk_event'
+    CHECK_NAME = 'splunk_metric'
 
     def test_checks(self):
         self.maxDiff = None
@@ -63,7 +72,7 @@ class TestSplunkEmptyEvents(AgentCheckTest):
                     'username': "admin",
                     'password': "admin",
                     'saved_searches': [{
-                        "name": "events",
+                        "name": "empty",
                         "parameters": {}
                     }]
                 }
@@ -71,17 +80,18 @@ class TestSplunkEmptyEvents(AgentCheckTest):
         }
         self.run_check(config, mocks={
             '_dispatch_saved_search': _mocked_dispatch_saved_search,
-            '_search': _mocked_minimal_search,
+            '_search': _mocked_search,
             '_saved_searches': _mocked_saved_searches
         })
-        current_check_events = self.check.get_events()
-        self.assertEqual(len(current_check_events), 0)
+        current_check_metrics = self.check.get_metrics()
+        self.assertEqual(len(current_check_metrics), 0)
 
-class TestSplunkMinimalEvents(AgentCheckTest):
+
+class TestSplunkMinimalMetrics(AgentCheckTest):
     """
-    Splunk event check should process minimal response correctly
+    Splunk metrics check should process minimal response correctly
     """
-    CHECK_NAME = 'splunk_event'
+    CHECK_NAME = 'splunk_metric'
 
     def test_checks(self):
         self.maxDiff = None
@@ -94,7 +104,7 @@ class TestSplunkMinimalEvents(AgentCheckTest):
                     'username': "admin",
                     'password': "admin",
                     'saved_searches': [{
-                        "name": "events",
+                        "name": "minimal_metrics",
                         "parameters": {}
                     }],
                     'tags': []
@@ -104,34 +114,28 @@ class TestSplunkMinimalEvents(AgentCheckTest):
 
         self.run_check(config, mocks={
             '_dispatch_saved_search': _mocked_dispatch_saved_search,
-            '_search': _mocked_minimal_search,
+            '_search': _mocked_search,
             '_saved_searches': _mocked_saved_searches
         })
 
-        self.assertEqual(len(self.events), 2)
-        self.assertEqual(self.events[0], {
-            'event_type': None,
-            'tags': [],
-            'timestamp': 1488974400.0,
-            'msg_title': None,
-            'msg_text': None,
-            'source_type_name': None
-        })
-        self.assertEqual(self.events[1], {
-            'event_type': None,
-            'tags': [],
-            'timestamp': 1488974400.0,
-            'msg_title': None,
-            'msg_text': None,
-            'source_type_name': None
-        })
+        self.assertEqual(len(self.metrics), 2)
+        self.assertMetric(
+            'metric_name',
+            time=1488974400.0,
+            value=1.0,
+            tags=[])
+        self.assertMetric(
+            'metric_name',
+            time=1488974400.0,
+            value=2,
+            tags=[])
 
 
-class TestSplunkFullEvents(AgentCheckTest):
+class TestSplunkFullMetrics(AgentCheckTest):
     """
-    Splunk event check should process full response correctly
+    Splunk metric check should process full response correctly
     """
-    CHECK_NAME = 'splunk_event'
+    CHECK_NAME = 'splunk_metric'
 
     def test_checks(self):
         self.maxDiff = None
@@ -144,7 +148,7 @@ class TestSplunkFullEvents(AgentCheckTest):
                     'username': "admin",
                     'password': "admin",
                     'saved_searches': [{
-                        "name": "events",
+                        "name": "full_metrics",
                         "parameters": {}
                     }],
                     'tags': ["checktag:checktagvalue"]
@@ -154,51 +158,207 @@ class TestSplunkFullEvents(AgentCheckTest):
 
         self.run_check(config, mocks={
             '_dispatch_saved_search': _mocked_dispatch_saved_search,
-            '_search': _mocked_full_search,
+            '_search': _mocked_search,
             '_saved_searches': _mocked_saved_searches
         })
 
-        self.assertEqual(len(self.events), 2)
-        self.assertEqual(self.events[0], {
-            'event_type': "some_type",
-            'timestamp': 1488997796.0,
-            'msg_title': "some_title",
-            'msg_text': "some_text",
-            'source_type_name': 'unknown-too_small',
-            'tags': [
-                'from:grey',
-                "full_formatted_message:Alarm 'Virtual machine CPU usage' on SWNC7R049 changed from Gray to Green",
-                "alarm_name:Virtual machine CPU usage",
-                "to:green",
-                "key:19964908",
-                "VMName:SWNC7R049",
-                "checktag:checktagvalue"
+        self.assertEqual(len(self.metrics), 2)
+        self.assertMetric(
+            'metric_name',
+            time=1488997796.0,
+            value=1,
+            tags=[
+                'hostname:myhost',
+                'some:tag',
+                'checktag:checktagvalue'
+            ])
+        self.assertMetric(
+            'metric_name',
+            time=1488997797.0,
+            value=1,
+            tags=[
+                'hostname:123',
+                'some:123',
+                'device_name:123',
+                'checktag:checktagvalue'
+            ])
+
+
+class TestSplunkAlternativeFieldsMetrics(AgentCheckTest):
+    """
+    Splunk metrics check should be able to have configurable value fields
+    """
+    CHECK_NAME = 'splunk_metric'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:13001',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches': [{
+                        "name": "alternative_fields_metrics",
+                        "metric_name_field": "mymetric",
+                        "metric_value_field": "myvalue",
+                        "parameters": {}
+                    }],
+                    'tags': []
+                }
             ]
+        }
+
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_search,
+            '_saved_searches': _mocked_saved_searches
         })
 
-        self.assertEqual(self.events[1], {
-            'event_type': "some_type",
-            'timestamp': 1488997797.0,
-            'msg_title': "some_title",
-            'msg_text': "some_text",
-            'source_type_name': 'unknown-too_small',
-            'tags': [
-                'from:grey',
-                "full_formatted_message:Alarm 'Virtual machine memory usage' on SWNC7R049 changed from Gray to Green",
-                "alarm_name:Virtual machine memory usage",
-                "to:green",
-                "key:19964909",
-                "VMName:SWNC7R049",
-                "checktag:checktagvalue"
+        self.assertEqual(len(self.metrics), 2)
+        self.assertMetric(
+            'metric_name',
+            time=1488974400.0,
+            value=1.0,
+            tags=[])
+        self.assertMetric(
+            'metric_name',
+            time=1488974400.0,
+            value=2.0,
+            tags=[])
+
+
+class TestSplunkFixedMetricNAme(AgentCheckTest):
+    """
+    Splunk metrics check should be able to have a fixed check name
+    """
+    CHECK_NAME = 'splunk_metric'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:13001',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches': [{
+                        "name": "alternative_fields_metrics",
+                        "metric_name": "custommetric",
+                        "metric_value_field": "myvalue",
+                        "parameters": {}
+                    }],
+                    'tags': []
+                }
             ]
+        }
+
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_search,
+            '_saved_searches': _mocked_saved_searches
         })
+
+        self.assertEqual(len(self.metrics), 2)
+        self.assertMetric(
+            'custommetric',
+            time=1488974400.0,
+            value=1.0,
+            tags=["mymetric:metric_name"])
+        self.assertMetric(
+            'custommetric',
+            time=1488974400.0,
+            value=2.0,
+            tags=["mymetric:metric_name"])
+
+
+class TestSplunkWarningOnMissingFields(AgentCheckTest):
+    """
+    Splunk metric check should produce a service check upon a missing value or metric name field
+    """
+    CHECK_NAME = 'splunk_metric'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:8089',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches': [{
+                        "name": "incomplete_metrics",
+                        "parameters": {}
+                    }],
+                    'tags': []
+                }
+            ]
+        }
+
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_search,
+            '_saved_searches': _mocked_saved_searches
+        })
+
+        self.assertEquals(self.service_checks[0]['status'], 1, "service check should have status AgentCheck.WARNING when fields are missing")
+
+
+class TestSplunkSameDataMetrics(AgentCheckTest):
+    """
+    Splunk metrics check should process metrics with the same data
+    """
+    CHECK_NAME = 'splunk_metric'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:13001',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches': [{
+                        "name": "duplicate_metrics",
+                        "parameters": {}
+                    }],
+                    'tags': []
+                }
+            ]
+        }
+
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_search,
+            '_saved_searches': _mocked_saved_searches
+        })
+
+        self.assertEqual(len(self.metrics), 2)
+        self.assertMetric(
+            'metric_name',
+            time=1488974400.0,
+            value=1,
+            tags=[])
+        self.assertMetric(
+            'metric_name',
+            time=1488974400.0,
+            value=1,
+            tags=[])
 
 
 class TestSplunkEarliestTimeAndDuplicates(AgentCheckTest):
     """
-    Splunk event check should poll batches responses
+    Splunk metric check should poll batches responses
     """
-    CHECK_NAME = 'splunk_event'
+    CHECK_NAME = 'splunk_metric'
 
     def test_checks(self):
         self.maxDiff = None
@@ -260,15 +420,15 @@ class TestSplunkEarliestTimeAndDuplicates(AgentCheckTest):
         test_data["sid"] = "poll"
         test_data["time"] = time_to_seconds("2017-03-08T18:29:59.000000+0000")
         self.run_check(config, mocks=test_mocks)
-        self.assertEqual(len(self.events), 4)
-        self.assertEqual([e['event_type'] for e in self.events], ["0_1", "0_2", "1_1", "1_2"])
+        self.assertEqual(len(self.metrics), 4)
+        self.assertEqual([e[2] for e in self.metrics], [11, 12, 21, 22])
 
         # respect earliest_time
         test_data["sid"] = "poll1"
         test_data["earliest_time"] = '2017-03-08T18:29:59.000000+0000'
         self.run_check(config, mocks=test_mocks)
-        self.assertEqual(len(self.events), 1)
-        self.assertEqual([e['event_type'] for e in self.events], ["2_1"])
+        self.assertEqual(len(self.metrics), 1)
+        self.assertEqual([e[2] for e in self.metrics], [31])
 
         # Throw exception during search
         test_data["throw"] = True
@@ -283,9 +443,9 @@ class TestSplunkEarliestTimeAndDuplicates(AgentCheckTest):
 
 class TestSplunkDelayFirstTime(AgentCheckTest):
     """
-    Splunk event check should only start polling after the specified time
+    Splunk metric check should only start polling after the specified time
     """
-    CHECK_NAME = 'splunk_event'
+    CHECK_NAME = 'splunk_metric'
 
     def test_checks(self):
         self.maxDiff = None
@@ -298,7 +458,7 @@ class TestSplunkDelayFirstTime(AgentCheckTest):
                     'username': "admin",
                     'password': "admin",
                     'saved_searches': [{
-                        "name": "events",
+                        "name": "minimal_metrics",
                         "parameters": {}
                     }],
                     'tags': []
@@ -316,92 +476,31 @@ class TestSplunkDelayFirstTime(AgentCheckTest):
 
         mocks = {
             '_dispatch_saved_search': _mocked_dispatch_saved_search,
-            '_search': _mocked_minimal_search,
+            '_search': _mocked_search,
             '_current_time_seconds': _mocked_current_time_seconds,
             '_saved_searches': _mocked_saved_searches
         }
 
         # Initial run
         self.run_check(config, mocks=mocks)
-        self.assertEqual(len(self.events), 0)
+        self.assertEqual(len(self.metrics), 0)
 
         # Not polling yet
         test_data["time"] = 30
         self.run_check(config, mocks=mocks)
-        self.assertEqual(len(self.events), 0)
+        self.assertEqual(len(self.metrics), 0)
 
         # Start polling
         test_data["time"] = 62
         self.run_check(config, mocks=mocks)
-        self.assertEqual(len(self.events), 2)
-
-
-class TestSplunkDeduplicateEventsInTheSameRun(AgentCheckTest):
-    """
-    Splunk event check should deduplicate events
-    """
-    CHECK_NAME = 'splunk_event'
-
-    def test_checks(self):
-        self.maxDiff = None
-
-        config = {
-            'init_config': {"default_batch_size": 2},
-            'instances': [
-                {
-                    'url': 'http://localhost:13001',
-                    'username': "admin",
-                    'password': "admin",
-                    'saved_searches': [{
-                        "name": "duplicates",
-                        "parameters": {}
-                    }],
-                    'tags': ["checktag:checktagvalue"]
-                }
-            ]
-        }
-
-        # Used to validate which searches have been executed
-        test_data = {
-            "expected_searches": ["duplicates"],
-            "sid": "",
-            "time": 0,
-        }
-
-        def _mocked_current_time_seconds():
-            return test_data["time"]
-
-        def _mocked_dup_search(*args, **kwargs):
-            sid = args[0]
-            count = args[1].batch_size
-            return json.loads(Fixtures.read_file("batch_%s_seq_%s.json" % (sid, count)))
-
-        def _mocked_dispatch_saved_search_do_post(*args, **kwargs):
-            class MockedResponse():
-                def json(self):
-                    return {"sid": test_data["sid"]}
-            return MockedResponse()
-
-        test_mocks = {
-            '_do_post': _mocked_dispatch_saved_search_do_post,
-            '_search': _mocked_dup_search,
-            '_current_time_seconds': _mocked_current_time_seconds,
-            '_saved_searches': _mocked_saved_searches
-        }
-
-        # Inital run
-        test_data["sid"] = "no_dup"
-        test_data["time"] = 1
-        self.run_check(config, mocks=test_mocks)
-        self.assertEqual(len(self.events), 2)
-        self.assertEqual([e['event_type'] for e in self.events], ["1", "2"])
+        self.assertEqual(len(self.metrics), 2)
 
 
 class TestSplunkContinueAfterRestart(AgentCheckTest):
     """
-    Splunk event check should continue where it left off after restart
+    Splunk metric check should continue where it left off after restart
     """
-    CHECK_NAME = 'splunk_event'
+    CHECK_NAME = 'splunk_metric'
 
     def test_checks(self):
         self.maxDiff = None
@@ -464,7 +563,7 @@ class TestSplunkContinueAfterRestart(AgentCheckTest):
         test_data["earliest_time"] = '2017-03-08T00:00:00.000000+0000'
         test_data["latest_time"] = None
         self.run_check(config, mocks=test_mocks)
-        self.assertEqual(len(self.events), 0)
+        self.assertEqual(len(self.metrics), 0)
 
         # Restart check and recover data
         test_data["time"] = time_to_seconds('2017-03-08T12:00:00.000000+0000')
@@ -483,9 +582,9 @@ class TestSplunkContinueAfterRestart(AgentCheckTest):
 
 class TestSplunkQueryInitialHistory(AgentCheckTest):
     """
-    Splunk event check should continue where it left off after restart
+    Splunk metric check should continue where it left off after restart
     """
-    CHECK_NAME = 'splunk_event'
+    CHECK_NAME = 'splunk_metric'
 
     def test_checks(self):
         self.maxDiff = None
@@ -524,7 +623,7 @@ class TestSplunkQueryInitialHistory(AgentCheckTest):
         def _mocked_dispatch_saved_search_do_post(*args, **kwargs):
             class MockedResponse():
                 def json(self):
-                    return {"sid": "events"}
+                    return {"sid": "minimal_metrics"}
             earliest_time = args[2]['dispatch.earliest_time']
             if test_data["earliest_time"] != "":
                 self.assertEquals(earliest_time, test_data["earliest_time"])
@@ -538,7 +637,7 @@ class TestSplunkQueryInitialHistory(AgentCheckTest):
 
         test_mocks = {
             '_do_post': _mocked_dispatch_saved_search_do_post,
-            '_search': _mocked_minimal_search,
+            '_search': _mocked_search,
             '_current_time_seconds': _mocked_current_time_seconds,
             '_saved_searches': _mocked_saved_searches
         }
@@ -556,15 +655,15 @@ class TestSplunkQueryInitialHistory(AgentCheckTest):
         test_data["earliest_time"] = '2017-03-08T23:00:00.000000+0000'
         test_data["latest_time"] = None
         self.run_check(config, mocks=test_mocks)
-        self.assertEqual(len(self.events), 2)
+        self.assertEqual(len(self.metrics), 2)
         self.assertFalse(self.continue_after_commit, "As long as we are not done with history, the check should continue")
 
 
 class TestSplunkMaxRestartTime(AgentCheckTest):
     """
-    Splunk event check should use the max restart time parameter
+    Splunk metric check should use the max restart time parameter
     """
-    CHECK_NAME = 'splunk_event'
+    CHECK_NAME = 'splunk_metric'
 
     def test_checks(self):
         self.maxDiff = None
@@ -620,7 +719,7 @@ class TestSplunkMaxRestartTime(AgentCheckTest):
         test_data["time"] = time_to_seconds('2017-03-08T00:00:00.000000+0000')
         test_data["earliest_time"] = '2017-03-08T00:00:00.000000+0000'
         self.run_check(config, mocks=test_mocks)
-        self.assertEqual(len(self.events), 0)
+        self.assertEqual(len(self.metrics), 0)
 
         # Restart check and recover data, taking into account the max restart history
         test_data["time"] = time_to_seconds('2017-03-08T12:00:00.000000+0000')
@@ -631,9 +730,9 @@ class TestSplunkMaxRestartTime(AgentCheckTest):
 
 class TestSplunkKeepTimeOnFailure(AgentCheckTest):
     """
-    Splunk event check should keep the same start time when commit fails.
+    Splunk metric check should keep the same start time when commit fails.
     """
-    CHECK_NAME = 'splunk_event'
+    CHECK_NAME = 'splunk_metric'
 
     def test_checks(self):
         self.maxDiff = None
@@ -647,7 +746,7 @@ class TestSplunkKeepTimeOnFailure(AgentCheckTest):
                     'username': "admin",
                     'password': "admin",
                     'saved_searches': [{
-                        "name": "events",
+                        "name": "minimal_metrics",
                         "parameters": {},
                     }],
                     'tags': ["checktag:checktagvalue"]
@@ -667,7 +766,7 @@ class TestSplunkKeepTimeOnFailure(AgentCheckTest):
         def _mocked_dispatch_saved_search_do_post(*args, **kwargs):
             class MockedResponse():
                 def json(self):
-                    return {"sid": "events"}
+                    return {"sid": "minimal_metrics"}
             earliest_time = args[2]['dispatch.earliest_time']
             if test_data["earliest_time"] != "":
                 self.assertEquals(earliest_time, test_data["earliest_time"])
@@ -676,7 +775,7 @@ class TestSplunkKeepTimeOnFailure(AgentCheckTest):
 
         test_mocks = {
             '_do_post': _mocked_dispatch_saved_search_do_post,
-            '_search': _mocked_minimal_search,
+            '_search': _mocked_search,
             '_current_time_seconds': _mocked_current_time_seconds,
             '_saved_searches': _mocked_saved_searches
         }
@@ -687,7 +786,7 @@ class TestSplunkKeepTimeOnFailure(AgentCheckTest):
         test_data["time"] = time_to_seconds('2017-03-08T11:00:00.000000+0000')
         test_data["earliest_time"] = '2017-03-08T11:00:00.000000+0000'
         self.run_check(config, mocks=test_mocks)
-        self.assertEqual(len(self.events), 2)
+        self.assertEqual(len(self.metrics), 2)
 
         # Make sure we keep the same start time
         self.run_check(config, mocks=test_mocks)
@@ -695,9 +794,9 @@ class TestSplunkKeepTimeOnFailure(AgentCheckTest):
 
 class TestSplunkAdvanceTimeOnSuccess(AgentCheckTest):
     """
-    Splunk event check should advance the start time when commit succeeds
+    Splunk metric check should advance the start time when commit succeeds
     """
-    CHECK_NAME = 'splunk_event'
+    CHECK_NAME = 'splunk_metric'
 
     def test_checks(self):
         self.maxDiff = None
@@ -711,7 +810,7 @@ class TestSplunkAdvanceTimeOnSuccess(AgentCheckTest):
                     'username': "admin",
                     'password': "admin",
                     'saved_searches': [{
-                        "name": "events",
+                        "name": "minimal_metrics",
                         "parameters": {},
                     }],
                     'tags': ["checktag:checktagvalue"]
@@ -731,7 +830,7 @@ class TestSplunkAdvanceTimeOnSuccess(AgentCheckTest):
         def _mocked_dispatch_saved_search_do_post(*args, **kwargs):
             class MockedResponse():
                 def json(self):
-                    return {"sid": "events"}
+                    return {"sid": "minimal_metrics"}
             earliest_time = args[2]['dispatch.earliest_time']
             if test_data["earliest_time"] != "":
                 self.assertEquals(earliest_time, test_data["earliest_time"])
@@ -740,7 +839,7 @@ class TestSplunkAdvanceTimeOnSuccess(AgentCheckTest):
 
         test_mocks = {
             '_do_post': _mocked_dispatch_saved_search_do_post,
-            '_search': _mocked_minimal_search,
+            '_search': _mocked_search,
             '_current_time_seconds': _mocked_current_time_seconds,
             '_saved_searches': _mocked_saved_searches
         }
@@ -749,7 +848,7 @@ class TestSplunkAdvanceTimeOnSuccess(AgentCheckTest):
         test_data["time"] = time_to_seconds('2017-03-08T11:00:00.000000+0000')
         test_data["earliest_time"] = '2017-03-08T11:00:00.000000+0000'
         self.run_check(config, mocks=test_mocks)
-        self.assertEqual(len(self.events), 2)
+        self.assertEqual(len(self.metrics), 2)
 
         # Make sure we advance the start time
         test_data["earliest_time"] = '2017-03-08T12:00:00.000000+0000'
@@ -758,9 +857,9 @@ class TestSplunkAdvanceTimeOnSuccess(AgentCheckTest):
 
 class TestSplunkWildcardSearches(AgentCheckTest):
     """
-    Splunk event check should process minimal response correctly
+    Splunk metric check should process minimal response correctly
     """
-    CHECK_NAME = 'splunk_event'
+    CHECK_NAME = 'splunk_metric'
 
     def test_checks(self):
         self.maxDiff = None
@@ -773,7 +872,7 @@ class TestSplunkWildcardSearches(AgentCheckTest):
                     'username': "admin",
                     'password': "admin",
                     'saved_searches': [{
-                        "match": "even*",
+                        "match": "minimal_*",
                         "parameters": {}
                     }],
                     'tags': []
@@ -788,31 +887,31 @@ class TestSplunkWildcardSearches(AgentCheckTest):
         def _mocked_saved_searches(*args, **kwargs):
             return data['saved_searches']
 
-        data['saved_searches'] = ["events", "blaat"]
+        data['saved_searches'] = ["minimal_metrics", "blaat"]
         self.run_check(config, mocks={
             '_dispatch_saved_search': _mocked_dispatch_saved_search,
-            '_search': _mocked_minimal_search,
+            '_search': _mocked_search,
             '_saved_searches': _mocked_saved_searches
         })
 
         self.assertEqual(len(self.check.instance_data['http://localhost:13001'].saved_searches.searches), 1)
-        self.assertEqual(len(self.events), 2)
+        self.assertEqual(len(self.metrics), 2)
 
         data['saved_searches'] = []
         self.run_check(config, mocks={
             '_dispatch_saved_search': _mocked_dispatch_saved_search,
-            '_search': _mocked_minimal_search,
+            '_search': _mocked_search,
             '_saved_searches': _mocked_saved_searches
         })
         self.assertEqual(len(self.check.instance_data['http://localhost:13001'].saved_searches.searches), 0)
-        self.assertEqual(len(self.events), 0)
+        self.assertEqual(len(self.metrics), 0)
 
 
 class TestSplunkSavedSearchesError(AgentCheckTest):
     """
-    Splunk event check should have a service check failure when getting an exception from saved searches
+    Splunk metric check should have a service check failure when getting an exception from saved searches
     """
-    CHECK_NAME = 'splunk_event'
+    CHECK_NAME = 'splunk_metric'
 
     def test_checks(self):
         self.maxDiff = None
@@ -825,7 +924,7 @@ class TestSplunkSavedSearchesError(AgentCheckTest):
                     'username': "admin",
                     'password': "admin",
                     'saved_searches': [{
-                        "match": "even*",
+                        "match": "metric*",
                         "parameters": {}
                     }],
                     'tags': []
@@ -847,28 +946,8 @@ class TestSplunkSavedSearchesError(AgentCheckTest):
         self.assertEquals(self.service_checks[0]['status'], 2, "service check should have status AgentCheck.CRITICAL")
 
 
-def _mocked_dispatch_saved_search(*args, **kwargs):
-    # Sid is equal to search name
-    return args[1].name
-
-def _mocked_search(*args, **kwargs):
-    # sid is set to saved search name
-    sid = args[0]
-    return [json.loads(Fixtures.read_file("%s.json" % sid))]
-
-def _mocked_minimal_search(*args, **kwargs):
-    # sid is set to saved search name
-    sid = args[0]
-    return [json.loads(Fixtures.read_file("minimal_%s.json" % sid))]
-
-def _mocked_full_search(*args, **kwargs):
-    # sid is set to saved search name
-    sid = args[0]
-    return [json.loads(Fixtures.read_file("full_%s.json" % sid))]
-
-
-class TestSplunkEventRespectParallelDispatches(AgentCheckTest):
-    CHECK_NAME = 'splunk_event'
+class TestSplunkMetricRespectParallelDispatches(AgentCheckTest):
+    CHECK_NAME = 'splunk_metric'
 
     def test_checks(self):
         self.maxDiff = None
