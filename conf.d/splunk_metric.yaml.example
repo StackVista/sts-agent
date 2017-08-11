@@ -47,9 +47,6 @@ instances:
     saved_searches:
       # Splunk name of the saved search
       - name: "metrics"
-        # By default the check takes the metric name from the metric_name_field in splunk.
-        # It is possible to fix the name by filling in metric_name
-        # metric_name: "mymetric"
         # metric_name_field: "metric"
         # The metric value field should contain numerical data in the splunk results
         # metric_value_field: "value"

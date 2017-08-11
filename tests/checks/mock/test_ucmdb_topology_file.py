@@ -12,7 +12,7 @@ class TestUcmdbNoTopology(AgentCheckTest):
 
         config = {
             'init_config': {},
-            'instances': [{'location': './tests/checks/fixtures/ucmdb/tql_export_empty.xml'}]}
+            'instances': [{'location': 'tests/core/fixtures/ucmdb/tql_export_empty.xml'}]}
         self.run_check(config)
         instances = self.check.get_topology_instances()
         self.assertEqual(len(instances), 0)
@@ -30,7 +30,7 @@ class TestUcmdbTopologyFull(AgentCheckTest):
             'init_config': {},
             'instances': [
                 {
-                    'location': 'tests/checks/fixtures/ucmdb/tql_export_full.xml',
+                    'location': 'tests/core/fixtures/ucmdb/tql_export_full.xml',
                     'tag_attributes': ['root_class','name'],
                     'tags': ['mytag']
                 }
@@ -39,7 +39,7 @@ class TestUcmdbTopologyFull(AgentCheckTest):
         self.run_check(config)
         instances = self.check.get_topology_instances()
         self.assertEqual(len(instances), 1)
-        self.assertEqual(instances[0]['instance'], {'type': 'ucmdb', 'url': 'tests/checks/fixtures/ucmdb/tql_export_full.xml'})
+        self.assertEqual(instances[0]['instance'], {'type': 'ucmdb', 'url': 'tests/core/fixtures/ucmdb/tql_export_full.xml'})
 
         self.assertEqual(len(instances[0]['components']), 2)
         self.assertEqual(instances[0]['components'][0], {
@@ -85,7 +85,7 @@ class TestUcmdbTopologyMinimal(AgentCheckTest):
             'init_config': {},
             'instances': [
                 {
-                    'location': 'tests/checks/fixtures/ucmdb/tql_export_min.xml',
+                    'location': 'tests/core/fixtures/ucmdb/tql_export_min.xml',
                     'tags': ['mytag']
                 }
             ]
@@ -93,7 +93,7 @@ class TestUcmdbTopologyMinimal(AgentCheckTest):
         self.run_check(config)
         instances = self.check.get_topology_instances()
         self.assertEqual(len(instances), 1)
-        self.assertEqual(instances[0]['instance'], {'type': 'ucmdb', 'url': 'tests/checks/fixtures/ucmdb/tql_export_min.xml'})
+        self.assertEqual(instances[0]['instance'], {'type': 'ucmdb', 'url': 'tests/core/fixtures/ucmdb/tql_export_min.xml'})
 
         self.assertEqual(len(instances[0]['components']), 2)
         self.assertEqual(instances[0]['components'][0], {'data': {'tags': ['mytag']},

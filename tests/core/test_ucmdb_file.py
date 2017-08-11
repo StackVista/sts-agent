@@ -5,7 +5,7 @@ from unittest import TestCase
 class TestUcmdbCIParser(TestCase):
 
     def test_parse_full(self):
-        parser = UcmdbCIParser("tests/checks/fixtures/ucmdb/tql_export_full.xml")
+        parser = UcmdbCIParser("tests/core/fixtures/ucmdb/tql_export_full.xml")
         parser.parse()
         components = parser.get_components()
         relations = parser.get_relations()
@@ -56,7 +56,7 @@ class TestUcmdbCIParser(TestCase):
 
     def test_parse_minimal(self):
         self.maxDiff = None
-        parser = UcmdbCIParser("tests/checks/fixtures/ucmdb/tql_export_min.xml")
+        parser = UcmdbCIParser("tests/core/fixtures/ucmdb/tql_export_min.xml")
         parser.parse()
         components = parser.get_components()
         relations = parser.get_relations()
@@ -75,7 +75,7 @@ class TestUcmdbCIParser(TestCase):
 
     def test_parse_empty(self):
         self.maxDiff = None
-        parser = UcmdbCIParser("tests/checks/fixtures/ucmdb/tql_export_empty.xml")
+        parser = UcmdbCIParser("tests/core/fixtures/ucmdb/tql_export_empty.xml")
         parser.parse()
         components = parser.get_components()
         relations = parser.get_relations()

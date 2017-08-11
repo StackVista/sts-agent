@@ -18,6 +18,6 @@ instances:
       - name
 
     # optional tags added to each topology element
-    tags:
-      - optional_tag1
-      - optional_tag2
+    # tags:
+    #   - optional_tag1
+    #   - optional_tag2
