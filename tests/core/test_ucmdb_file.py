@@ -1,6 +1,6 @@
-# stdlib
-from utils.ucmdb import UcmdbCIParser
 from unittest import TestCase
+
+from utils.ucmdb import UcmdbCIParser
 
 class TestUcmdbCIParser(TestCase):
 
