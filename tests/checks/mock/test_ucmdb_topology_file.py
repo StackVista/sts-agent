@@ -1,4 +1,5 @@
-# stdlib
+import time
+from utils.persistable_store import PersistableStore
 from tests.checks.common import AgentCheckTest
 
 class TestUcmdbNoTopology(AgentCheckTest):
@@ -112,3 +113,38 @@ class TestUcmdbTopologyMinimal(AgentCheckTest):
             'sourceId': 'dab1c91cdc7a6d808b0642cb02ea22f0',
             'targetId': '6c01ec45816a40eb866400ff143f4968',
             'type': {'name': 'containment'}})
+
+class TestUcmdbTopologyPollingInterval(AgentCheckTest):
+    """
+    Ucmdb check should report topology from xml export that contains bare minimum
+    """
+    CHECK_NAME = 'ucmdb_file'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'location': 'tests/core/fixtures/ucmdb/tql_polling_min.xml',
+                    'file_polling_interval': 2
+                }
+            ]
+        }
+        # reseting the polling interval before run
+        store = PersistableStore("ucmdb_file", "tests/core/fixtures/ucmdb/tql_polling_min.xml")
+        store.clear_status()
+
+        self.run_check(config)
+        instances = self.check.get_topology_instances()
+        self.assertEqual(len(instances), 1)
+
+        self.run_check(config)
+        instances = self.check.get_topology_instances()
+        self.assertEqual(len(instances), 0)
+        time.sleep(2)
+
+        self.run_check(config)
+        instances = self.check.get_topology_instances()
+        self.assertEqual(len(instances), 1)

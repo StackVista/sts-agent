@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from utils.ucmdb import UcmdbCIParser
+from utils.ucmdb.ucmdb_parser import UcmdbCIParser
 
 class TestUcmdbCIParser(TestCase):
 
