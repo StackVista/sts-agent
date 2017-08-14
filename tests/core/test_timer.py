@@ -4,7 +4,7 @@ from unittest import TestCase
 import time
 import uuid
 
-class TestPersistableStore(TestCase):
+class TestTimer(TestCase):
 
     def test_timer_not_expired(self):
         timer = Timer("timer_name", 10)
