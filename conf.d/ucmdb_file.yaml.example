@@ -1,0 +1,26 @@
+# UCMDB file base integration
+
+init_config:
+
+instances:
+  # File location where tql query result is synced from
+  - location: "/path/to/file"
+    # topology synchronization interval in seconds, default is 0, meaning sync is done on each check run
+    # file_polling_interval: 0
+
+    # ci attributes that will be exposed as tags
+    tag_attributes:
+      - root_class
+
+    # ci attribute that stores component type
+    component_type_field:
+      - root_class
+
+    # ci attribute that stores relation type
+    relation_type_field:
+      - name
+
+    # optional tags added to each topology element
+    # tags:
+    #   - optional_tag1
+    #   - optional_tag2
