@@ -13,12 +13,10 @@ instances:
       - root_class
 
     # ci attribute that stores component type
-    component_type_field:
-      - root_class
+    component_type_field: root_class
 
     # ci attribute that stores relation type
-    relation_type_field:
-      - name
+    relation_type_field: name
 
     # optional tags added to each topology element
     # tags:
