@@ -56,12 +56,15 @@ class UcmdbTopologyFile(AgentCheck):
         ucmdb_instance.persist()
 
     def execute_check(self, ucmdb_instance):
+        self.start_snapshot(ucmdb_instance.instance_key)
         try:
             parser = UcmdbCIParser(ucmdb_instance.location)
             parser.parse()
             self.add_components(ucmdb_instance, parser.get_components())
             self.add_relations(ucmdb_instance, parser.get_relations())
+            self.stop_snapshot(ucmdb_instance.instance_key)
         except Exception as e:
+            self._clear_topology(ucmdb_instance.instance_key, clear_in_snapshot=True)
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, message=str(e))
             self.log.exception("Ucmdb Topology exception: %s" % str(e))
             raise CheckException("Cannot get topology from %s, please check your configuration. Message: %s" % (ucmdb_instance.location, str(e)))
