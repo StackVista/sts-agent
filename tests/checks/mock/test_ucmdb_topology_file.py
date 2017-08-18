@@ -16,7 +16,9 @@ class TestUcmdbNoTopology(AgentCheckTest):
             'instances': [{'location': 'tests/core/fixtures/ucmdb/tql_export_empty.xml'}]}
         self.run_check(config)
         instances = self.check.get_topology_instances()
-        self.assertEqual(len(instances), 0)
+        self.assertEqual(len(instances), 1)
+        self.assertEqual(len(instances[0]['components']), 0)
+        self.assertEqual(len(instances[0]['relations']), 0)
 
 class TestUcmdbTopologyFull(AgentCheckTest):
     """
