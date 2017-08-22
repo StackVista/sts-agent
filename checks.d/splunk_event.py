@@ -4,7 +4,7 @@
 
 # 3rd party
 
-from utils.splunk.splunk import SplunkInstanceConfig, SavedSearches
+from utils.splunk.splunk import SplunkTelemetryInstanceConfig, SavedSearches
 from utils.splunk.splunk_telemetry import SplunkTelemetryInstance, SplunkTelemetrySavedSearch
 from utils.splunk.splunk_telemetry_base import SplunkTelemetryBase
 
@@ -33,7 +33,7 @@ class SplunkEvent(SplunkTelemetryBase):
         self.event(kwargs)
 
     def get_instance(self, instance, current_time):
-        metric_instance_config = SplunkInstanceConfig(instance, self.init_config, {
+        metric_instance_config = SplunkTelemetryInstanceConfig(instance, self.init_config, {
             'default_request_timeout_seconds': 5,
             'default_search_max_retry_count': 3,
             'default_search_seconds_between_retries': 1,

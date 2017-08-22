@@ -7,6 +7,8 @@ class SplunkTelemetrySavedSearch(SplunkSavedSearch):
     def __init__(self, instance_config, saved_search_instance):
         super(SplunkTelemetrySavedSearch, self).__init__(instance_config, saved_search_instance)
 
+        self.fields_for_identification = saved_search_instance.get('fields_for_identification', instance_config.default_fields_for_identification)
+
         self.config = {
             field_name: saved_search_instance.get(field_name, instance_config.get_or_default("default_" + field_name))
             for field_name in ['initial_history_time_seconds', 'max_restart_history_seconds', 'max_query_chunk_seconds']
