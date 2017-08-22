@@ -44,6 +44,7 @@ class SplunkEvent(SplunkTelemetryBase):
             'default_max_restart_history_seconds': 86400,
             'default_max_query_chunk_seconds': 3600,
             'default_initial_delay_seconds': 0,
+            'default_fields_for_identification': ["_bkt", "_cd"]
         })
         event_saved_searches = SavedSearches([
             EventSavedSearch(metric_instance_config, saved_search_instance)

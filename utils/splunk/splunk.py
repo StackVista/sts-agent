@@ -30,6 +30,7 @@ class SplunkSavedSearch(object):
         self.search_max_retry_count = int(saved_search_instance.get('search_max_retry_count', instance_config.default_search_max_retry_count))
         self.search_seconds_between_retries = int(saved_search_instance.get('search_seconds_between_retries', instance_config.default_search_seconds_between_retries))
         self.batch_size = int(saved_search_instance.get('batch_size', instance_config.default_batch_size))
+        self.fields_for_identification = saved_search_instance.get('fields_for_identification', instance_config.default_fields_for_identification)
 
     def retrieve_fields(self, data):
         telemetry = {}
@@ -76,6 +77,7 @@ class SplunkInstanceConfig(object):
         self.default_verify_ssl_certificate = self.get_or_default('default_verify_ssl_certificate')
         self.default_batch_size = self.get_or_default('default_batch_size')
         self.default_saved_searches_parallel = self.get_or_default('default_saved_searches_parallel')
+        self.default_fields_for_identification = self.get_or_default('default_fields_for_identification')
 
         self.verify_ssl_certificate = bool(instance.get('verify_ssl_certificate', self.default_verify_ssl_certificate))
         self.base_url = instance['url']

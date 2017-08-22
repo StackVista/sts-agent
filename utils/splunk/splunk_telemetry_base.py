@@ -88,8 +88,12 @@ class SplunkTelemetryBase(AgentCheck):
         for data in result["results"]:
             # We need a unique identifier for splunk events, according to https://answers.splunk.com/answers/334613/is-there-a-unique-event-id-for-each-event-in-the-i.html
             # this can be (server, index, _cd)
-            # I use (_bkt, _cd) because we only process data from 1 server in a check, and _bkt contains the index
-            current_id = (data["_bkt"], data["_cd"])
+
+            if saved_search.fields_for_identification is None: # whole record
+                current_id = tuple(data)
+            else:
+                current_id = tuple(data[field] for field in saved_search.fields_for_identification)
+
             timestamp = time_to_seconds(take_required_field("_time", data))
 
             if timestamp > saved_search.last_observed_timestamp:
