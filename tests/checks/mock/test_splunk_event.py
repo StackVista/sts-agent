@@ -993,7 +993,7 @@ class TestSplunkAllFieldsForIdentification(AgentCheckTest):
                     'saved_searches': [{
                         "name": "all_events",
                         "parameters": {},
-                        "fields_for_identification": None
+                        "fields_for_identification": []
                     }],
                     'tags': []
                 }

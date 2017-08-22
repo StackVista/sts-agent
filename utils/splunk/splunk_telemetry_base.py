@@ -89,7 +89,7 @@ class SplunkTelemetryBase(AgentCheck):
             # We need a unique identifier for splunk events, according to https://answers.splunk.com/answers/334613/is-there-a-unique-event-id-for-each-event-in-the-i.html
             # this can be (server, index, _cd)
 
-            if saved_search.fields_for_identification is None: # whole record
+            if not saved_search.fields_for_identification: # empty list, whole record
                 current_id = tuple(data)
             else:
                 current_id = tuple(data[field] for field in saved_search.fields_for_identification)

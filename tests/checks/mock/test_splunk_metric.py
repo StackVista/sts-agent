@@ -1062,7 +1062,7 @@ class TestSplunkAllFieldsForIdentification(AgentCheckTest):
                     'saved_searches': [{
                         "name": "metrics_identification_fields_all",
                         "parameters": {},
-                        "fields_for_identification": None
+                        "fields_for_identification": []
                     }],
                     'tags': []
                 }
