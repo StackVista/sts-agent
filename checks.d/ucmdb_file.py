@@ -60,8 +60,8 @@ class UcmdbTopologyFile(AgentCheck):
         try:
             parser = UcmdbCIParser(ucmdb_instance.location)
             parser.parse()
-            self.add_components(ucmdb_instance, parser.get_components())
-            self.add_relations(ucmdb_instance, parser.get_relations())
+            self.add_components(ucmdb_instance, parser.get_components().values())
+            self.add_relations(ucmdb_instance, parser.get_relations().values())
             self.stop_snapshot(ucmdb_instance.instance_key)
         except Exception as e:
             self._clear_topology(ucmdb_instance.instance_key, clear_in_snapshot=True)

@@ -46,7 +46,7 @@ class TestUcmdbTopologyFull(AgentCheckTest):
         self.assertEqual(len(instances), 1)
         self.assertEqual(instances[0]['instance'], {'type': 'ucmdb', 'url': 'tests/core/fixtures/ucmdb/tql_export_full.xml'})
 
-        self.assertEqual(len(instances[0]['components']), 2)
+        self.assertEqual(len(instances[0]['components']), 1)
         self.assertEqual(instances[0]['components'][0], {
             'data': {'display_label': 'CRMI (MQCODE)',
             'global_id': 'dab1c91cdc7a6d808b0642cb02ea22f0',
@@ -55,15 +55,6 @@ class TestUcmdbTopologyFull(AgentCheckTest):
             'tags': ['business_application', 'CRMI (MQCODE)', 'mytag']},
             'externalId': 'dab1c91cdc7a6d808b0642cb02ea22f0',
             'type': {'name': 'dab1c91cdc7a6d808b0642cb02ea22f0'}})
-
-        self.assertEqual(instances[0]['components'][1], {
-            'data': {'display_label': 'ISSUER LOADBALANCER-SSL-OFFLOADER',
-            'global_id': 'ba21d9dfb1c2ebf4ee951589a3b4ec62',
-            'name': 'ISSUER LOADBALANCER-SSL-OFFLOADER',
-            'root_class': 'business_application',
-            'tags': ['business_application','ISSUER LOADBALANCER-SSL-OFFLOADER','mytag']},
-            'externalId': 'ba21d9dfb1c2ebf4ee951589a3b4ec62',
-            'type': {'name': 'ba21d9dfb1c2ebf4ee951589a3b4ec62'}})
 
         self.assertEqual(len(instances[0]['relations']), 1)
         self.assertEqual(instances[0]['relations'][0], {'data': {'DiscoveryID1': 'dab1c91cdc7a6d808b0642cb02ea22f0',

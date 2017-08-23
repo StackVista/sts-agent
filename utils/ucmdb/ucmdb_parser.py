@@ -5,7 +5,7 @@ except ImportError:
     # failover to pure python implementation of parser
     import xml.etree.ElementTree as ET
 
-class UcmdbCIParser:
+class UcmdbCIParser(object):
     # SAX style parser for UCMDB TQL query result xml
     #
     # <object operation="add" name="business_application" ucmdb_id="dab1c91cdc7a6d808b0642cb02ea22f0" id="UCMDB%0Abusiness_application%0A1%0Ainternal_id%3DSTRING%3Ddab1c91cdc7a6d808b0642cb02ea22f0%0A">
@@ -22,11 +22,13 @@ class UcmdbCIParser:
     #   <attribute name="end2Id">UCMDB%0Abusiness_application%0A1%0Ainternal_id%3DSTRING%3D282fbea52182451a03cf7f707ec3a597%0A</attribute>
     #   <attribute name="display_label" datatype="STRING">Usage</attribute>
     # </link>
+    #
+    # <object operation="delete" name="business_application" ucmdb_id="dab1c91cdc7a6d808b0642cb02ea22f0" id="UCMDB%0Abusiness_application%0A1%0Ainternal_id%3DSTRING%3Ddab1c91cdc7a6d808b0642cb02ea22f0%0A"/>
 
     def __init__(self, file):
         self.file = file
-        self.components = []
-        self.relations = []
+        self.components = dict()
+        self.relations = dict()
 
     def parse(self):
         tree = ET.iterparse(self.file)
@@ -41,7 +43,7 @@ class UcmdbCIParser:
                     if 'name' in elem.attrib and 'ucmdb_id' in elem.attrib:
                         current_element['name'] = elem.attrib['name']
                         current_element['ucmdb_id'] = elem.attrib['ucmdb_id']
-                        self.components.append(current_element)
+                        self.components[current_element['ucmdb_id']] = current_element
                     current_element = self.new_element()
                 elif elem.tag == 'link':
                     if 'operation' in elem.attrib:
@@ -53,7 +55,7 @@ class UcmdbCIParser:
                             current_element['source_id'] = current_element['data']['DiscoveryID1']
                         if 'DiscoveryID2' in current_element['data']:
                             current_element['target_id'] = current_element['data']['DiscoveryID2']
-                        self.relations.append(current_element)
+                        self.relations[current_element['ucmdb_id']] = current_element
                     current_element = self.new_element()
             elem.clear()
 
