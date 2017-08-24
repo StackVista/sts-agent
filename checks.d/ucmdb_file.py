@@ -1,5 +1,6 @@
 from checks import AgentCheck, CheckException
 from utils.ucmdb.ucmdb_file_dump import UcmdbDumpStructure, UcmdbFileDump
+from utils.ucmdb.ucmdb_component_groups import UcmdbComponentGroups
 from utils.persistable_store import PersistableStore
 from utils.timer import Timer
 
@@ -13,6 +14,8 @@ class UcmdbTopologyFileInstance(object):
         "component_type_field": "name",
         "relation_type_field": "name",
         "excluded_types": [],
+        "grouping_connected_components": False,
+        "component_group": {},
         "tags": []}
 
     def __init__(self, instance):
@@ -25,6 +28,8 @@ class UcmdbTopologyFileInstance(object):
         self.component_type_field = self._get_or_default(instance, "component_type_field", self.CONFIG_DEFAULTS)
         self.relation_type_field = self._get_or_default(instance, "relation_type_field", self.CONFIG_DEFAULTS)
         self.excluded_types = set(self._get_or_default(instance, "excluded_types", self.CONFIG_DEFAULTS))
+        self.grouping_connected_components = self._get_or_default(instance, "grouping_connected_components", self.CONFIG_DEFAULTS)
+        self.component_group = self._get_or_default(instance, "component_group", self.CONFIG_DEFAULTS)
         self.tags = self._get_or_default(instance, 'tags', self.CONFIG_DEFAULTS)
         self.instance_key = {"type": self.INSTANCE_TYPE, "url":  self.location}
 
@@ -67,10 +72,9 @@ class UcmdbTopologyFile(AgentCheck):
     def execute_check(self, ucmdb_instance):
         self.start_snapshot(ucmdb_instance.instance_key)
         try:
-            dump = UcmdbFileDump(ucmdb_instance.dump_structure)
-            dump.load(ucmdb_instance.excluded_types)
-            self.add_components(ucmdb_instance, dump.get_components().values())
-            self.add_relations(ucmdb_instance, dump.get_relations().values())
+            components, relations = self.load_and_label_groups(ucmdb_instance)
+            self.add_components(ucmdb_instance, components)
+            self.add_relations(ucmdb_instance, relations)
             self.stop_snapshot(ucmdb_instance.instance_key)
         except Exception as e:
             self._clear_topology(ucmdb_instance.instance_key, clear_in_snapshot=True)
@@ -79,6 +83,16 @@ class UcmdbTopologyFile(AgentCheck):
             raise CheckException("Cannot get topology from %s, please check your configuration. Message: %s" % (ucmdb_instance.location, str(e)))
         else:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
+
+    def load_and_label_groups(self, ucmdb_instance):
+        dump = UcmdbFileDump(ucmdb_instance.dump_structure)
+        dump.load(ucmdb_instance.excluded_types)
+        if ucmdb_instance.grouping_connected_components:
+            grouping = UcmdbComponentGroups(dump.get_components(), dump.get_relations(), ucmdb_instance.component_group)
+            grouping.label_groups()
+            return (grouping.get_components().values(), grouping.get_relations().values())
+        else:
+            return (dump.get_components().values(), dump.get_relations().values())
 
     def add_components(self, ucmdb_instance, ucmdb_components):
         for ucmdb_component in ucmdb_components:

@@ -32,7 +32,6 @@ class UcmdbComponentGroups(object):
                     self.unionfind.union(source_number, target_number)
 
     def _label_components(self):
-        print 'detected group count: ', self.unionfind.count()
         group_number_to_label = dict()
         for id, label in self.component_id_to_label.items():
             component_number = self.component_number[id]

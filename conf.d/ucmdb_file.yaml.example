@@ -3,10 +3,24 @@
 init_config:
 
 instances:
-  # File location where tql query result is synced from
-  - location: "/path/to/file"
+  # Root folder where tql query results are stored
+  # the folder could have two subfolders "full" and "increment"
+  # - "full" contains snapshots
+  # - "increment" should get updates
+  - location: "/path/to/folder"
     # topology synchronization interval in seconds, default is 0, meaning sync is done on each check run
     # file_polling_interval: 0
+
+    #
+    # excluded_types:
+    #  - excluded_type
+
+    # grouping connected components
+    # grouping_connected_components: True
+
+    # group that has component name in it will get the group label otherwise simple group number
+    # component_group:
+    #  component name: group label
 
     # ci attributes that will be exposed as tags
     tag_attributes:

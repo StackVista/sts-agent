@@ -284,3 +284,47 @@ class TestUcmdbTopologyExcludeTypes(AgentCheckTest):
 
         self.assertEqual(len(instances[0]['components']), 0)
         self.assertEqual(len(instances[0]['relations']), 0)
+
+class TestUcmdbTopologyGroupingConnectedComponents(AgentCheckTest):
+    """
+    Ucmdb check should report topology that can be optionally labeled with groups
+    """
+    CHECK_NAME = 'ucmdb_file'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'location': 'tests/core/fixtures/ucmdb/check/group',
+                    'grouping_connected_components': True,
+                    'component_group': {"mycomponent": "custom_group"}
+                }
+            ]
+        }
+        self.run_check(config)
+        instances = self.check.get_topology_instances()
+        self.assertEqual(len(instances), 1)
+        self.assertEqual(instances[0]['instance'], {'type': 'ucmdb', 'url': 'tests/core/fixtures/ucmdb/check/group'})
+
+        self.assertEqual(len(instances[0]['components']), 3)
+        self.assertEqual(len(instances[0]['relations']), 1)
+
+        self.assertEqual(instances[0]['components'],[
+            {'data': {'name': 'mycomponent', 'tags': ['custom_group']},
+            'externalId': 'dab1c91cdc7a6d808b0642cb02ea22f0',
+            'type': {'name': 'business_service'}},
+            {'data': {'name': 'mycomponent3', 'tags': ['group1']},
+            'externalId': 'ba21d9dfb1c2ebf4ee951589a3b4ec63',
+            'type': {'name': 'business_service'}},
+            {'data': {'name': 'mycomponent2', 'tags': ['custom_group']},
+            'externalId': 'ba21d9dfb1c2ebf4ee951589a3b4ec62',
+            'type': {'name': 'business_service'}}])
+        self.assertEqual(instances[0]['relations'], [{'data': {'DiscoveryID1': 'dab1c91cdc7a6d808b0642cb02ea22f0',
+            'DiscoveryID2': 'ba21d9dfb1c2ebf4ee951589a3b4ec62'},
+            'externalId': 'dab1c91cdc7a6d808b0642cb02ea22f0-containment-ba21d9dfb1c2ebf4ee951589a3b4ec62',
+            'sourceId': 'dab1c91cdc7a6d808b0642cb02ea22f0',
+            'targetId': 'ba21d9dfb1c2ebf4ee951589a3b4ec62',
+            'type': {'name': 'containment'}}])
