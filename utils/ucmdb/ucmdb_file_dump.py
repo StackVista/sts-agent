@@ -52,22 +52,41 @@ class UcmdbFileDump(object):
         self.components = dict()
         self.relations = dict()
 
-    def load(self):
+    def is_component_excluded(self, component, excluded_types):
+        return component['name'] in excluded_types
+
+    def is_relation_excluded(self, relation, excluded_types, excluded_component_ids):
+        excluded_by_type = 'name' in relation and relation['name'] in excluded_types
+        excluded_by_source = 'source_id' in relation and relation['source_id'] in excluded_component_ids
+        excluded_by_target = 'target_id' in relation and relation['target_id'] in excluded_component_ids
+        return excluded_by_type or excluded_by_source or excluded_by_target
+
+    def load(self, excluded_types = set()):
+        excluded_component_ids = set()
         for snapshot in self.structure.get_snapshots():
             parser = UcmdbCIParser(snapshot)
             parser.parse()
             for id, component in parser.get_components().iteritems():
-                self.handle_element(self.components, id, component)
+                if self.is_component_excluded(component, excluded_types):
+                    excluded_component_ids.add(id)
+                else:
+                    self.handle_element(self.components, id, component)
             for id, relation in parser.get_relations().iteritems():
-                self.handle_element(self.relations, id, relation)
+                if not self.is_relation_excluded(relation, excluded_types, excluded_component_ids):
+                    self.handle_element(self.relations, id, relation)
 
         for increment in self.structure.get_increments():
             parser = UcmdbCIParser(increment)
             parser.parse()
             for id, component in parser.get_components().iteritems():
-                self.handle_element(self.components, id, component)
+                if self.is_component_excluded(component, excluded_types):
+                    excluded_component_ids.add(id)
+                else:
+                    self.handle_element(self.components, id, component)
             for id, relation in parser.get_relations().iteritems():
-                self.handle_element(self.relations, id, relation)
+                if not self.is_relation_excluded(relation, excluded_types, excluded_component_ids):
+                    print "relation", relation
+                    self.handle_element(self.relations, id, relation)
 
     def handle_element(self, final_elements, id, element):
         if element['operation'] == "add" or element['operation'] == "update":
