@@ -72,8 +72,9 @@ class UcmdbFileDump(object):
     def handle_element(self, final_elements, id, element):
         if element['operation'] == "add" or element['operation'] == "update":
             final_elements[id] = element
-        elif element['operation'] == "delete" and id in final_elements:
-            del final_elements[id]
+        elif element['operation'] == "delete":
+            if id in final_elements:
+                del final_elements[id]
         else:
             raise Exception("Unknown operation %s" % element['operation'])
 

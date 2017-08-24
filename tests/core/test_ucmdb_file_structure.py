@@ -43,9 +43,15 @@ class TestUcmdbDumpStructure(TestCase):
         increments = structure.get_increments()
 
         self.assertEquals(len(snapshots), 3)
-        self.assertEquals(snapshots, ["3.xml", "2.xml", "1.xml"])
+        self.assertEquals(snapshots, [
+            os.path.join(tmp_full_dir,"3.xml"),
+            os.path.join(tmp_full_dir,"2.xml"),
+            os.path.join(tmp_full_dir,"1.xml")])
         self.assertEquals(len(increments), 3)
-        self.assertEquals(increments, ["3.xml", "2.xml", "1.xml"])
+        self.assertEquals(increments, [
+            os.path.join(tmp_increment_dir,"3.xml"),
+            os.path.join(tmp_increment_dir,"2.xml"),
+            os.path.join(tmp_increment_dir,"1.xml")])
 
     def make_file(self, path, modification_time):
         file = open(path, "w")

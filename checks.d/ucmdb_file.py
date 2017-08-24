@@ -1,7 +1,8 @@
 from checks import AgentCheck, CheckException
-from utils.ucmdb.ucmdb_parser import UcmdbCIParser
+from utils.ucmdb.ucmdb_file_dump import UcmdbDumpStructure, UcmdbFileDump
 from utils.persistable_store import PersistableStore
 from utils.timer import Timer
+
 
 class UcmdbTopologyFileInstance(object):
     INSTANCE_TYPE = "ucmdb"
@@ -28,6 +29,11 @@ class UcmdbTopologyFileInstance(object):
         self._persistable_store = PersistableStore(self.PERSISTENCE_CHECK_NAME, self.location)
         self.timer = Timer("last_poll_time", self.polling_interval)
         self.timer.load(self._persistable_store)
+        self.dump_structure = UcmdbDumpStructure.load(self.location)
+        self.previous_structure = self._persistable_store['ucmdb_dump_structure']
+
+    def should_execute_check(self):
+        return self.timer.expired() or (self.previous_structure is None or self.dump_structure.has_changes(self.previous_structure))
 
     def _get_or_default(self, instance, field_name, defaults):
         if field_name in instance:
@@ -38,6 +44,7 @@ class UcmdbTopologyFileInstance(object):
     def persist(self):
         self.timer.reset()
         self.timer.persist(self._persistable_store)
+        self._persistable_store['ucmdb_dump_structure'] = self.dump_structure
         self._persistable_store.commit_status()
 
 
@@ -47,8 +54,8 @@ class UcmdbTopologyFile(AgentCheck):
     def check(self, instance):
         ucmdb_instance = UcmdbTopologyFileInstance(instance)
 
-        if not ucmdb_instance.timer.expired():
-            self.log.debug("Skipping ucmdb file instance %s, waiting for polling interval completion." % ucmdb_instance.location)
+        if not ucmdb_instance.should_execute_check():
+            self.log.debug("Skipping ucmdb file instance %s, waiting for changes and polling interval completion." % ucmdb_instance.location)
             return
 
         self.execute_check(ucmdb_instance)
@@ -58,10 +65,10 @@ class UcmdbTopologyFile(AgentCheck):
     def execute_check(self, ucmdb_instance):
         self.start_snapshot(ucmdb_instance.instance_key)
         try:
-            parser = UcmdbCIParser(ucmdb_instance.location)
-            parser.parse()
-            self.add_components(ucmdb_instance, parser.get_components().values())
-            self.add_relations(ucmdb_instance, parser.get_relations().values())
+            dump = UcmdbFileDump(ucmdb_instance.dump_structure)
+            dump.load()
+            self.add_components(ucmdb_instance, dump.get_components().values())
+            self.add_relations(ucmdb_instance, dump.get_relations().values())
             self.stop_snapshot(ucmdb_instance.instance_key)
         except Exception as e:
             self._clear_topology(ucmdb_instance.instance_key, clear_in_snapshot=True)
