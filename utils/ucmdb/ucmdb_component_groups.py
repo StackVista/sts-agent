@@ -44,13 +44,10 @@ class UcmdbComponentGroups(object):
                 continue
             group_id = self.unionfind.find(component_number)
             label = group_number_to_label.get(group_id, "group%s" % group_id)
-            self._append_tags(component['data'], [label])
+            self._append_label(component['data'], label)
 
-    def _append_tags(self, data, tag_list):
-        if 'tags' in data and tag_list:
-            data['tags'] += tag_list
-        elif tag_list:
-            data['tags'] = tag_list
+    def _append_label(self, data, label):
+        data['label.connected_group'] = label
 
     def get_components(self):
         return self.components

@@ -18,12 +18,12 @@ class TestUcmdbComponentGroups(TestCase):
 
         self.assertEquals(components, {
             'id1': {
-                'data': {'tags': ['group1'], 'name': 'comp'},
+                'data': {'label.connected_group': 'group1', 'name': 'comp'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id1'},
             'id2': {
-                'data': {'tags': ['group0'], 'name': 'comp'},
+                'data': {'label.connected_group': 'group0', 'name': 'comp'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id2'}})
@@ -43,12 +43,12 @@ class TestUcmdbComponentGroups(TestCase):
 
         self.assertEquals(components, {
             'id1': {
-                'data': {'tags': ['group1'], 'name': 'comp'},
+                'data': {'label.connected_group': 'group1', 'name': 'comp'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id1'},
             'id2': {
-                'data': {'tags': ['group1'], 'name': 'comp'},
+                'data': {'label.connected_group': 'group1', 'name': 'comp'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id2'}})
@@ -72,22 +72,22 @@ class TestUcmdbComponentGroups(TestCase):
 
         self.assertEquals(components, {
             'id1': {
-                'data': {'tags': ['mycomplabel'], 'name': 'mycomp'},
+                'data': {'label.connected_group': 'mycomplabel', 'name': 'mycomp'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id1'},
             'id2': {
-                'data': {'tags': ['mycomplabel'], 'name': 'comp'},
+                'data': {'label.connected_group': 'mycomplabel', 'name': 'comp'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id2'},
             'id3': {
-                'data': {'tags': ['group2'], 'name': 'comp'},
+                'data': {'label.connected_group': 'group2', 'name': 'comp'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id3'},
             'id4': {
-                'data': {'tags': ['group2'], 'name': 'comp'},
+                'data': {'label.connected_group': 'group2', 'name': 'comp'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id4'}})
@@ -112,7 +112,7 @@ class TestUcmdbComponentGroups(TestCase):
                 'operation': 'delete',
                 'ucmdb_id': 'id1'},
             'id2': {
-                'data': {'tags': ['group0'], 'name': 'comp'},
+                'data': {'label.connected_group': 'group0', 'name': 'comp'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id2'}})

@@ -313,13 +313,13 @@ class TestUcmdbTopologyGroupingConnectedComponents(AgentCheckTest):
         self.assertEqual(len(instances[0]['relations']), 1)
 
         self.assertEqual(instances[0]['components'],[
-            {'data': {'name': 'mycomponent', 'tags': ['custom_group']},
+            {'data': {'name': 'mycomponent', 'label.connected_group': 'custom_group'},
             'externalId': 'dab1c91cdc7a6d808b0642cb02ea22f0',
             'type': {'name': 'business_service'}},
-            {'data': {'name': 'mycomponent3', 'tags': ['group1']},
+            {'data': {'name': 'mycomponent3', 'label.connected_group': 'group1'},
             'externalId': 'ba21d9dfb1c2ebf4ee951589a3b4ec63',
             'type': {'name': 'business_service'}},
-            {'data': {'name': 'mycomponent2', 'tags': ['custom_group']},
+            {'data': {'name': 'mycomponent2', 'label.connected_group': 'custom_group'},
             'externalId': 'ba21d9dfb1c2ebf4ee951589a3b4ec62',
             'type': {'name': 'business_service'}}])
         self.assertEqual(instances[0]['relations'], [{'data': {'DiscoveryID1': 'dab1c91cdc7a6d808b0642cb02ea22f0',

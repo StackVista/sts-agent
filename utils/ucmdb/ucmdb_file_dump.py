@@ -85,7 +85,6 @@ class UcmdbFileDump(object):
                     self.handle_element(self.components, id, component)
             for id, relation in parser.get_relations().iteritems():
                 if not self.is_relation_excluded(relation, excluded_types, excluded_component_ids):
-                    print "relation", relation
                     self.handle_element(self.relations, id, relation)
 
     def handle_element(self, final_elements, id, element):
