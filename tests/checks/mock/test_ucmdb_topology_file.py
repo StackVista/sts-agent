@@ -257,3 +257,30 @@ class TestUcmdbTopologyDumpStructure(AgentCheckTest):
         self.assertEqual(len(instances), 1)
         self.assertEqual(len(instances[0]['components']), 3)
         self.assertEqual(len(instances[0]['relations']), 2)
+
+
+class TestUcmdbTopologyExcludeTypes(AgentCheckTest):
+    """
+    Ucmdb check should report topology from xml export that contains bare minimum
+    """
+    CHECK_NAME = 'ucmdb_file'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'location': 'tests/core/fixtures/ucmdb/check/exclude_types',
+                    'excluded_types': ['business_service', 'containment']
+                }
+            ]
+        }
+        self.run_check(config)
+        instances = self.check.get_topology_instances()
+        self.assertEqual(len(instances), 1)
+        self.assertEqual(instances[0]['instance'], {'type': 'ucmdb', 'url': 'tests/core/fixtures/ucmdb/check/exclude_types'})
+
+        self.assertEqual(len(instances[0]['components']), 0)
+        self.assertEqual(len(instances[0]['relations']), 0)

@@ -12,6 +12,7 @@ class UcmdbTopologyFileInstance(object):
         "file_polling_interval": 0,
         "component_type_field": "name",
         "relation_type_field": "name",
+        "excluded_types": [],
         "tags": []}
 
     def __init__(self, instance):
@@ -23,6 +24,7 @@ class UcmdbTopologyFileInstance(object):
         self.polling_interval = self._get_or_default(instance, "file_polling_interval", self.CONFIG_DEFAULTS)
         self.component_type_field = self._get_or_default(instance, "component_type_field", self.CONFIG_DEFAULTS)
         self.relation_type_field = self._get_or_default(instance, "relation_type_field", self.CONFIG_DEFAULTS)
+        self.excluded_types = set(self._get_or_default(instance, "excluded_types", self.CONFIG_DEFAULTS))
         self.tags = self._get_or_default(instance, 'tags', self.CONFIG_DEFAULTS)
         self.instance_key = {"type": self.INSTANCE_TYPE, "url":  self.location}
 
@@ -66,7 +68,7 @@ class UcmdbTopologyFile(AgentCheck):
         self.start_snapshot(ucmdb_instance.instance_key)
         try:
             dump = UcmdbFileDump(ucmdb_instance.dump_structure)
-            dump.load()
+            dump.load(ucmdb_instance.excluded_types)
             self.add_components(ucmdb_instance, dump.get_components().values())
             self.add_relations(ucmdb_instance, dump.get_relations().values())
             self.stop_snapshot(ucmdb_instance.instance_key)
