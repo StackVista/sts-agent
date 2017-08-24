@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+  <data>
+    <objects>
+      <object operation="update" name="business_application" ucmdb_id="ba21d9dfb1c2ebf4ee951589a3b4ec63" id="UCMDB%0Abusiness_application%0A1%0Ainternal_id%3DSTRING%3Dba21d9dfb1c2ebf4ee951589a3b4ec63%0A">
+        <attribute name="display_label" datatype="STRING">UPDATED</attribute>
+      </object>
+    </objects>
+    <links>
+      <link name="containment" operation="delete" ucmdb_id="a9247f4296601c507064ae599bec177f"/>
+    </links>
+  </data>
+</root>

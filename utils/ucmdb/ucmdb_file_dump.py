@@ -35,12 +35,14 @@ class UcmdbDumpStructure(object):
         if os.path.exists(snapshot_dir):
             snapshot_files = [f for f in os.listdir(snapshot_dir) if isfile(join(snapshot_dir, f)) and f.endswith(".xml")]
             for snapshot_file in snapshot_files:
-                snapshots[snapshot_file] = int(getmtime(join(snapshot_dir, snapshot_file)))
+                snapshot_file_path = join(snapshot_dir, snapshot_file)
+                snapshots[snapshot_file_path] = int(getmtime(snapshot_file_path))
 
         if os.path.exists(increment_dir):
             increment_files = [f for f in os.listdir(increment_dir) if isfile(join(increment_dir, f)) and f.endswith(".xml")]
             for increment_file in increment_files:
-                increments[increment_file] = int(getmtime(join(increment_dir, increment_file)))
+                increment_file_path = join(increment_dir, increment_file)
+                increments[increment_file_path] = int(getmtime(increment_file_path))
         return UcmdbDumpStructure(snapshots, increments)
 
 
@@ -50,32 +52,28 @@ class UcmdbFileDump(object):
         self.components = dict()
         self.relations = dict()
 
-    @staticmethod
-    def parse_xml(ucmdb_dump_structure):
-        final_components = dict()
-        final_relations = dict()
-        for snapshot in ucmdb_dump_structure.get_snapshots():
+    def load(self):
+        for snapshot in self.structure.get_snapshots():
             parser = UcmdbCIParser(snapshot)
             parser.parse()
             for id, component in parser.get_components().iteritems():
-                UcmdbFileDump.handle_element(final_components, id, component)
+                self.handle_element(self.components, id, component)
             for id, relation in parser.get_relations().iteritems():
-                UcmdbFileDump.handle_element(final_relations, id, relation)
+                self.handle_element(self.relations, id, relation)
 
-        for increment in ucmdb_dump_structure.get_increments():
+        for increment in self.structure.get_increments():
             parser = UcmdbCIParser(increment)
             parser.parse()
             for id, component in parser.get_components().iteritems():
-                UcmdbFileDump.handle_element(final_components, id, component)
+                self.handle_element(self.components, id, component)
             for id, relation in parser.get_relations().iteritems():
-                UcmdbFileDump.handle_element(final_relations, id, relation)
+                self.handle_element(self.relations, id, relation)
 
-    @staticmethod
     def handle_element(self, final_elements, id, element):
         if element['operation'] == "add" or element['operation'] == "update":
             final_elements[id] = element
-        elif element['operation'] == "delete":
-            final_elements.remove(id)
+        elif element['operation'] == "delete" and id in final_elements:
+            del final_elements[id]
         else:
             raise Exception("Unknown operation %s" % element['operation'])
 
