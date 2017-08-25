@@ -2,10 +2,12 @@
 from python_algorithms.basic.union_find import UF
 
 class UcmdbComponentGroups(object):
-    def __init__(self, components_dict, relations_dict, component_name_to_label = dict()):
+    def __init__(self, components_dict, relations_dict, component_name_to_label = dict(), label_min_group_size=1):
         self.components = components_dict
         self.relations = relations_dict
         self.component_name_to_label = component_name_to_label
+        self.label_min_group_size = label_min_group_size
+        self.group_counts = dict()
         self.component_id_to_label = dict()
         self.component_number = dict()
         counter = 0
@@ -21,6 +23,7 @@ class UcmdbComponentGroups(object):
 
     def label_groups(self):
         self._union_groups()
+        self._calculate_group_counts()
         self._label_components()
 
     def _union_groups(self):
@@ -30,6 +33,17 @@ class UcmdbComponentGroups(object):
                 target_number = self.component_number.get(relation['target_id'], None)
                 if source_number is not None and target_number is not None and not self.unionfind.connected(source_number, target_number):
                     self.unionfind.union(source_number, target_number)
+
+    def _calculate_group_counts(self):
+        for id, component in self.components.items():
+            component_number = self.component_number.get(id, None)
+            if component_number is None:
+                continue
+            group_id = self.unionfind.find(component_number)
+            if group_id in self.group_counts.keys():
+                self.group_counts[group_id] += 1
+            else:
+                self.group_counts[group_id] = 1
 
     def _label_components(self):
         group_number_to_label = dict()
@@ -43,8 +57,13 @@ class UcmdbComponentGroups(object):
             if component_number is None:
                 continue
             group_id = self.unionfind.find(component_number)
-            label = group_number_to_label.get(group_id, "group%s" % group_id)
-            self._append_label(component['data'], label)
+            label = group_number_to_label.get(group_id, None)
+            if label is None:
+                group_size = self.group_counts.get(group_id, None)
+                if group_size is not None and group_size >= self.label_min_group_size:
+                    self._append_label(component['data'], "group_of_size_%s" % group_size)
+            else:
+                self._append_label(component['data'], label)
 
     def _append_label(self, data, label):
         data['label.connected_group'] = label

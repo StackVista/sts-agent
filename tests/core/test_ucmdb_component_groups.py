@@ -6,6 +6,7 @@ from utils.ucmdb.ucmdb_component_groups import UcmdbComponentGroups
 class TestUcmdbComponentGroups(TestCase):
 
     def test_component_per_group(self):
+        self.maxDiff = None
         components = {
             "id1": self.make_component("id1"),
             "id2": self.make_component("id2")}
@@ -18,18 +19,19 @@ class TestUcmdbComponentGroups(TestCase):
 
         self.assertEquals(components, {
             'id1': {
-                'data': {'label.connected_group': 'group1', 'name': 'comp'},
+                'data': {'label.connected_group': 'group_of_size_1', 'name': 'comp'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id1'},
             'id2': {
-                'data': {'label.connected_group': 'group0', 'name': 'comp'},
+                'data': {'label.connected_group': 'group_of_size_1', 'name': 'comp'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id2'}})
         self.assertEquals(len(relations), 0)
 
     def test_two_components_form_group(self):
+        self.maxDiff = None
         components = {
             "id1": self.make_component("id1"),
             "id2": self.make_component("id2")}
@@ -43,12 +45,12 @@ class TestUcmdbComponentGroups(TestCase):
 
         self.assertEquals(components, {
             'id1': {
-                'data': {'label.connected_group': 'group1', 'name': 'comp'},
+                'data': {'label.connected_group': 'group_of_size_2', 'name': 'comp'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id1'},
             'id2': {
-                'data': {'label.connected_group': 'group1', 'name': 'comp'},
+                'data': {'label.connected_group': 'group_of_size_2', 'name': 'comp'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id2'}})
@@ -82,12 +84,12 @@ class TestUcmdbComponentGroups(TestCase):
                 'operation': 'add',
                 'ucmdb_id': 'id2'},
             'id3': {
-                'data': {'label.connected_group': 'group2', 'name': 'comp'},
+                'data': {'label.connected_group': 'group_of_size_2', 'name': 'comp'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id3'},
             'id4': {
-                'data': {'label.connected_group': 'group2', 'name': 'comp'},
+                'data': {'label.connected_group': 'group_of_size_2', 'name': 'comp'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id4'}})
@@ -112,7 +114,7 @@ class TestUcmdbComponentGroups(TestCase):
                 'operation': 'delete',
                 'ucmdb_id': 'id1'},
             'id2': {
-                'data': {'label.connected_group': 'group0', 'name': 'comp'},
+                'data': {'label.connected_group': 'group_of_size_1', 'name': 'comp'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id2'}})

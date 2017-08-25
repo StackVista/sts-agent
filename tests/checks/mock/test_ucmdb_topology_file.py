@@ -316,7 +316,7 @@ class TestUcmdbTopologyGroupingConnectedComponents(AgentCheckTest):
             {'data': {'name': 'mycomponent', 'label.connected_group': 'custom_group'},
             'externalId': 'dab1c91cdc7a6d808b0642cb02ea22f0',
             'type': {'name': 'business_service'}},
-            {'data': {'name': 'mycomponent3', 'label.connected_group': 'group1'},
+            {'data': {'name': 'mycomponent3', 'label.connected_group': 'group_of_size_1'},
             'externalId': 'ba21d9dfb1c2ebf4ee951589a3b4ec63',
             'type': {'name': 'business_service'}},
             {'data': {'name': 'mycomponent2', 'label.connected_group': 'custom_group'},

@@ -16,6 +16,7 @@ class UcmdbTopologyFileInstance(object):
         "excluded_types": [],
         "grouping_connected_components": False,
         "component_group": {},
+        "label_min_group_size": 1,
         "tags": []}
 
     def __init__(self, instance):
@@ -30,6 +31,7 @@ class UcmdbTopologyFileInstance(object):
         self.excluded_types = set(self._get_or_default(instance, "excluded_types", self.CONFIG_DEFAULTS))
         self.grouping_connected_components = self._get_or_default(instance, "grouping_connected_components", self.CONFIG_DEFAULTS)
         self.component_group = self._get_or_default(instance, "component_group", self.CONFIG_DEFAULTS)
+        self.label_min_group_size = self._get_or_default(instance, "label_min_group_size", self.CONFIG_DEFAULTS)
         self.tags = self._get_or_default(instance, 'tags', self.CONFIG_DEFAULTS)
         self.instance_key = {"type": self.INSTANCE_TYPE, "url":  self.location}
 
@@ -88,7 +90,7 @@ class UcmdbTopologyFile(AgentCheck):
         dump = UcmdbFileDump(ucmdb_instance.dump_structure)
         dump.load(ucmdb_instance.excluded_types)
         if ucmdb_instance.grouping_connected_components:
-            grouping = UcmdbComponentGroups(dump.get_components(), dump.get_relations(), ucmdb_instance.component_group)
+            grouping = UcmdbComponentGroups(dump.get_components(), dump.get_relations(), ucmdb_instance.component_group, ucmdb_instance.label_min_group_size)
             grouping.label_groups()
             return (grouping.get_components().values(), grouping.get_relations().values())
         else:
