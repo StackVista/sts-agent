@@ -22,7 +22,8 @@ class TestUtilsSplunk(TestCase):
             'default_search_seconds_between_retries': 1,
             'default_verify_ssl_certificate': False,
             'default_batch_size': 1000,
-            'default_saved_searches_parallel': 3
+            'default_saved_searches_parallel': 3,
+            'default_unique_key_fields': ["_bkt", "_cd"]
         })
         saved_search = SplunkSavedSearch(instance_config, {"name": "search", "parameters": {}})
 
@@ -54,7 +55,8 @@ class TestUtilsSplunk(TestCase):
             'default_search_seconds_between_retries': 1,
             'default_verify_ssl_certificate': False,
             'default_batch_size': 1000,
-            'default_saved_searches_parallel': 3
+            'default_saved_searches_parallel': 3,
+            'default_unique_key_fields': ["_bkt", "_cd"]
         })
 
         def _mocked_do_get(*args, **kwargs):
@@ -93,7 +95,8 @@ class TestSavedSearches(TestCase):
             'default_search_seconds_between_retries': 1,
             'default_verify_ssl_certificate': False,
             'default_batch_size': 1000,
-            'default_saved_searches_parallel': 3
+            'default_saved_searches_parallel': 3,
+            'default_unique_key_fields': ["_bkt", "_cd"]
         })
 
         saved_search_components = SplunkSavedSearch(instance_config, {"name": "components", "parameters": {}})

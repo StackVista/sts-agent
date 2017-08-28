@@ -89,6 +89,13 @@ class SplunkInstanceConfig(object):
         return self.username, self.password
 
 
+class SplunkTelemetryInstanceConfig(SplunkInstanceConfig):
+    def __init__(self, instance, init_config, defaults):
+        super(SplunkTelemetryInstanceConfig, self).__init__(instance, init_config, defaults)
+
+        self.default_unique_key_fields = self.get_or_default('default_unique_key_fields')
+
+
 class SavedSearches(object):
     def __init__(self, saved_searches):
         self.searches = filter(lambda ss: ss.name is not None, saved_searches)

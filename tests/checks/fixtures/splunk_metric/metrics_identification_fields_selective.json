@@ -1,0 +1,20 @@
+{
+	"preview": false,
+	"init_offset": 0,
+	"messages": [],
+	"fields": [],
+	"results": [{
+		"_time": "2017-12-18T12:00:00.000+00:00",
+        "uid1": "uid",
+		"uid2": 1,
+        "value": 1,
+        "metric": "metric_name"
+	}, {
+		"_time": "2017-12-18T12:00:00.000+00:00",
+		"uid1": "uid",
+		"uid2": 2,
+        "value": 2,
+        "metric": "metric_name"
+	}],
+	"highlighted": {}
+}
