@@ -43,12 +43,12 @@ class TestUcmdbComponentTrees(TestCase):
 
         self.assertEquals(components, {
             'id1': {
-                'data': {'label.tree': 'id1', 'name': 'name1'},
+                'data': {'label.id1': 'id1', 'name': 'name1'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id1'},
             'id2': {
-                'data': {'label.tree': 'id2', 'name': 'name2'},
+                'data': {'label.id2': 'id2', 'name': 'name2'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id2'}})
@@ -73,22 +73,22 @@ class TestUcmdbComponentTrees(TestCase):
 
         self.assertEquals(components, {
             'id1': {
-                'data': {'label.tree': 'id1', 'name': 'name1'},
+                'data': {'label.id1': 'id1', 'name': 'name1'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id1'},
             'id2': {
-                'data': {'label.tree': 'id1', 'name': 'name2'},
+                'data': {'label.id1': 'id1', 'name': 'name2'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id2'},
             'id3': {
-                'data': {'label.tree': 'id3', 'name': 'name3'},
+                'data': {'label.id3': 'id3', 'name': 'name3'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id3'},
             'id4': {
-                'data': {'label.tree': 'id3', 'name': 'name4'},
+                'data': {'label.id3': 'id3', 'name': 'name4'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id4'}})
@@ -114,22 +114,22 @@ class TestUcmdbComponentTrees(TestCase):
 
         self.assertEquals(components, {
             'id1': {
-                'data': {'label.tree': 'id1', 'name': 'name1'},
+                'data': {'label.id1': 'id1', 'name': 'name1'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id1'},
             'id2': {
-                'data': {'label.tree': 'id1', 'name': 'name2'},
+                'data': {'label.id1': 'id1', 'name': 'name2'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id2'},
             'id3': {
-                'data': {'label.tree': 'id1', 'name': 'name3'},
+                'data': {'label.id1': 'id1', 'name': 'name3'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id3'},
             'id4': {
-                'data': {'label.tree': 'id1', 'name': 'name4'},
+                'data': {'label.id1': 'id1', 'name': 'name4'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id4'}})
@@ -154,21 +154,69 @@ class TestUcmdbComponentTrees(TestCase):
 
         self.assertEquals(components, {
             'id1': {
-                'data': {'label.tree': 'id1', 'name': 'name1'},
+                'data': {'label.id1': 'id1', 'name': 'name1'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id1'},
             'id2': {
-                'data': {'label.tree': 'id1', 'name': 'name2'},
+                'data': {'label.id1': 'id1', 'name': 'name2'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id2'},
             'id3': {
-                'data': {'label.tree': 'id1', 'name': 'name3'},
+                'data': {'label.id1': 'id1', 'name': 'name3'},
                 'name': 'defaultcomponent',
                 'operation': 'add',
                 'ucmdb_id': 'id3'}})
         self.assertEquals(len(relations), 3)
+
+    def test_ucmdb_several_trees(self):
+        self.maxDiff = None
+        components = {
+            "id1": self.make_component("id1", "name1"),
+            "id2": self.make_component("id2", "name2"),
+            "id3": self.make_component("id3", "name3"),
+            "id4": self.make_component("id4", "name4"),
+            "id5": self.make_component("id5", "name5")}
+        relations = {
+            "rel1": self.make_relation("rel1", "id1", "id2"),
+            "rel2": self.make_relation("rel2", "id3", "id4"),
+            "rel3": self.make_relation("rel3", "id4", "id5"),
+            "rel4": self.make_relation("rel4", "id2", "id5")
+        }
+
+        tree_labeling = UcmdbComponentTrees(components, relations, {'name1':'id1', 'name3':'id3'})
+        tree_labeling.label_trees()
+        components = tree_labeling.get_components()
+        relations = tree_labeling.get_relations()
+
+        self.assertEquals(components, {
+            'id1': {
+                'data': {'label.id1': 'id1', 'name': 'name1'},
+                'name': 'defaultcomponent',
+                'operation': 'add',
+                'ucmdb_id': 'id1'},
+            'id2': {
+                'data': {'label.id1': 'id1', 'name': 'name2'},
+                'name': 'defaultcomponent',
+                'operation': 'add',
+                'ucmdb_id': 'id2'},
+            'id3': {
+                'data': {'label.id3': 'id3', 'name': 'name3'},
+                'name': 'defaultcomponent',
+                'operation': 'add',
+                'ucmdb_id': 'id3'},
+            'id4': {
+                'data': {'label.id3': 'id3', 'name': 'name4'},
+                'name': 'defaultcomponent',
+                'operation': 'add',
+                'ucmdb_id': 'id4'},
+            'id5': {
+                'data': {'label.id1': 'id1', 'label.id3': 'id3', 'name': 'name5'},
+                'name': 'defaultcomponent',
+                'operation': 'add',
+                'ucmdb_id': 'id5'}})
+        self.assertEquals(len(relations), 4)
 
     def make_component(self, id, name="comp"):
         component = dict()

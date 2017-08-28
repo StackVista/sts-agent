@@ -62,7 +62,7 @@ class UcmdbComponentTrees(object):
                         queue.append(adjacent_comp)
 
     def _append_label(self, data, label):
-        data['label.tree'] = label
+        data['label.%s' % label] = label
 
     def get_components(self):
         return self.components
