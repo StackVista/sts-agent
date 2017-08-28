@@ -1,6 +1,7 @@
 from checks import AgentCheck, CheckException
 from utils.ucmdb.ucmdb_file_dump import UcmdbDumpStructure, UcmdbFileDump
 from utils.ucmdb.ucmdb_component_groups import UcmdbComponentGroups
+from utils.ucmdb.ucmdb_component_trees import UcmdbComponentTrees
 from utils.persistable_store import PersistableStore
 from utils.timer import Timer
 
@@ -15,6 +16,7 @@ class UcmdbTopologyFileInstance(object):
         "relation_type_field": "name",
         "excluded_types": [],
         "grouping_connected_components": False,
+        "grouping_component_trees": False,
         "component_group": {},
         "label_min_group_size": 1,
         "tags": []}
@@ -30,6 +32,7 @@ class UcmdbTopologyFileInstance(object):
         self.relation_type_field = self._get_or_default(instance, "relation_type_field", self.CONFIG_DEFAULTS)
         self.excluded_types = set(self._get_or_default(instance, "excluded_types", self.CONFIG_DEFAULTS))
         self.grouping_connected_components = self._get_or_default(instance, "grouping_connected_components", self.CONFIG_DEFAULTS)
+        self.grouping_component_trees = self._get_or_default(instance, "grouping_component_trees", self.CONFIG_DEFAULTS)
         self.component_group = self._get_or_default(instance, "component_group", self.CONFIG_DEFAULTS)
         self.label_min_group_size = self._get_or_default(instance, "label_min_group_size", self.CONFIG_DEFAULTS)
         self.tags = self._get_or_default(instance, 'tags', self.CONFIG_DEFAULTS)
@@ -89,12 +92,26 @@ class UcmdbTopologyFile(AgentCheck):
     def load_and_label_groups(self, ucmdb_instance):
         dump = UcmdbFileDump(ucmdb_instance.dump_structure)
         dump.load(ucmdb_instance.excluded_types)
+        components = dump.get_components()
+        relations = dump.get_relations()
+
         if ucmdb_instance.grouping_connected_components:
-            grouping = UcmdbComponentGroups(dump.get_components(), dump.get_relations(), ucmdb_instance.component_group, ucmdb_instance.label_min_group_size)
-            grouping.label_groups()
-            return (grouping.get_components().values(), grouping.get_relations().values())
-        else:
-            return (dump.get_components().values(), dump.get_relations().values())
+            components, relations = self._label_connected_groups(components, relations, ucmdb_instance)
+
+        if ucmdb_instance.grouping_component_trees:
+            components, relations = self._label_trees(components, relations, ucmdb_instance)
+
+        return (components.values(), relations.values())
+
+    def _label_connected_groups(self, components, relations, ucmdb_instance):
+        grouping = UcmdbComponentGroups(components, relations, ucmdb_instance.component_group, ucmdb_instance.label_min_group_size)
+        grouping.label_groups()
+        return (grouping.get_components(), grouping.get_relations())
+
+    def _label_trees(self, components, relations, ucmdb_instance):
+        trees = UcmdbComponentTrees(components, relations, ucmdb_instance.component_group)
+        trees.label_trees()
+        return (trees.get_components(), trees.get_relations())
 
     def add_components(self, ucmdb_instance, ucmdb_components):
         for ucmdb_component in ucmdb_components:

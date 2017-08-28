@@ -1,5 +1,5 @@
 
-class UcmdbTreeLabeling(object):
+class UcmdbComponentTrees(object):
     def __init__(self, components_dict, relations_dict, tree_parent_to_label = dict()):
         self.components = components_dict
         self.relations = relations_dict

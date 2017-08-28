@@ -1,8 +1,8 @@
 from unittest import TestCase
 
-from utils.ucmdb.ucmdb_tree_labels import UcmdbTreeLabeling
+from utils.ucmdb.ucmdb_component_trees import UcmdbComponentTrees
 
-class TestUcmdbTreeLabeling(TestCase):
+class TestUcmdbComponentTrees(TestCase):
 
     def test_ucmdb_tree_labels_no_roots(self):
         self.maxDiff = None
@@ -11,7 +11,7 @@ class TestUcmdbTreeLabeling(TestCase):
             "id2": self.make_component("id2", "name2")}
         relations = {}
 
-        tree_labeling = UcmdbTreeLabeling(components, relations)
+        tree_labeling = UcmdbComponentTrees(components, relations)
         tree_labeling.label_trees()
         components = tree_labeling.get_components()
         relations = tree_labeling.get_relations()
@@ -36,7 +36,7 @@ class TestUcmdbTreeLabeling(TestCase):
             "id2": self.make_component("id2", "name2")}
         relations = {}
 
-        tree_labeling = UcmdbTreeLabeling(components, relations, {'name1':'id1', 'name2':'id2'})
+        tree_labeling = UcmdbComponentTrees(components, relations, {'name1':'id1', 'name2':'id2'})
         tree_labeling.label_trees()
         components = tree_labeling.get_components()
         relations = tree_labeling.get_relations()
@@ -66,7 +66,7 @@ class TestUcmdbTreeLabeling(TestCase):
             "rel2": self.make_relation("rel2", "id3", "id4")
         }
 
-        tree_labeling = UcmdbTreeLabeling(components, relations, {'name1':'id1', 'name3':'id3'})
+        tree_labeling = UcmdbComponentTrees(components, relations, {'name1':'id1', 'name3':'id3'})
         tree_labeling.label_trees()
         components = tree_labeling.get_components()
         relations = tree_labeling.get_relations()
@@ -107,7 +107,7 @@ class TestUcmdbTreeLabeling(TestCase):
             "rel3": self.make_relation("rel3", "id3", "id4")
         }
 
-        tree_labeling = UcmdbTreeLabeling(components, relations, {'name1':'id1'})
+        tree_labeling = UcmdbComponentTrees(components, relations, {'name1':'id1'})
         tree_labeling.label_trees()
         components = tree_labeling.get_components()
         relations = tree_labeling.get_relations()
@@ -147,7 +147,7 @@ class TestUcmdbTreeLabeling(TestCase):
             "rel3": self.make_relation("rel3", "id3", "id1")
         }
 
-        tree_labeling = UcmdbTreeLabeling(components, relations, {'name1':'id1'})
+        tree_labeling = UcmdbComponentTrees(components, relations, {'name1':'id1'})
         tree_labeling.label_trees()
         components = tree_labeling.get_components()
         relations = tree_labeling.get_relations()
