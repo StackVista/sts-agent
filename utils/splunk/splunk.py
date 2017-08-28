@@ -93,7 +93,7 @@ class SplunkTelemetryInstanceConfig(SplunkInstanceConfig):
     def __init__(self, instance, init_config, defaults):
         super(SplunkTelemetryInstanceConfig, self).__init__(instance, init_config, defaults)
 
-        self.default_fields_for_identification = self.get_or_default('default_fields_for_identification')
+        self.default_unique_key_fields = self.get_or_default('default_unique_key_fields')
 
 
 class SavedSearches(object):

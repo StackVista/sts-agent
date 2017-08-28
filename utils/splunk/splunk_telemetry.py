@@ -7,7 +7,7 @@ class SplunkTelemetrySavedSearch(SplunkSavedSearch):
     def __init__(self, instance_config, saved_search_instance):
         super(SplunkTelemetrySavedSearch, self).__init__(instance_config, saved_search_instance)
 
-        self.fields_for_identification = saved_search_instance.get('fields_for_identification', instance_config.default_fields_for_identification)
+        self.unique_key_fields = saved_search_instance.get('unique_key_fields', instance_config.default_unique_key_fields)
 
         self.config = {
             field_name: saved_search_instance.get(field_name, instance_config.get_or_default("default_" + field_name))
@@ -49,7 +49,7 @@ class SplunkTelemetryInstance(object):
         self.tags = instance.get('tags', [])
         self.initial_delay_seconds = int(instance.get('initial_delay_seconds', self.instance_config.get_or_default('default_initial_delay_seconds')))
         self.launch_time_seconds = current_time
-        self.fields_for_identification = instance.get('fields_for_identification', self.instance_config.get_or_default('default_fields_for_identification'))
+        self.unique_key_fields = instance.get('unique_key_fields', self.instance_config.get_or_default('default_unique_key_fields'))
 
     def initial_time_done(self, current_time_seconds):
         return current_time_seconds >= self.launch_time_seconds + self.initial_delay_seconds

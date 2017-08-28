@@ -61,7 +61,7 @@ class SplunkMetric(SplunkTelemetryBase):
             'default_max_restart_history_seconds': 86400,
             'default_max_query_chunk_seconds': 3600,
             'default_initial_delay_seconds': 0,
-            'default_fields_for_identification': ["_bkt", "_cd"]
+            'default_unique_key_fields': ["_bkt", "_cd"]
         })
         metric_saved_searches = SavedSearches([
             MetricSavedSearch(metric_instance_config, saved_search_instance)

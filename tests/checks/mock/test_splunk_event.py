@@ -934,7 +934,7 @@ class TestSplunkSelectiveFieldsForIdentification(AgentCheckTest):
                     'saved_searches': [{
                         "name": "selective_events",
                         "parameters": {},
-                        "fields_for_identification": ["uid1", "uid2"]
+                        "unique_key_fields": ["uid1", "uid2"]
                     }],
                     'tags': []
                 }
@@ -993,7 +993,7 @@ class TestSplunkAllFieldsForIdentification(AgentCheckTest):
                     'saved_searches': [{
                         "name": "all_events",
                         "parameters": {},
-                        "fields_for_identification": []
+                        "unique_key_fields": []
                     }],
                     'tags': []
                 }

@@ -35,8 +35,8 @@ init_config:
   # The metric value field should contain numerical data in the splunk results
   # default_metric_value_field: "value"
 
-  # Fields to uniquely identify a record. Use fields_for_identification: None to use the whole record.
-  # default_fields_for_identification:
+  # Fields to uniquely identify a record. Use unique_key_fields: None to use the whole record.
+  # default_unique_key_fields:
   #   - "_bkt"
   #   - "_cd"
 
@@ -64,7 +64,7 @@ instances:
         # initial_history_time_seconds: 0
         # max_restart_history_seconds: 86400
         # max_query_chunk_seconds: 3600
-        # fields_for_identification:
+        # unique_key_fields:
         #   - "_bkt"
         #   - "_cd"
 

@@ -1008,7 +1008,7 @@ class TestSplunkSelectiveFieldsForIdentification(AgentCheckTest):
                     'saved_searches': [{
                         "name": "metrics_identification_fields_selective",
                         "parameters": {},
-                        "fields_for_identification": ["uid1", "uid2"]
+                        "unique_key_fields": ["uid1", "uid2"]
                     }],
                     'tags': []
                 }
@@ -1062,7 +1062,7 @@ class TestSplunkAllFieldsForIdentification(AgentCheckTest):
                     'saved_searches': [{
                         "name": "metrics_identification_fields_all",
                         "parameters": {},
-                        "fields_for_identification": []
+                        "unique_key_fields": []
                     }],
                     'tags': []
                 }
