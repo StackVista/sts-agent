@@ -988,3 +988,111 @@ class TestSplunkMetricRespectParallelDispatches(AgentCheckTest):
             '_dispatch_and_await_search': _mock_dispatch_and_await_search,
             '_saved_searches': _mocked_saved_searches
         })
+
+class TestSplunkSelectiveFieldsForIdentification(AgentCheckTest):
+    """
+    Splunk metrics check should process metrics where the unique identifier is set to a selective number of fields
+    """
+    CHECK_NAME = 'splunk_metric'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:13001',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches': [{
+                        "name": "metrics_identification_fields_selective",
+                        "parameters": {},
+                        "unique_key_fields": ["uid1", "uid2"]
+                    }],
+                    'tags': []
+                }
+            ]
+        }
+
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_search,
+            '_saved_searches': _mocked_saved_searches
+        })
+
+        self.assertEqual(len(self.metrics), 2)
+        self.assertMetric(
+            'metric_name',
+            time=1513598400.0,
+            value=1,
+            tags=["uid1:uid", "uid2:1"])
+        self.assertMetric(
+            'metric_name',
+            time=1513598400.0,
+            value=2,
+            tags=["uid1:uid", "uid2:2"])
+
+        # shouldn't resend the metrics
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_search,
+            '_saved_searches': _mocked_saved_searches
+        })
+
+        self.assertEqual(len(self.metrics), 0)
+
+
+class TestSplunkAllFieldsForIdentification(AgentCheckTest):
+    """
+    Splunk metrics check should process metrics where the unique identifier is set to all fields in a record
+    """
+    CHECK_NAME = 'splunk_metric'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:13001',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches': [{
+                        "name": "metrics_identification_fields_all",
+                        "parameters": {},
+                        "unique_key_fields": []
+                    }],
+                    'tags': []
+                }
+            ]
+        }
+
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_search,
+            '_saved_searches': _mocked_saved_searches
+        })
+
+        self.assertEqual(len(self.metrics), 2)
+        self.assertMetric(
+            'metric_name',
+            time=1513598400.0,
+            value=1,
+            tags=[])
+        self.assertMetric(
+            'metric_name',
+            time=1513598400.0,
+            value=2,
+            tags=[])
+
+
+        # shouldn't resend the metrics
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_search,
+            '_saved_searches': _mocked_saved_searches
+        })
+
+        self.assertEqual(len(self.metrics), 0)

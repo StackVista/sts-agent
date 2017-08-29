@@ -866,6 +866,10 @@ def _mocked_full_search(*args, **kwargs):
     sid = args[0]
     return [json.loads(Fixtures.read_file("full_%s.json" % sid))]
 
+def _mocked_identification_fields_search(*args, **kwargs):
+    # sid is set to saved search name
+    sid = args[0]
+    return [json.loads(Fixtures.read_file("identification_fields_%s.json" % sid))]
 
 class TestSplunkEventRespectParallelDispatches(AgentCheckTest):
     CHECK_NAME = 'splunk_event'
@@ -909,3 +913,121 @@ class TestSplunkEventRespectParallelDispatches(AgentCheckTest):
             '_dispatch_and_await_search': _mock_dispatch_and_await_search,
             '_saved_searches': _mocked_saved_searches
         })
+
+
+class TestSplunkSelectiveFieldsForIdentification(AgentCheckTest):
+    """
+    Splunk event check should process events where the unique identifier is set to a selective number of fields
+    """
+    CHECK_NAME = 'splunk_event'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:13001',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches': [{
+                        "name": "selective_events",
+                        "parameters": {},
+                        "unique_key_fields": ["uid1", "uid2"]
+                    }],
+                    'tags': []
+                }
+            ]
+        }
+
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_identification_fields_search,
+            '_saved_searches': _mocked_saved_searches
+        })
+
+        self.assertEqual(len(self.events), 2)
+        self.assertEqual(self.events[0], {
+            'event_type': u"some_type",
+            'tags': [u"uid2:1", u"uid1:uid"],
+            'timestamp': 1544293796.0,
+            'msg_title': None,
+            'msg_text': None,
+            'source_type_name': None
+        })
+        self.assertEqual(self.events[1], {
+            'event_type': u"some_type",
+            'tags': [u"uid2:2", u"uid1:uid"],
+            'timestamp': 1544293796.0,
+            'msg_title': None,
+            'msg_text': None,
+            'source_type_name': None
+        })
+
+        # shouldn't resend events
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_identification_fields_search,
+            '_saved_searches': _mocked_saved_searches
+        })
+        self.assertEqual(len(self.events), 0)
+
+
+class TestSplunkAllFieldsForIdentification(AgentCheckTest):
+    """
+    Splunk event check should process events where the unique identifier is set to all fields in a record
+    """
+    CHECK_NAME = 'splunk_event'
+
+    def test_checks(self):
+        self.maxDiff = None
+
+        config = {
+            'init_config': {},
+            'instances': [
+                {
+                    'url': 'http://localhost:13001',
+                    'username': "admin",
+                    'password': "admin",
+                    'saved_searches': [{
+                        "name": "all_events",
+                        "parameters": {},
+                        "unique_key_fields": []
+                    }],
+                    'tags': []
+                }
+            ]
+        }
+
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_identification_fields_search,
+            '_saved_searches': _mocked_saved_searches
+        })
+
+        self.assertEqual(len(self.events), 2)
+        self.assertEqual(self.events[0], {
+            'event_type': u"some_type",
+            'tags': [u"value:1"],
+            'timestamp': 1544293796.0,
+            'msg_title': None,
+            'msg_text': None,
+            'source_type_name': None
+        })
+        self.assertEqual(self.events[1], {
+            'event_type': u"some_type",
+            'tags': [u"value:2"],
+            'timestamp': 1544293796.0,
+            'msg_title': None,
+            'msg_text': None,
+            'source_type_name': None
+        })
+
+        # shouldn't resend events
+        self.run_check(config, mocks={
+            '_dispatch_saved_search': _mocked_dispatch_saved_search,
+            '_search': _mocked_identification_fields_search,
+            '_saved_searches': _mocked_saved_searches
+        })
+        self.assertEqual(len(self.events), 0)

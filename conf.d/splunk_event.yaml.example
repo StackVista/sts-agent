@@ -31,6 +31,11 @@ init_config:
   # Delay before starting polling events after starting
   # default_initial_delay_seconds: 600
 
+  # Fields to uniquely identify a record. Use unique_key_fields: None to use the whole record.
+  # default_unique_key_fields:
+  #   - "_bkt"
+  #   - "_cd"
+
 # Currently it is not possible to specify multiple instances with the same url.
 # It is possible to specify multiple saved_searches on a single instance.
 instances:
@@ -52,6 +57,9 @@ instances:
         # initial_history_time_seconds: 0
         # max_restart_history_seconds: 86400
         # max_query_chunk_seconds: 3600
+        # unique_key_fields:
+        #   - "_bkt"
+        #   - "_cd"
 
         # Additional parameters for the splunk saved search query
         parameters:
