@@ -219,21 +219,21 @@ class TestUcmdbComponentTrees(TestCase):
         self.assertEquals(len(relations), 4)
 
     def make_component(self, id, name="comp"):
-        component = dict()
-        data = {'name':name}
-        component['ucmdb_id'] = id
-        component['name'] = "defaultcomponent"
-        component['operation'] = "add"
-        component['data'] = data
+        component = {
+            'data': {'name': name},
+            'ucmdb_id': id,
+            'name': "defaultcomponent",
+            'operation': "add"
+        }
         return component
 
     def make_relation(self, id, source_id, target_id):
-        relation = dict()
-        data = dict()
-        relation['ucmdb_id'] = id
-        relation['source_id'] = source_id
-        relation['target_id'] = target_id
-        relation['name'] = "defaultrelation"
-        relation['operation'] = "add"
-        relation['data'] = data
+        relation = {
+            'ucmdb_id': id,
+            'source_id': source_id,
+            'target_id': target_id,
+            'name': "defaultrelation",
+            'operation': "add",
+            'data': {}
+        }
         return relation
