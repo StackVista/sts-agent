@@ -87,3 +87,4 @@ iso8601==0.1.11
 
 # checks.d/ucmdb_file.py
 ET==0.0.2
+python_algorithms==0.2.2

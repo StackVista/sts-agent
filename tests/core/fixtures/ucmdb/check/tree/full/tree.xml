@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+  <data>
+    <objects>
+      <object operation="add" name="business_service" ucmdb_id="dab1c91cdc7a6d808b0642cb02ea22f0">
+        <attribute name="name" datatype="STRING">mycomponent</attribute>
+      </object>
+      <object operation="add" name="business_service" ucmdb_id="ba21d9dfb1c2ebf4ee951589a3b4ec62">
+        <attribute name="name" datatype="STRING">mycomponent2</attribute>
+      </object>
+      <object operation="add" name="business_service" ucmdb_id="ba21d9dfb1c2ebf4ee951589a3b4ec63">
+        <attribute name="name" datatype="STRING">mycomponent3</attribute>
+      </object>
+    </objects>
+    <links>
+      <link name="containment" operation="add" ucmdb_id="a9247f4296601c507064ae599bec177e">
+        <attribute name="DiscoveryID1">dab1c91cdc7a6d808b0642cb02ea22f0</attribute>
+        <attribute name="DiscoveryID2">ba21d9dfb1c2ebf4ee951589a3b4ec62</attribute>
+      </link>
+    </links>
+  </data>
+</root>

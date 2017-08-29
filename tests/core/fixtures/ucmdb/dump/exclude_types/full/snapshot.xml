@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+  <data>
+    <objects>
+      <object operation="add" name="business_application" ucmdb_id="dab1c91cdc7a6d808b0642cb02ea22f1" id="UCMDB%0Abusiness_application%0A1%0Ainternal_id%3DSTRING%3Ddab1c91cdc7a6d808b0642cb02ea22f1%0A">
+      </object>
+      <object operation="add" name="to_be_excluded" ucmdb_id="ba21d9dfb1c2ebf4ee951589a3b4ec63" id="UCMDB%0Abusiness_application%0A1%0Ainternal_id%3DSTRING%3Dba21d9dfb1c2ebf4ee951589a3b4ec63%0A">
+      </object>
+    </objects>
+    <links>
+      <link name="to_be_excluded" operation="add" ucmdb_id="a9247f4296601c507064ae599bec177f">
+        <attribute name="DiscoveryID1">dab1c91cdc7a6d808b0642cb02ea22f1</attribute>
+        <attribute name="DiscoveryID2">ba21d9dfb1c2ebf4ee951589a3b4ec63</attribute>
+      </link>
+    </links>
+  </data>
+</root>

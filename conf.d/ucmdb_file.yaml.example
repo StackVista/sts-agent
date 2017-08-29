@@ -3,10 +3,30 @@
 init_config:
 
 instances:
-  # File location where tql query result is synced from
-  - location: "/path/to/file"
+  # Root folder where tql query results are stored
+  # the folder could have two subfolders "full" and "increment"
+  # - "full" contains snapshots
+  # - "increment" contains snapshot updates
+  - location: "/path/to/folder"
     # topology synchronization interval in seconds, default is 0, meaning sync is done on each check run
     # file_polling_interval: 0
+
+    # a list of types to be excluded from topology
+    # excluded_types:
+    #  - excluded_type
+
+    # If grouping_connected_components=True the components in the topology are labeled by the group they belong to.
+    # The group label is determined by the component_name_A -> label_A mapping specified in component_group config option.
+    # If component that has component_name_A belongs to the particular group then the group label is label_A
+    # grouping_connected_components: False
+
+    # If True the components in topology are labeled by tree they belong to.
+    # The roots of the trees are identified by the name of the component in "component_group" map in similar way as for grouping_connected_components option.
+    # grouping_component_trees: False
+
+    # Map of component name -> group label.
+    # component_group:
+    #  component name: group label
 
     # ci attributes that will be exposed as tags
     tag_attributes:

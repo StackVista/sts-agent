@@ -1,7 +1,10 @@
 from checks import AgentCheck, CheckException
-from utils.ucmdb.ucmdb_parser import UcmdbCIParser
+from utils.ucmdb.ucmdb_file_dump import UcmdbDumpStructure, UcmdbFileDump
+from utils.ucmdb.ucmdb_component_groups import UcmdbComponentGroups
+from utils.ucmdb.ucmdb_component_trees import UcmdbComponentTrees
 from utils.persistable_store import PersistableStore
 from utils.timer import Timer
+
 
 class UcmdbTopologyFileInstance(object):
     INSTANCE_TYPE = "ucmdb"
@@ -11,6 +14,11 @@ class UcmdbTopologyFileInstance(object):
         "file_polling_interval": 0,
         "component_type_field": "name",
         "relation_type_field": "name",
+        "excluded_types": [],
+        "grouping_connected_components": False,
+        "grouping_component_trees": False,
+        "component_group": {},
+        "label_min_group_size": 1,
         "tags": []}
 
     def __init__(self, instance):
@@ -22,12 +30,22 @@ class UcmdbTopologyFileInstance(object):
         self.polling_interval = self._get_or_default(instance, "file_polling_interval", self.CONFIG_DEFAULTS)
         self.component_type_field = self._get_or_default(instance, "component_type_field", self.CONFIG_DEFAULTS)
         self.relation_type_field = self._get_or_default(instance, "relation_type_field", self.CONFIG_DEFAULTS)
+        self.excluded_types = set(self._get_or_default(instance, "excluded_types", self.CONFIG_DEFAULTS))
+        self.grouping_connected_components = self._get_or_default(instance, "grouping_connected_components", self.CONFIG_DEFAULTS)
+        self.grouping_component_trees = self._get_or_default(instance, "grouping_component_trees", self.CONFIG_DEFAULTS)
+        self.component_group = self._get_or_default(instance, "component_group", self.CONFIG_DEFAULTS)
+        self.label_min_group_size = self._get_or_default(instance, "label_min_group_size", self.CONFIG_DEFAULTS)
         self.tags = self._get_or_default(instance, 'tags', self.CONFIG_DEFAULTS)
         self.instance_key = {"type": self.INSTANCE_TYPE, "url":  self.location}
 
         self._persistable_store = PersistableStore(self.PERSISTENCE_CHECK_NAME, self.location)
         self.timer = Timer("last_poll_time", self.polling_interval)
         self.timer.load(self._persistable_store)
+        self.dump_structure = UcmdbDumpStructure.load(self.location)
+        self.previous_structure = self._persistable_store['ucmdb_dump_structure']
+
+    def should_execute_check(self):
+        return self.timer.expired() or (self.previous_structure is None or self.dump_structure.has_changes(self.previous_structure))
 
     def _get_or_default(self, instance, field_name, defaults):
         if field_name in instance:
@@ -38,6 +56,7 @@ class UcmdbTopologyFileInstance(object):
     def persist(self):
         self.timer.reset()
         self.timer.persist(self._persistable_store)
+        self._persistable_store['ucmdb_dump_structure'] = self.dump_structure
         self._persistable_store.commit_status()
 
 
@@ -47,8 +66,8 @@ class UcmdbTopologyFile(AgentCheck):
     def check(self, instance):
         ucmdb_instance = UcmdbTopologyFileInstance(instance)
 
-        if not ucmdb_instance.timer.expired():
-            self.log.debug("Skipping ucmdb file instance %s, waiting for polling interval completion." % ucmdb_instance.location)
+        if not ucmdb_instance.should_execute_check():
+            self.log.debug("Skipping ucmdb file instance %s, waiting for changes and polling interval completion." % ucmdb_instance.location)
             return
 
         self.execute_check(ucmdb_instance)
@@ -58,10 +77,9 @@ class UcmdbTopologyFile(AgentCheck):
     def execute_check(self, ucmdb_instance):
         self.start_snapshot(ucmdb_instance.instance_key)
         try:
-            parser = UcmdbCIParser(ucmdb_instance.location)
-            parser.parse()
-            self.add_components(ucmdb_instance, parser.get_components())
-            self.add_relations(ucmdb_instance, parser.get_relations())
+            components, relations = self.load_and_label_groups(ucmdb_instance)
+            self.add_components(ucmdb_instance, components)
+            self.add_relations(ucmdb_instance, relations)
             self.stop_snapshot(ucmdb_instance.instance_key)
         except Exception as e:
             self._clear_topology(ucmdb_instance.instance_key, clear_in_snapshot=True)
@@ -70,6 +88,30 @@ class UcmdbTopologyFile(AgentCheck):
             raise CheckException("Cannot get topology from %s, please check your configuration. Message: %s" % (ucmdb_instance.location, str(e)))
         else:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
+
+    def load_and_label_groups(self, ucmdb_instance):
+        dump = UcmdbFileDump(ucmdb_instance.dump_structure)
+        dump.load(ucmdb_instance.excluded_types)
+        components = dump.get_components()
+        relations = dump.get_relations()
+
+        if ucmdb_instance.grouping_connected_components:
+            components, relations = self._label_connected_groups(components, relations, ucmdb_instance)
+
+        if ucmdb_instance.grouping_component_trees:
+            components, relations = self._label_trees(components, relations, ucmdb_instance)
+
+        return (components.values(), relations.values())
+
+    def _label_connected_groups(self, components, relations, ucmdb_instance):
+        grouping = UcmdbComponentGroups(components, relations, ucmdb_instance.component_group, ucmdb_instance.label_min_group_size)
+        grouping.label_groups()
+        return (grouping.get_components(), grouping.get_relations())
+
+    def _label_trees(self, components, relations, ucmdb_instance):
+        trees = UcmdbComponentTrees(components, relations, ucmdb_instance.component_group)
+        trees.label_trees()
+        return (trees.get_components(), trees.get_relations())
 
     def add_components(self, ucmdb_instance, ucmdb_components):
         for ucmdb_component in ucmdb_components:

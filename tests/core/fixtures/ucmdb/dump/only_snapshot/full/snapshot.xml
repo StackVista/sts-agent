@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+  <data>
+    <objects>
+      <object operation="add" name="business_application" ucmdb_id="dab1c91cdc7a6d808b0642cb02ea22f0" id="UCMDB%0Abusiness_application%0A1%0Ainternal_id%3DSTRING%3Ddab1c91cdc7a6d808b0642cb02ea22f0%0A">
+        <attribute name="display_label" datatype="STRING">CRMI (MQCODE)</attribute>
+        <attribute name="name" datatype="STRING">CRMI (MQCODE)</attribute>
+        <attribute name="global_id" datatype="STRING">dab1c91cdc7a6d808b0642cb02ea22f0</attribute>
+        <attribute name="root_class" datatype="STRING">business_application</attribute>
+      </object>
+      <object operation="add" name="business_application" ucmdb_id="ba21d9dfb1c2ebf4ee951589a3b4ec62" id="UCMDB%0Abusiness_application%0A1%0Ainternal_id%3DSTRING%3Dba21d9dfb1c2ebf4ee951589a3b4ec62%0A">
+        <attribute name="display_label" datatype="STRING">ISSUER LOADBALANCER-SSL-OFFLOADER</attribute>
+        <attribute name="name" datatype="STRING">ISSUER LOADBALANCER-SSL-OFFLOADER</attribute>
+        <attribute name="global_id" datatype="STRING">ba21d9dfb1c2ebf4ee951589a3b4ec62</attribute>
+        <attribute name="root_class" datatype="STRING">business_application</attribute>
+      </object>
+    </objects>
+    <links>
+      <link name="containment" operation="add" ucmdb_id="a9247f4296601c507064ae599bec177e">
+        <attribute name="DiscoveryID1">dab1c91cdc7a6d808b0642cb02ea22f0</attribute>
+        <attribute name="DiscoveryID2">6c01ec45816a40eb866400ff143f4968</attribute>
+        <attribute name="end1Id">UCMDB%0ARB_BusinessFunction%0A1%0Ainternal_id%3DSTRING%3Ddab1c91cdc7a6d808b0642cb02ea22f0%0A</attribute>
+        <attribute name="end2Id">UCMDB%0ARB_BusinessChannel%0A1%0Ainternal_id%3DSTRING%3Dba21d9dfb1c2ebf4ee951589a3b4ec62%0A</attribute>
+        <attribute name="display_label" datatype="STRING">Containment</attribute>
+      </link>
+    </links>
+  </data>
+</root>
