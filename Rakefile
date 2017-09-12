@@ -5,41 +5,11 @@ require 'rake/clean'
 require 'rubocop/rake_task'
 
 # Flavored Travis CI jobs
-require './ci/apache'
-require './ci/activemq'
-require './ci/cassandra'
 require './ci/checks_mock'
 require './ci/core_integration'
-require './ci/couchdb'
 require './ci/default'
-require './ci/elasticsearch'
-require './ci/etcd'
-require './ci/fluentd'
-require './ci/gearman'
-require './ci/go_expvar'
-require './ci/haproxy'
-require './ci/kong'
-require './ci/lighttpd'
-require './ci/memcache'
-require './ci/mongo'
-require './ci/mysql'
-require './ci/nginx'
-require './ci/pgbouncer'
-require './ci/phpfpm'
-require './ci/postgres'
-require './ci/powerdns_recursor'
-require './ci/rabbitmq'
-require './ci/redis'
-require './ci/riak'
-require './ci/snmp'
-require './ci/ssh'
-require './ci/supervisord'
 require './ci/system'
-require './ci/tokumx'
-require './ci/tomcat'
-require './ci/varnish'
 require './ci/windows'
-require './ci/zookeeper'
 require './ci/docker_daemon'
 
 CLOBBER.include '**/*.pyc'
@@ -48,7 +18,10 @@ CLOBBER.include '**/*.pyc'
 unless ENV['CI']
   rakefile_dir = File.dirname(__FILE__)
   ENV['TRAVIS_BUILD_DIR'] = rakefile_dir
-  ENV['INTEGRATIONS_DIR'] = File.join(rakefile_dir, 'embedded')
+  # Commented out to make 'rake run' work with integrations in ../integrations and
+  # configuration in ./confi.d/*.yaml
+  # ENV['INTEGRATIONS_DIR'] = File.join(rakefile_dir, 'embedded')
+  ENV['CHECKSD_OVERRIDE'] = File.join(rakefile_dir, 'tests/checks/fixtures/checks')
   ENV['PIP_CACHE'] = File.join(rakefile_dir, '.cache/pip')
   ENV['VOLATILE_DIR'] = '/tmp/dd-agent-testing'
   ENV['CONCURRENCY'] = ENV['CONCURRENCY'] || '2'

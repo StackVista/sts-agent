@@ -557,11 +557,11 @@ class Processes(Check):
         try:
             output, _, _ = get_subprocess_output(['ps', ps_arg], self.logger)
             processLines = output.splitlines()  # Also removes a trailing empty line
-        except StandardError:
+
+            del processLines[0]  # Removes the headers
+        except Exception:
             self.logger.exception('getProcesses')
             return False
-
-        del processLines[0]  # Removes the headers
 
         processes = []
 

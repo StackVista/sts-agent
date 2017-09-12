@@ -43,6 +43,7 @@ end
 BAD_CITIZENS = {
   'couch' => 'couchdb',
   'disk' => 'system',
+  'dns_check' => 'system',
   'network' => 'system',
   'tcp_check' => 'system',
   'http_check' => 'system',

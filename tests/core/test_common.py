@@ -17,7 +17,6 @@ from tests.core.test_topology_check import DummyTopologyCheck
 from checks.collector import Collector
 from tests.checks.common import load_check
 from utils.hostname import get_hostname
-from utils.ntp import NTPUtil
 from utils.proxy import get_proxy
 
 logger = logging.getLogger()
@@ -145,43 +144,7 @@ class TestCore(unittest.TestCase):
         }], val)
         self.assertEquals(len(check.service_checks), 0, check.service_checks)
 
-    def test_collector(self):
-        agentConfig = {
-            'api_key': 'test_apikey',
-            'check_timings': True,
-            'collect_ec2_tags': True,
-            'collect_instance_metadata': False,
-            'create_dd_check_tags': False,
-            'version': 'test',
-            'tags': '',
-        }
-
-        # Run a single checks.d check as part of the collector.
-        redis_config = {
-            "init_config": {},
-            "instances": [{"host": "localhost", "port": 6379}]
-        }
-        checks = [load_check('redisdb', redis_config, agentConfig)]
-
-        c = Collector(agentConfig, [], {}, get_hostname(agentConfig))
-        payload, continue_immediately = c.run({
-            'initialized_checks': checks,
-            'init_failed_checks': {}
-        })
-        assert not continue_immediately
-        metrics = payload['metrics']
-
-        # Check that we got a timing metric for all checks.
-        timing_metrics = [m for m in metrics
-            if m[0] == 'stackstate.agent.check_run_time']
-        all_tags = []
-        for metric in timing_metrics:
-            all_tags.extend(metric[3]['tags'])
-        for check in checks:
-            tag = "check:%s" % check.name
-            assert tag in all_tags, all_tags
-
-# Checks whether topology data announced to a check is properly stored for retrieval.
+    # Checks whether topology data announced to a check is properly stored for retrieval.
     def test_announce_topology_data_presence(self):
         self.setUpAgentCheck()
 
@@ -483,6 +446,9 @@ class TestCore(unittest.TestCase):
                 "password": "barenv"
             })
 
+
+class TestCollectionInterval(unittest.TestCase):
+
     def test_min_collection_interval(self):
         config = {'instances': [{}], 'init_config': {}}
 
@@ -549,59 +515,130 @@ class TestCore(unittest.TestCase):
         metrics = check.get_metrics()
         self.assertTrue(len(metrics) > 0, metrics)
 
-    def test_ntp_global_settings(self):
-        # Clear any existing ntp config
-        NTPUtil._drop()
-
-        config = {'instances': [{
-            "host": "foo.com",
-            "port": "bar",
-            "version": 42,
-            "timeout": 13.37}],
-            'init_config': {}}
-
+    def test_collector(self):
         agentConfig = {
-            'version': '0.1',
-            'api_key': 'toto'
+            'api_key': 'test_apikey',
+            'check_timings': True,
+            'collect_ec2_tags': True,
+            'collect_instance_metadata': False,
+            'create_dd_check_tags': False,
+            'version': 'test',
+            'tags': '',
         }
 
-        # load this config in the ntp singleton
-        ntp_util = NTPUtil(config)
-
-        # default min collection interval for that check was 20sec
-        check = load_check('ntp', config, agentConfig)
-        check.run()
-
-        self.assertEqual(ntp_util.args["host"], "foo.com")
-        self.assertEqual(ntp_util.args["port"], "bar")
-        self.assertEqual(ntp_util.args["version"], 42)
-        self.assertEqual(ntp_util.args["timeout"], 13.37)
-
-        # Clear the singleton to prepare for next config
-        NTPUtil._drop()
-
-        config = {'instances': [{}], 'init_config': {}}
-        agentConfig = {
-            'version': '0.1',
-            'api_key': 'toto'
+        # Run a single checks.d check as part of the collector.
+        redis_config = {
+            "init_config": {},
+            "instances": [{"host": "localhost", "port": 6379}]
         }
 
-        # load the new config
-        ntp_util = NTPUtil(config)
+        checks = [load_check('redisdb', redis_config, agentConfig)]
 
-        # default min collection interval for that check was 20sec
-        check = load_check('ntp', config, agentConfig)
-        try:
-            check.run()
-        except Exception:
-            pass
+        c = Collector(agentConfig, [], {}, get_hostname(agentConfig))
+        payload, _ = c.run({
+            'initialized_checks': checks,
+            'init_failed_checks': {}
+        })
+        metrics = payload['metrics']
 
-        self.assertTrue(ntp_util.args["host"].endswith("pool.ntp.org"))
-        self.assertEqual(ntp_util.args["port"], "ntp")
-        self.assertEqual(ntp_util.args["version"], 3)
-        self.assertEqual(ntp_util.args["timeout"], 1.0)
+        # Check that we got a timing metric for all checks.
+        timing_metrics = [m for m in metrics
+            if m[0] == 'stackstate.agent.check_run_time']
+        all_tags = []
+        for metric in timing_metrics:
+            all_tags.extend(metric[3]['tags'])
+        for check in checks:
+            tag = "check:%s" % check.name
+            assert tag in all_tags, all_tags
 
-        NTPUtil._drop()
+    # Test whether the collector collects topology information from checks
+    def test_topology_collection(self):
+        agentConfig = {
+            'api_key': 'test_apikey',
+            'check_timings': True,
+            'collect_ec2_tags': True,
+            'collect_instance_metadata': False,
+            'create_dd_check_tags': False,
+            'version': 'test',
+            'tags': '',
+        }
+
+        # Run a single checks.d check as part of the collector.
+        dummy_topology_check_config = {
+            "init_config": {},
+            "instances": [{"dummy_instance": "dummy_instance"}]
+        }
+
+# create dummy checks, creating two component and 1 relation
+        check1 = DummyTopologyCheck(1, 'dummy_topology_check', dummy_topology_check_config.get('init_config'), agentConfig, instances=[{"instance_id": 1, "pass":True}, {"instance_id": 2, "pass":True}])
+        check2 = DummyTopologyCheck(2, 'dummy_topology_check', dummy_topology_check_config.get('init_config'), agentConfig, instances=[{"instance_id": 3, "pass":True}, {"instance_id": 4, "pass":True}], snapshot=True)
+
+        emitted_topologies = []
+
+# mock emitter to pick up data emitted by the collector
+        def mock_emitter(message, log, agentConfig, endpoint):
+            emitted_topologies.extend(message['topologies'])
+
+        c = Collector(agentConfig, [mock_emitter], {}, get_hostname(agentConfig))
+        payload, _ = c.run({
+            'initialized_checks': [check1, check2],
+            'init_failed_checks': {}
+        })
+        topologies = payload['topologies']
+
+        def assertTopology(topology, check, instance_id):
+            self.assertEquals(topology['instance'], check.instance_key(instance_id))
+            self.assertEquals(len(topology['components']), 2)
+            self.assertEquals(len(topology['relations']), 1)
+            self.assertEquals(check.expected_components(instance_id), topology['components'])
+            self.assertEquals(check.expected_relations(), topology['relations'])
+            if check.snapshot:
+                self.assertTrue(topology["start_snapshot"])
+                self.assertTrue(topology["stop_snapshot"])
+            else:
+                self.assertTrue("start_snapshot" not in topology)
+                self.assertTrue("stop_snapshot" not in topology)
+
+# Make sure the emissions of the collector are observed
+        assertTopology(topologies[0], check1, 1)
+        assertTopology(topologies[1], check1, 2)
+        assertTopology(topologies[2], check2, 4)
+        assertTopology(topologies[3], check2, 3)
+
+        assertTopology(emitted_topologies[0], check1, 1)
+        assertTopology(emitted_topologies[1], check1, 2)
+        assertTopology(emitted_topologies[2], check2, 4)
+        assertTopology(emitted_topologies[3], check2, 3)
+
+    def test_apptags(self):
+        '''
+        Tests that the app tags are sent if specified so
+        '''
+        agentConfig = {
+            'api_key': 'test_apikey',
+            'collect_ec2_tags': False,
+            'collect_instance_metadata': False,
+            'create_dd_check_tags': True,
+            'version': 'test',
+            'tags': '',
+        }
+
+        # Run a single checks.d check as part of the collector.
+        redis_config = {
+            "init_config": {},
+            "instances": [{"host": "localhost", "port": 6379}]
+        }
+
+        checks = [load_check('redisdb', redis_config, agentConfig)]
+
+        c = Collector(agentConfig, [], {}, get_hostname(agentConfig))
+        payload, _ = c.run({
+            'initialized_checks': checks,
+            'init_failed_checks': {}
+        })
+
+        # We check that the redis DD_CHECK_TAG is sent in the payload
+        self.assertTrue('dd_check:redisdb' in payload['host-tags']['system'])
 
 
 class TestAggregator(unittest.TestCase):

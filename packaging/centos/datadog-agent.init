@@ -19,13 +19,16 @@ PIDPATH="/var/run/sts-agent/"
 PROG="stackstate-agent"
 LOCKFILE=/var/lock/subsys/$PROG
 FORWARDERPATH="/opt/stackstate-agent/agent/stsagent.py"
+TRACEAGENTPATH="/opt/stackstate-agent/bin/trace-agent"
 SUPERVISORD_PATH="PATH=/opt/stackstate-agent/embedded/bin:/opt/stackstate-agent/bin:$PATH /opt/stackstate-agent/bin/supervisord"
 SUPERVISORCTL_PATH="/opt/stackstate-agent/bin/supervisorctl"
 SUPERVISOR_CONF="/etc/sts-agent/supervisor.conf"
 SUPERVISOR_SOCK="/opt/stackstate-agent/run/stackstate-supervisor.sock"
 SUPERVISOR_PIDFILE="/opt/stackstate-agent/run/stackstate-supervisord.pid"
 COLLECTOR_PIDFILE="/opt/stackstate-agent/run/sts-agent.pid"
-DD_OPT_PROC_REGEX="dogstatsd|jmxfetch|go-metro"
+
+# Captures processes in the supervisord group that are 'optional' i.e. not essential for the agent to run
+DD_OPT_PROC_REGEX="dogstatsd|jmxfetch|go-metro|trace-agent"
 
 # Source function library.
 . /etc/rc.d/init.d/functions
@@ -49,16 +52,16 @@ check_status() {
 
         s=`$SUPERVISORCTL_PATH -c $SUPERVISOR_CONF status`
 
-        # number of RUNNING supervisord programs (ignoring dogstatsd, jmxfetch and go-metro)
+        # Number of RUNNING supervisord programs (ignoring optional procs captured by $DD_OPT_PROC_REGEX)
         p=`echo "$s" | grep -Ev $DD_OPT_PROC_REGEX | grep -c RUNNING`
 
-        # Number of non-failed OPTIONAL supervisord programs (dogstatsd, jmxfetch and go-metro)
+        # Number of non-failed OPTIONAL supervisord programs
         p_o=`echo "$s" | grep -E $DD_OPT_PROC_REGEX | grep -cv FATAL`
 :
-        # number of expected running supervisord programs (ignoring dogstatsd and jmxfetch)
+        # Number of expected running supervisord programs (ignoring optional procs)
         c=`grep -Ev $DD_OPT_PROC_REGEX $SUPERVISOR_CONF | grep -c '\[program:'`
 
-        # Number of expected optional supervisord programs (dogstatsd, jmxfetch and go-metro)
+        # Number of expected optional supervisord programs
         c_o=`grep -E $DD_OPT_PROC_REGEX $SUPERVISOR_CONF | grep -c '\[program:'`
 
         if [ "$p" -ne "$c" ]; then
@@ -172,7 +175,9 @@ info() {
     DOGSTATSD_RETURN=$?
     su $AGENTUSER -c "$FORWARDERPATH info"
     FORWARDER_RETURN=$?
-    exit $(($FORWARDER_RETURN+$COLLECTOR_RETURN+DOGSTATSD_RETURN))
+    su $AGENTUSER -c "$TRACEAGENTPATH -info"
+    TRACEAGENT_RETURN=$? # not used for now, Trace/APM not a core feature yet
+    exit $(($FORWARDER_RETURN+$COLLECTOR_RETURN+$DOGSTATSD_RETURN))
 }
 
 reload() {
