@@ -50,7 +50,7 @@ class TestNoProxy(TestCase):
 
         self.assertEquals(env["no_proxy"], "127.0.0.1,localhost,169.254.169.254")
         self.assertEquals({}, get_environ_proxies(
-            "http://localhost:17123/api/v1/series"))
+            "http://localhost:18123/api/v1/series"))
 
         expected_proxies = {
             'http': 'http://localhost:3128',

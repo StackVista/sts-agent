@@ -240,12 +240,12 @@ c=0
 set +e
 trap - ERR
 
-$dl_cmd http://127.0.0.1:17123/status?threshold=0 > /dev/null 2>&1
+$dl_cmd http://127.0.0.1:18123/status?threshold=0 > /dev/null 2>&1
 success=$?
 while [ "$success" -gt "0" ]; do
     sleep 1
     echo -n "."
-    $dl_cmd http://127.0.0.1:17123/status?threshold=0 > /dev/null 2>&1
+    $dl_cmd http://127.0.0.1:18123/status?threshold=0 > /dev/null 2>&1
     success=$?
     c=$(($c+1))
 

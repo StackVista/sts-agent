@@ -85,3 +85,7 @@ beautifulsoup4==4.5.1
 # checks.d/splunk_event.py
 pytz==2016.10
 iso8601==0.1.11
+
+# checks.d/ucmdb_file.py
+ET==0.0.2
+python_algorithms==0.2.2

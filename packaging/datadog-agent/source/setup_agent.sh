@@ -540,7 +540,7 @@ ERROR_MESSAGE="The Agent hasn't submitted metrics after 90 seconds"
 while [ "$c" -lt "90" ]; do
     sleep 1
     print_console_wo_nl "."
-    if $HTTP_TESTER "http://localhost:17123/status?threshold=0"; then
+    if $HTTP_TESTER "http://localhost:18123/status?threshold=0"; then
         break
     fi
     c=$((c+1))

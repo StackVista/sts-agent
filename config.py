@@ -322,8 +322,8 @@ def get_config(parse_args=True, cfg_path=None, options=None, can_query_registry=
     # General config
     agentConfig = {
         'check_freq': DEFAULT_CHECK_FREQUENCY,
-        'dogstatsd_port': 8125,
-        'dogstatsd_target': 'http://localhost:17123',
+        'dogstatsd_port': 8225,
+        'dogstatsd_target': 'http://localhost:18123',
         'graphite_listen_port': None,
         'hostname': None,
         'listen_port': None,
@@ -403,7 +403,7 @@ def get_config(parse_args=True, cfg_path=None, options=None, can_query_registry=
         # Forwarder or not forwarder
         agentConfig['use_forwarder'] = options is not None and options.use_forwarder
         if agentConfig['use_forwarder']:
-            listen_port = 17123
+            listen_port = 18123
             if config.has_option('Main', 'listen_port'):
                 listen_port = int(config.get('Main', 'listen_port'))
             agentConfig['dd_url'] = "http://{}:{}".format(agentConfig['bind_host'], listen_port)
@@ -480,8 +480,8 @@ def get_config(parse_args=True, cfg_path=None, options=None, can_query_registry=
 
         # Dogstatsd config
         dogstatsd_defaults = {
-            'dogstatsd_port': 8125,
-            'dogstatsd_target': 'http://' + agentConfig['bind_host'] + ':17123',
+            'dogstatsd_port': 8225,
+            'dogstatsd_target': 'http://' + agentConfig['bind_host'] + ':18123',
         }
         for key, value in dogstatsd_defaults.iteritems():
             if config.has_option('Main', key):

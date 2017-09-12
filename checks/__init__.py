@@ -342,13 +342,15 @@ class TopologyInstance:
 
         if self._in_snapshot or self._stop_snapshot:
             result["stop_snapshot"] = self._stop_snapshot
+        return result
 
+    def clear_topology_and_snapshot(self, clear_in_snapshot=True):
         self._components = []
         self._relations = []
         self._start_snapshot = False
         self._stop_snapshot = False
-
-        return result
+        if clear_in_snapshot:
+            self._in_snapshot = False
 
 class AgentCheck(object):
     OK, WARNING, CRITICAL, UNKNOWN = (0, 1, 2, 3)
@@ -451,6 +453,20 @@ class AgentCheck(object):
     def instance_count(self):
         """ Return the number of instances that are configured for this check. """
         return len(self.instances)
+
+    def raw(self, metric, value, tags=None, hostname=None, device_name=None, timestamp=None):
+        """
+        Record the value of a metric, with optional tags, hostname and device
+        name. No aggregation will be done.
+
+        :param metric: The name of the metric
+        :param value: The value of the gauge
+        :param tags: (optional) A list of tags for this metric
+        :param hostname: (optional) A hostname for this metric. Defaults to the current hostname.
+        :param device_name: (optional) The device name for this metric
+        :param timestamp: (optional) The timestamp for this metric value
+        """
+        self.aggregator.raw(metric, value, tags, hostname, device_name, timestamp)
 
     def gauge(self, metric, value, tags=None, hostname=None, device_name=None, timestamp=None):
         """
@@ -682,6 +698,10 @@ class AgentCheck(object):
         topology_instance = self._assure_instance(instance_key)
         topology_instance.stop_snapshot()
 
+    def _clear_topology(self, instance_key, clear_in_snapshot=True):
+        topology_instance = self._assure_instance(instance_key)
+        topology_instance.clear_topology_and_snapshot(clear_in_snapshot)
+
     def component(self, instance_key, id, type, data={}):
         """
         Accounce a component to StackState.
@@ -813,6 +833,10 @@ class AgentCheck(object):
         :return: object with topology changes
         """
         result = [instance.get_topology() for instance in self.topology_instances.values()]
+
+        for instance in self.topology_instances.values():
+            instance.clear_topology_and_snapshot(clear_in_snapshot=False)
+
         self.topology_instances = dict((key, value) for key, value in self.topology_instances.iteritems() if value.is_in_snapshot())
         return result
 

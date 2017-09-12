@@ -10,7 +10,6 @@ from urllib import urlencode
 from util import check_yaml
 from utils.checkfiles import get_conf_path
 from utils.http import retrieve_json
-from utils.singleton import Singleton
 from utils.dockerutil import DockerUtil
 
 import requests
@@ -23,20 +22,28 @@ DEFAULT_TLS_VERIFY = True
 
 
 class KubeUtil:
-    __metaclass__ = Singleton
 
     DEFAULT_METHOD = 'http'
     KUBELET_HEALTH_PATH = '/healthz'
     MACHINE_INFO_PATH = '/api/v1.3/machine/'
     METRICS_PATH = '/api/v1.3/subcontainers/'
-    PODS_LIST_PATH = '/pods/'
+    DEPLOYMENTS_LIST_PATH = 'deployments/'
+    REPLICASETS_LIST_PATH = 'replicasets/'
+    PODS_LIST_PATH = 'pods/'
+    SERVICES_LIST_PATH = 'services/'
+    NODES_LIST_PATH = 'nodes/'
+    ENDPOINTS_LIST_PATH = 'endpoints/'
     DEFAULT_CADVISOR_PORT = 4194
     DEFAULT_HTTP_KUBELET_PORT = 10255
     DEFAULT_HTTPS_KUBELET_PORT = 10250
+    # sts version: DEFAULT_MASTER_PORT = 443
+    DEFAULT_MASTER_METHOD = 'https'
     DEFAULT_MASTER_PORT = 8080
     DEFAULT_MASTER_NAME = 'kubernetes'  # DNS name to reach the master from a pod.
+    DEFAULT_USE_KUBE_AUTH = False
     CA_CRT_PATH = '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
     AUTH_TOKEN_PATH = '/var/run/secrets/kubernetes.io/serviceaccount/token'
+    DEFAULT_TIMEOUT_SECONDS = 10
 
     POD_NAME_LABEL = "io.kubernetes.pod.name"
     NAMESPACE_LABEL = "io.kubernetes.pod.namespace"
@@ -57,13 +64,21 @@ class KubeUtil:
                           'Trying connecting to kubelet with default settings anyway...')
                 instance = {}
 
+        self.timeoutSeconds = instance.get("timeoutSeconds", KubeUtil.DEFAULT_TIMEOUT_SECONDS)
         self.method = instance.get('method', KubeUtil.DEFAULT_METHOD)
         self._node_ip = self._node_name = None  # lazy evaluation
         self.host_name = os.environ.get('HOSTNAME')
         self.tls_settings = self._init_tls_settings(instance)
 
         # apiserver
-        self.kubernetes_api_url = 'https://%s/api/v1' % (os.environ.get('KUBERNETES_SERVICE_HOST') or self.DEFAULT_MASTER_NAME)
+        self.master_method = instance.get('master_method', KubeUtil.DEFAULT_MASTER_METHOD)
+        self.master_name = instance.get('master_name', KubeUtil.DEFAULT_MASTER_NAME)
+        self.master_port = instance.get('master_port', KubeUtil.DEFAULT_MASTER_PORT)
+        self.use_kube_auth = instance.get('use_kube_auth', KubeUtil.DEFAULT_USE_KUBE_AUTH)
+
+        self.master_host = os.environ.get('KUBERNETES_SERVICE_HOST') or ('%s:%d' % (self.master_name, self.master_port))
+        self.kubernetes_api_url = '%s://%s/api/v1' % (self.master_method, os.environ.get('KUBERNETES_SERVICE_HOST') or self.DEFAULT_MASTER_NAME)
+        self.kubernetes_api_extension_url = '%s://%s/apis/extensions/v1beta1/' % (self.master_method, self.master_host)
 
         # kubelet
         try:
@@ -77,6 +92,10 @@ class KubeUtil:
         self.kubelet_host = self.kubelet_api_url.split(':')[1].lstrip('/')
         self.pods_list_url = urljoin(self.kubelet_api_url, KubeUtil.PODS_LIST_PATH)
         self.kube_health_url = urljoin(self.kubelet_api_url, KubeUtil.KUBELET_HEALTH_PATH)
+        self.nodes_list_url = urljoin(self.kubelet_api_url, KubeUtil.NODES_LIST_PATH)
+        self.services_list_url = urljoin(self.kubelet_api_url, KubeUtil.SERVICES_LIST_PATH)
+        self.endpoints_list_url = urljoin(self.kubelet_api_url, KubeUtil.ENDPOINTS_LIST_PATH)
+        self.deployments_list_url = urljoin(self.kubernetes_api_extension_url, KubeUtil.DEPLOYMENTS_LIST_PATH)
 
         # cadvisor
         self.cadvisor_port = instance.get('port', KubeUtil.DEFAULT_CADVISOR_PORT)
@@ -193,18 +212,32 @@ class KubeUtil:
         pod_items = pods_list.get("items") or []
         for pod in pod_items:
             metadata = pod.get("metadata", {})
-            name = metadata.get("name")
-            namespace = metadata.get("namespace")
-            labels = metadata.get("labels")
-            if name and labels and namespace:
+            pod_labels = self.extract_metadata_labels(metadata, excluded_keys)
+            kube_labels.update(pod_labels)
+
+        return kube_labels
+
+    def extract_metadata_labels(self, metadata, excluded_keys={}, add_kube_prefix=True):
+        """
+        Extract labels from metadata section coming from the kubelet API.
+        """
+        kube_labels = defaultdict(list)
+        name = metadata.get("name")
+        namespace = metadata.get("namespace")
+        labels = metadata.get("labels")
+        if name and labels:
+            if namespace:
                 key = "%s/%s" % (namespace, name)
+            else:
+                key = name
 
-                for k, v in labels.iteritems():
-                    if k in excluded_keys:
-                        continue
-
+            for k, v in labels.iteritems():
+                if k in excluded_keys:
+                    continue
+                if add_kube_prefix:
                     kube_labels[key].append(u"kube_%s:%s" % (k, v))
-
+                else:
+                    kube_labels[key].append(u"%s:%s" % (k, v))
         return kube_labels
 
     def retrieve_pods_list(self):
@@ -214,18 +247,87 @@ class KubeUtil:
         TODO: the list of pods could be cached with some policy to be decided.
         """
         return self.perform_kubelet_query(self.pods_list_url).json()
+        # return self.retrieve_json_with_optional_auth(url=self.pods_list_url) # TODO sts version
+
+    def retrieve_endpoints_list(self):
+        """
+        Retrieve the list of endpoints for this cluster querying the kubelet API.
+
+        TODO: the list of endpoints could be cached with some policy to be decided.
+        """
+        return self.retrieve_json_with_optional_auth(url=self.endpoints_list_url)
 
     def retrieve_machine_info(self):
         """
         Retrieve machine info from Cadvisor.
         """
-        return retrieve_json(self.machine_info_url)
+        return self.retrieve_json_with_optional_auth(url=self.machine_info_url)
 
     def retrieve_metrics(self):
         """
         Retrieve metrics from Cadvisor.
         """
-        return retrieve_json(self.metrics_url)
+        return self.retrieve_json_with_optional_auth(url=self.metrics_url)
+
+    def retrieve_nodes_list(self):
+        """
+        Retrieve the list of nodes for this cluster querying the kublet API.
+        """
+        return self.retrieve_json_with_optional_auth(self.nodes_list_url)
+
+    def retrieve_services_list(self):
+        """
+        Retrieve the list of services for this cluster querying the kublet API.
+        """
+        return self.retrieve_json_with_optional_auth(url=self.services_list_url)
+
+    def retrieve_json_with_optional_auth(self, url):
+        if self.use_kube_auth:
+            return self.retrieve_json_auth(url=url, auth_token=self.get_auth_token(), timeout=self.timeoutSeconds)
+        else:
+            return retrieve_json(url=url, timeout=self.timeoutSeconds)
+
+    def retrieve_deployments_list(self):
+        """
+        Retrieve the list of deployments for this cluster querying the kublet API extensions.
+        https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+        """
+        return self.retrieve_json_with_optional_auth(url=self.deployments_list_url)
+
+    def retrieve_replicaset_filtered_list(self, namespace = None, labels_dict = None):
+        """
+        Retrieve the list of replicasets for given parameters, namespace and labels selector.
+        https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+
+        The replicaset filter is very similar to how it is implemented in kubernetes dashboard:
+        https://github.com/kubernetes/dashboard/blob/master/src/app/backend/resource/deployment/detail.go
+        https://github.com/kubernetes/dashboard/blob/master/src/app/backend/resource/common/resourcechannels.go
+        """
+        if labels_dict and len(labels_dict) > 0:
+            params = "?labelSelector=%s" % self._to_label_selector(labels_dict)
+        else:
+            params = ""
+
+        if namespace:
+            fetch_url = "%snamespaces/%s/%s%s" % (self.kubernetes_api_extension_url, namespace, KubeUtil.REPLICASETS_LIST_PATH, params)
+        else:
+            fetch_url = "%s%s%s" % (self.kubernetes_api_extension_url, KubeUtil.REPLICASETS_LIST_PATH, params)
+
+        return self._retrieve_replicaset_list(fetch_url=fetch_url)
+
+    def _retrieve_replicaset_list(self, fetch_url):
+        """
+        Retrieve the list of replicasets for given parameters, namespace and labels selector.
+        https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+        """
+        return self.retrieve_json_with_optional_auth(url=fetch_url)
+
+    def _to_label_selector(self, labels_dict):
+        """
+        Render labels dict {'app': 'nginxapp', 'pod-template-hash': 275046495} to a label selector in a form "app%3Dnginxapp,pod-template-hash%3D275046495"
+        """
+        labels = ["%s%%3D%s" % (name, value) for name, value in labels_dict.items()]
+        return ",".join(labels)
 
     def perform_kubelet_query(self, url, verbose=True, timeout=10):
         """

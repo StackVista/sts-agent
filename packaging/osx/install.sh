@@ -85,12 +85,12 @@ while [ "$c" -lt "30" ]; do
     c=$(($c+1))
 done
 
-curl -f http://127.0.0.1:17123/status?threshold=0 > /dev/null 2>&1
+curl -f http://127.0.0.1:18123/status?threshold=0 > /dev/null 2>&1
 success=$?
 while [ "$success" -gt "0" ]; do
     sleep 1
     echo -n "."
-    curl -f http://127.0.0.1:17123/status?threshold=0 > /dev/null 2>&1
+    curl -f http://127.0.0.1:18123/status?threshold=0 > /dev/null 2>&1
     success=$?
 done
 
