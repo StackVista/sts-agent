@@ -283,7 +283,7 @@ class KubeUtil:
 
     def retrieve_json_with_optional_auth(self, url):
         if self.use_kube_auth:
-            return self.retrieve_json_auth(url=url, auth_token=self.get_auth_token(), timeout=self.timeoutSeconds)
+            return self.retrieve_json_auth(url=url, timeout=self.timeoutSeconds)
         else:
             return retrieve_json(url=url, timeout=self.timeoutSeconds)
 
