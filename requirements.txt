@@ -37,3 +37,11 @@ simplejson==3.6.5
 supervisor==3.3.0
 tornado==3.2.2
 uptime==3.0.1
+
+# utils/splunk/splunk.py
+pytz==2016.10
+iso8601==0.1.11
+
+# utils/ucmdb/ucmdb_component_groups.py
+ET==0.0.2
+python_algorithms==0.2.2
