@@ -3,7 +3,6 @@ sudo: false
 branches:
   only:
     - master
-    - serviceDiscoveryTest
     - updateTo5.16
     - /^\d+\.\d+\.x$/ # release forked patches branch
 
