@@ -359,6 +359,7 @@ class TestCore(unittest.TestCase):
         agentConfig = {
             'api_key': 'test_apikey',
             'collect_ec2_tags': False,
+            'collect_orchestrator_tags': False,
             'collect_instance_metadata': False,
             'create_dd_check_tags': True,
             'version': 'test',
