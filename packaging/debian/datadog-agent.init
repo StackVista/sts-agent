@@ -31,7 +31,7 @@ COLLECTOR_PIDFILE="/opt/stackstate-agent/run/sts-agent.pid"
 SYSTEM_PATH=/opt/stackstate-agent/embedded/bin:/opt/stackstate-agent/bin:$PATH
 
 # Captures processes in the supervisord group that are 'optional' i.e. not essential for the agent to run
-DD_OPT_PROC_REGEX="dogstatsd|jmxfetch|go-metro|trace-agent"
+DD_OPT_PROC_REGEX="dogstatsd|jmxfetch|go-metro|trace-agent|process-agent"
 
 if [ ! -x $AGENTPATH ]; then
     echo "$AGENTPATH not found. Exiting."

@@ -18,9 +18,10 @@ def get_subprocess_output(command, log, raise_on_empty_output=True):
     if an error occurs.
     """
 
-    max_size = 1024 * 1024  # 1 MB
-
-    with tempfile.SpooledTemporaryFile(max_size=max_size) as stdout_f, tempfile.SpooledTemporaryFile(max_size=max_size) as stderr_f:
+    # Use tempfile, allowing a larger amount of memory. The subprocess.Popen
+    # docs warn that the data read is buffered in memory. They suggest not to
+    # use subprocess.PIPE if the data size is large or unlimited.
+    with tempfile.TemporaryFile() as stdout_f, tempfile.TemporaryFile() as stderr_f:
         proc = subprocess.Popen(command, stdout=stdout_f, stderr=stderr_f)
         proc.wait()
         stderr_f.seek(0)

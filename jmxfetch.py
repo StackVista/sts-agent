@@ -20,12 +20,13 @@ import yaml
 # project
 from config import (
     DEFAULT_CHECK_FREQUENCY,
+    SD_PIPE_NAME,
     get_confd_path,
     get_config,
     get_jmx_pipe_path,
     get_logging_config,
     PathNotFound,
-    _is_affirmative
+    _is_affirmative,
 )
 from util import yLoader
 from utils.jmx import JMX_FETCH_JAR_NAME, JMXFiles
@@ -55,6 +56,7 @@ JMX_CHECKS = [
     'jmx',
     'solr',
     'tomcat',
+    'kafka',
 ]
 JMX_COLLECT_COMMAND = 'collect'
 JMX_LIST_COMMANDS = {
@@ -269,7 +271,9 @@ class JMXFetch(object):
                 pipe_path = get_jmx_pipe_path()
                 subprocess_args.insert(4, '--tmp_directory')
                 subprocess_args.insert(5, pipe_path)
-                subprocess_args.insert(4, '--sd_standby')
+                subprocess_args.insert(4, '--sd_pipe')
+                subprocess_args.insert(5, SD_PIPE_NAME)
+                subprocess_args.insert(4, '--sd_enabled')
 
             if jmx_checks:
                 subprocess_args.insert(4, '--check')
@@ -434,6 +438,8 @@ class JMXFetch(object):
 
             if custom_jar_paths:
                 if isinstance(custom_jar_paths, basestring):
+                    log.warn('Using a string when having only one custom jar will be deprecated in future versions' +
+                        ' of the agent. Only the list syntax will be supported. %s', LINK_TO_DOC)
                     custom_jar_paths = [custom_jar_paths]
                 for custom_jar_path in custom_jar_paths:
                     if not os.path.isfile(custom_jar_path):

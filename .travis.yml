@@ -4,7 +4,7 @@ branches:
   only:
     - master
     - serviceDiscoveryTest
-    - updateTo5.12
+    - updateTo5.16
     - /^\d+\.\d+\.x$/ # release forked patches branch
 
 language: python
@@ -43,6 +43,7 @@ matrix:
 # Override travis defaults with empty jobs
 before_install:
 - rvm install 2.1.5
+# before_install: echo "OVERRIDING TRAVIS STEPS"
 install: echo "OVERRIDING TRAVIS STEPS"
 before_script: echo "OVERRIDING TRAVIS STEPS"
 
@@ -52,7 +53,7 @@ script:
   # Needed if no cache exists
   - mkdir -p $INTEGRATIONS_DIR
   - ls -al $INTEGRATIONS_DIR
-  - 'rake ci:run'
+  - bundle exec rake ci:run
   - ls -al $INTEGRATIONS_DIR
 
 

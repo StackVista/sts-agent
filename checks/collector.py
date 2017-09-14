@@ -31,15 +31,14 @@ from config import get_system_stats, get_version
 import checks.system.unix as u
 import checks.system.win32 as w32
 import modules
-from util import (
-    get_uuid,
-    Timer,
-)
-from utils.cloud_metadata import GCE, EC2
+from util import get_uuid
+from utils.cloud_metadata import GCE, EC2, CloudFoundry
 from utils.logger import log_exceptions
 from utils.jmx import JMXFiles
 from utils.platform import Platform, get_os
 from utils.subprocess_output import get_subprocess_output
+from utils.timer import Timer
+from utils.orchestrator import MetadataCollector
 
 log = logging.getLogger(__name__)
 
@@ -203,7 +202,8 @@ class Collector(object):
             'memory': u.Memory(log),
             'processes': u.Processes(log),
             'cpu': u.Cpu(log),
-            'system': u.System(log)
+            'system': u.System(log),
+            'file_handles': u.FileHandles(log)
         }
 
         # Win32 System `Checks
@@ -211,7 +211,6 @@ class Collector(object):
             'io': w32.IO(log),
             'proc': w32.Processes(log),
             'memory': w32.Memory(log),
-            'network': w32.Network(log),
             'cpu': w32.Cpu(log),
             'system': w32.System(log)
         }
@@ -292,7 +291,7 @@ class Collector(object):
         # Run the system checks. Checks will depend on the OS
         if Platform.is_windows():
             # Win32 system checks
-            for check_name in ['memory', 'cpu', 'network', 'io', 'proc', 'system']:
+            for check_name in ['memory', 'cpu', 'io', 'proc', 'system']:
                 try:
                     metrics.extend(self._win32_system_checks[check_name].check(self.agentConfig))
                 except Exception:
@@ -301,7 +300,7 @@ class Collector(object):
             # Unix system checks
             sys_checks = self._unix_system_checks
 
-            for check_name in ['load', 'system', 'cpu']:
+            for check_name in ['load', 'system', 'cpu', 'file_handles']:
                 try:
                     result_check = sys_checks[check_name].check(self.agentConfig)
                     if result_check:
@@ -681,6 +680,11 @@ class Collector(object):
             if self.agentConfig['collect_ec2_tags']:
                 host_tags.extend(EC2.get_tags(self.agentConfig))
 
+            if self.agentConfig['collect_orchestrator_tags']:
+                host_docker_tags = MetadataCollector().get_host_tags()
+                if host_docker_tags:
+                    host_tags.extend(host_docker_tags)
+
             if host_tags:
                 payload['host-tags']['system'] = host_tags
 
@@ -765,6 +769,7 @@ class Collector(object):
                 metadata["socket-hostname"] = socket.gethostname()
             except Exception:
                 pass
+
         try:
             metadata["socket-fqdn"] = socket.getfqdn()
         except Exception:
@@ -774,9 +779,17 @@ class Collector(object):
         metadata["timezones"] = self._decode_tzname(time.tzname)
 
         # Add cloud provider aliases
+        if not metadata.get("host_aliases"):
+            metadata["host_aliases"] = []
+
         host_aliases = GCE.get_host_aliases(self.agentConfig)
         if host_aliases:
-            metadata['host_aliases'] = host_aliases
+            metadata['host_aliases'] += host_aliases
+
+        try:
+            metadata["host_aliases"] += CloudFoundry.get_host_aliases(self.agentConfig)
+        except Exception:
+            pass
 
         return metadata
 

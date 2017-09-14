@@ -6,7 +6,6 @@ from itertools import product
 import imp
 import logging
 import os
-from shutil import copyfile
 from pprint import pformat
 import sys
 import time
@@ -23,29 +22,6 @@ from utils.hostname import get_hostname
 from utils.platform import get_os
 
 log = logging.getLogger('tests')
-
-CHECKS_FIXTURE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'fixtures', 'checks')
-AUTO_CONF_FIXTURE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'core', 'fixtures', 'auto_conf')
-CHECKSD_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'checks.d')
-AUTO_CONFD_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'conf.d', 'auto_conf')
-
-def copy_checks():
-    if not os.path.exists(CHECKSD_PATH):
-        os.mkdir(CHECKSD_PATH)
-    if not os.path.exists(AUTO_CONFD_PATH):
-        os.mkdir(AUTO_CONFD_PATH)
-    copyfile(os.path.join(CHECKS_FIXTURE_PATH, 'disk.py'), os.path.join(CHECKSD_PATH, 'disk.py'))
-    copyfile(os.path.join(CHECKS_FIXTURE_PATH, 'consul.py'), os.path.join(CHECKSD_PATH, 'consul.py'))
-    copyfile(os.path.join(CHECKS_FIXTURE_PATH, 'redisdb.py'), os.path.join(CHECKSD_PATH, 'redisdb.py'))
-    copyfile(os.path.join(AUTO_CONF_FIXTURE_PATH, 'consul.yaml'), os.path.join(AUTO_CONFD_PATH, 'consul.yaml'))
-    copyfile(os.path.join(AUTO_CONF_FIXTURE_PATH, 'redisdb.yaml'), os.path.join(AUTO_CONFD_PATH, 'redisdb.yaml'))
-
-def remove_checks():
-    os.remove(os.path.join(CHECKSD_PATH, 'disk.py'))
-    os.remove(os.path.join(CHECKSD_PATH, 'consul.py'))
-    os.remove(os.path.join(CHECKSD_PATH, 'redisdb.py'))
-    os.remove(os.path.join(AUTO_CONFD_PATH, 'consul.yaml'))
-    os.remove(os.path.join(AUTO_CONFD_PATH, 'redisdb.yaml'))
 
 def _is_sdk():
     return "SDK_TESTING" in os.environ
@@ -205,6 +181,28 @@ class AgentCheckTest(unittest.TestCase):
 
     def is_travis(self):
         return "TRAVIS" in os.environ
+
+
+    def wait_for_async(self, method, attribute, count, results_timeout):
+        """
+        Loop on `self.check.method` until `self.check.attribute >= count`.
+        Raise after
+        """
+
+        # Check the initial values to see if we already have results before waiting for the async
+        # instances to finish
+        initial_values = getattr(self, attribute)
+
+        i = 0
+        while i < results_timeout:
+            self.check._process_results()
+            if len(getattr(self.check, attribute)) + len(initial_values) >= count:
+                return getattr(self.check, method)() + initial_values
+            time.sleep(1.1)
+            i += 1
+        raise Exception("Didn't get the right count of service checks in time, {0}/{1} in {2}s: {3}"
+                        .format(len(getattr(self.check, attribute)), count, i,
+                                getattr(self.check, attribute)))
 
     def load_check(self, config, agent_config=None):
         agent_config = agent_config or self.DEFAULT_AGENT_CONFIG

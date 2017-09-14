@@ -7,11 +7,19 @@ import simplejson as json
 from docker.errors import NullResource, NotFound
 
 # project
-from utils.dockerutil import DockerUtil, SWARM_SVC_LABEL
+from utils.dockerutil import (
+    DockerUtil,
+    SWARM_SVC_LABEL,
+    RANCHER_CONTAINER_IP,
+    RANCHER_CONTAINER_NAME,
+    RANCHER_SVC_NAME,
+    RANCHER_STACK_NAME
+)
 from utils.kubernetes import KubeUtil
 from utils.platform import Platform
 from utils.service_discovery.abstract_sd_backend import AbstractSDBackend
 from utils.service_discovery.config_stores import get_config_store
+from utils.orchestrator import MetadataCollector
 
 STACKSTATE_ID = 'com.stackstate.sd.check.id'
 
@@ -77,13 +85,23 @@ class SDDockerBackend(AbstractSDBackend):
             agentConfig['sd_config_backend'] = None
             self.config_store = get_config_store(agentConfig=agentConfig)
 
-        self.docker_client = DockerUtil(config_store=self.config_store).client
+        self.dockerutil = DockerUtil(config_store=self.config_store)
+        self.docker_client = self.dockerutil.client
         if Platform.is_k8s():
-            self.kubeutil = KubeUtil()
+            try:
+                self.kubeutil = KubeUtil()
+            except Exception as ex:
+                self.kubeutil = None
+                log.error("Couldn't instantiate the kubernetes client, "
+                    "subsequent kubernetes calls will fail as well. Error: %s" % str(ex))
+
+        self.metadata_collector = MetadataCollector()
 
         self.VAR_MAPPING = {
             'host': self._get_host_address,
+            'pid': self._get_container_pid,
             'port': self._get_port,
+            'container-name': self._get_container_name,
             'tags': self._get_additional_tags,
         }
 
@@ -92,10 +110,13 @@ class SDDockerBackend(AbstractSDBackend):
     def _make_fetch_state(self):
         pod_list = []
         if Platform.is_k8s():
-            try:
-                pod_list = self.kubeutil.retrieve_pods_list().get('items', [])
-            except Exception as ex:
-                log.warning("Failed to retrieve pod list: %s" % str(ex))
+            if not self.kubeutil:
+                log.error("kubelet client not created, cannot retrieve pod list.")
+            else:
+                try:
+                    pod_list = self.kubeutil.retrieve_pods_list().get('items', [])
+                except Exception as ex:
+                    log.warning("Failed to retrieve pod list: %s" % str(ex))
         return _SDDockerBackendConfigFetchState(self.docker_client.inspect_container, pod_list)
 
     def update_checks(self, changed_containers):
@@ -126,7 +147,7 @@ class SDDockerBackend(AbstractSDBackend):
             return
 
         identifier = inspect.get('Config', {}).get('Labels', {}).get(STACKSTATE_ID) or \
-            inspect.get('Config', {}).get('Image')
+            self.dockerutil.image_name_extractor(inspect)
 
         platform_kwargs = {}
         if Platform.is_k8s():
@@ -137,6 +158,14 @@ class SDDockerBackend(AbstractSDBackend):
             }
 
         return self.config_store.get_checks_to_refresh(identifier, **platform_kwargs)
+
+    def _get_container_pid(self, state, cid, tpl_var):
+        """Extract the host-namespace pid of the container pid 0"""
+        pid = state.inspect_container(cid).get('State', {}).get('Pid')
+        if not pid:
+            return None
+
+        return str(pid)
 
     def _get_host_address(self, state, c_id, tpl_var):
         """Extract the container IP from a docker inspect object, or the kubelet API."""
@@ -167,6 +196,15 @@ class SDDockerBackend(AbstractSDBackend):
             pod_ip = state.get_kube_config(c_id, 'status').get('podIP')
             if pod_ip:
                 return pod_ip
+
+        if Platform.is_rancher():
+            # try to get the rancher IP address
+            log.debug("No IP address was found in container %s (%s) "
+                "trying with the Rancher label" % (c_id[:12], c_img))
+
+            ip_addr = c_inspect.get('Config', {}).get('Labels', {}).get(RANCHER_CONTAINER_IP)
+            if ip_addr:
+                return ip_addr.split('/')[0]
 
         log.error("No IP address was found for container %s (%s)" % (c_id[:12], c_img))
         return None
@@ -205,6 +243,8 @@ class SDDockerBackend(AbstractSDBackend):
 
         try:
             ports = map(lambda x: x.split('/')[0], container_inspect['NetworkSettings']['Ports'].keys())
+            if len(ports) == 0: # There might be a key Port in NetworkSettings but no ports so we raise IndexError to check in ExposedPorts
+                raise IndexError
         except (IndexError, KeyError, AttributeError):
             # try to get ports from the docker API. Works if the image has an EXPOSE instruction
             ports = map(lambda x: x.split('/')[0], container_inspect['Config'].get('ExposedPorts', {}).keys())
@@ -241,7 +281,9 @@ class SDDockerBackend(AbstractSDBackend):
 
     def get_tags(self, state, c_id):
         """Extract useful tags from docker or platform APIs. These are collected by default."""
-        tags = []
+        c_inspect = state.inspect_container(c_id)
+        tags = self.dockerutil.extract_container_tags(c_inspect)
+
         if Platform.is_k8s():
             pod_metadata = state.get_kube_config(c_id, 'metadata')
 
@@ -259,38 +301,47 @@ class SDDockerBackend(AbstractSDBackend):
             namespace = pod_metadata.get('namespace')
             tags.append('kube_namespace:%s' % namespace)
 
-            # get created-by
-            created_by = json.loads(pod_metadata.get('annotations', {}).get('kubernetes.io/created-by', '{}'))
-            creator_kind = created_by.get('reference', {}).get('kind')
-            creator_name = created_by.get('reference', {}).get('name')
-
             # add creator tags
-            if creator_name:
-                if creator_kind == 'ReplicationController':
-                    tags.append('kube_replication_controller:%s' % creator_name)
-                elif creator_kind == 'DaemonSet':
-                    tags.append('kube_daemon_set:%s' % creator_name)
-                elif creator_kind == 'ReplicaSet':
-                    tags.append('kube_replica_set:%s' % creator_name)
-            else:
-                log.debug('creator-name for pod %s is empty, this should not happen' % pod_metadata.get('name'))
+            creator_tags = self.kubeutil.get_pod_creator_tags(pod_metadata)
+            tags.extend(creator_tags)
 
-            # FIXME haissam: for service and deployment we need to store a list of these guys
-            # that we query from the apiserver and to compare their selectors with the pod labels.
-            # For service it's straight forward.
-            # For deployment we only need to do it if the pod creator is a ReplicaSet.
-            # Details: https://kubernetes.io/docs/user-guide/deployments/#selector
+            # add services tags
+            if self.kubeutil.collect_service_tag:
+                services = self.kubeutil.match_services_for_pod(pod_metadata)
+                for s in services:
+                    if s is not None:
+                        tags.append('kube_service:%s' % s)
 
         elif Platform.is_swarm():
-            c_labels = state.inspect_container(c_id).get('Config', {}).get('Labels', {})
+            c_labels = c_inspect.get('Config', {}).get('Labels', {})
             swarm_svc = c_labels.get(SWARM_SVC_LABEL)
             if swarm_svc:
                 tags.append('swarm_service:%s' % swarm_svc)
 
+        elif Platform.is_rancher():
+            service_name = c_inspect.get('Config', {}).get('Labels', {}).get(RANCHER_SVC_NAME)
+            stack_name = c_inspect.get('Config', {}).get('Labels', {}).get(RANCHER_STACK_NAME)
+            container_name = c_inspect.get('Config', {}).get('Labels', {}).get(RANCHER_CONTAINER_NAME)
+            if service_name:
+                tags.append('rancher_service:%s' % service_name)
+            if stack_name:
+                tags.append('rancher_stack:%s' % stack_name)
+            if container_name:
+                tags.append('rancher_container:%s' % container_name)
+
+        if self.metadata_collector.has_detected():
+            orch_tags = self.metadata_collector.get_container_tags(co=c_inspect)
+            tags.extend(orch_tags)
+
         return tags
+
+    def _get_container_name(self, state, c_id, tpl_var):
+        container_inspect = state.inspect_container(c_id)
+        return container_inspect.get('Name', '').lstrip('/')
 
     def _get_additional_tags(self, state, c_id, *args):
         tags = []
+
         if Platform.is_k8s():
             pod_metadata = state.get_kube_config(c_id, 'metadata')
             pod_spec = state.get_kube_config(c_id, 'spec')
@@ -300,6 +351,11 @@ class SDDockerBackend(AbstractSDBackend):
                 return []
             tags.append('node_name:%s' % pod_spec.get('nodeName'))
             tags.append('pod_name:%s' % pod_metadata.get('name'))
+
+            c_inspect = state.inspect_container(c_id)
+            c_name = c_inspect.get('Config', {}).get('Labels', {}).get(self.kubeutil.CONTAINER_NAME_LABEL)
+            if c_name:
+                tags.append('kube_container_name:%s' % c_name)
         return tags
 
     def get_configs(self):
@@ -307,7 +363,7 @@ class SDDockerBackend(AbstractSDBackend):
         configs = {}
         state = self._make_fetch_state()
         containers = [(
-            container.get('Image'),
+            self.dockerutil.image_name_extractor(container),
             container.get('Id'), container.get('Labels')
         ) for container in self.docker_client.containers()]
 
@@ -321,13 +377,20 @@ class SDDockerBackend(AbstractSDBackend):
 
                     # build instances list if needed
                     if configs.get(check_name) is None:
-                        configs[check_name] = (source, (init_config, [instance]))
+                        if isinstance(instance, list):
+                            configs[check_name] = (source, (init_config, instance))
+                        else:
+                            configs[check_name] = (source, (init_config, [instance]))
                     else:
                         conflict_init_msg = 'Different versions of `init_config` found for check {}. ' \
                             'Keeping the first one found.'
                         if configs[check_name][1][0] != init_config:
                             log.warning(conflict_init_msg.format(check_name))
-                        configs[check_name][1][1].append(instance)
+                        if isinstance(instance, list):
+                            for inst in instance:
+                                configs[check_name][1][1].append(inst)
+                        else:
+                            configs[check_name][1][1].append(instance)
             except Exception:
                 log.exception('Building config for container %s based on image %s using service '
                               'discovery failed, leaving it alone.' % (cid[:12], image))
@@ -356,13 +419,26 @@ class SDDockerBackend(AbstractSDBackend):
             source, config_tpl = config_tpl
             check_name, init_config_tpl, instance_tpl, variables = config_tpl
 
-            # insert tags in instance_tpl and process values for template variables
-            instance_tpl, var_values = self._fill_tpl(state, c_id, instance_tpl, variables, tags)
+            # covering mono-instance and multi-instances cases
+            tmpl_array = instance_tpl
+            if not isinstance(instance_tpl, list):
+                tmpl_array = [instance_tpl]
 
-            tpl = self._render_template(init_config_tpl or {}, instance_tpl or {}, var_values)
-            if tpl and len(tpl) == 2:
-                init_config, instance = tpl
-                check_configs.append((source, (check_name, init_config, instance)))
+            # insert tags in instance_tpl and process values for template variables
+            result_instances = []
+            result_init_config = None
+            for inst_tmpl in tmpl_array:
+                instance_tpl, var_values = self._fill_tpl(state, c_id, inst_tmpl, variables, tags)
+                tpl = self._render_template(init_config_tpl or {}, instance_tpl or {}, var_values)
+                if tpl and len(tpl) == 2:
+                    init_config, instance = tpl
+                    result_instances.append(instance)
+                    if not result_init_config:
+                        result_init_config = init_config
+                    elif result_init_config != init_config:
+                        self.log.warning("Different versions of `init_config` found for "
+                            "check {}. Keeping the first one found.".format('check_name'))
+            check_configs.append((source, (check_name, result_init_config, result_instances)))
 
         return check_configs
 
@@ -391,7 +467,7 @@ class SDDockerBackend(AbstractSDBackend):
                 variables = map(lambda x: x.strip('%'), variables)
                 if not isinstance(init_config_tpl, dict):
                     init_config_tpl = json.loads(init_config_tpl or '{}')
-                if not isinstance(instance_tpl, dict):
+                if not isinstance(instance_tpl, dict) and not isinstance(instance_tpl, list):
                     instance_tpl = json.loads(instance_tpl or '{}')
             except json.JSONDecodeError:
                 log.exception('Failed to decode the JSON template fetched for check {0}. Its configuration'
@@ -412,7 +488,11 @@ class SDDockerBackend(AbstractSDBackend):
         # add default tags to the instance
         if tags:
             tpl_tags = instance_tpl.get('tags', [])
-            tags += tpl_tags if isinstance(tpl_tags, list) else [tpl_tags]
+            if isinstance(tpl_tags, dict):
+                for key, val in tpl_tags.iteritems():
+                    tags.append("{}:{}".format(key, val))
+            else:
+                tags += tpl_tags if isinstance(tpl_tags, list) else [tpl_tags]
             instance_tpl['tags'] = list(set(tags))
 
         for var in variables:

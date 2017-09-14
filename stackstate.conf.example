@@ -29,6 +29,9 @@ api_key: none
 # Set the host's tags (optional)
 # tags: mytag, env:prod, role:database
 
+# Collect docker orchestrator name and version as agent tags
+# collect_orchestrator_tags: yes
+
 # Timeout in seconds for requests to for StackState intake api
 http_emitter_timeout=60
 
@@ -120,6 +123,11 @@ gce_updated_hostname: yes
 # Settings for connecting to the service discovery backend.
 # sd_backend_host: 127.0.0.1
 # sd_backend_port: 4001
+#
+# If you use etcd, you can set a username and password for auth
+#
+# sd_backend_username:
+# sd_backend_password:
 #
 # By default, the agent will look for the configuration templates under the
 # `/stackstate/check_configs` key in the back-end. If you wish otherwise, uncomment this option
