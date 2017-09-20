@@ -109,7 +109,6 @@ class KubeUtil:
         self.use_kube_auth = instance.get('use_kube_auth', KubeUtil.DEFAULT_USE_KUBE_AUTH)
 
         self.master_host = os.environ.get('KUBERNETES_SERVICE_HOST') or ('%s:%d' % (self.master_name, self.master_port))
-        # TODO sts: self.kubernetes_api_url = '%s://%s/api/v1' % (self.master_method, os.environ.get('KUBERNETES_SERVICE_HOST') or self.DEFAULT_MASTER_NAME)
         self.kubernetes_api_extension_url = '%s://%s/apis/extensions/v1beta1/' % (self.master_method, self.master_host)
 
         if 'api_server_url' in instance:
@@ -272,55 +271,29 @@ class KubeUtil:
         label_prefix = label_prefix or self.kube_label_prefix
         for pod in pod_items:
             metadata = pod.get("metadata", {})
-            pod_labels = self.extract_metadata_labels(metadata, excluded_keys)
-            kube_labels.update(pod_labels)
-            #name = metadata.get("name")
-            #namespace = metadata.get("namespace")
-            #labels = metadata.get("labels", {})
-            #if name and namespace:
-            #    key = "%s/%s" % (namespace, name)
-
-        return kube_labels
-
-# TODO: 5.16 code:
-#        # Extract creator tags
-#        podtags = self.get_pod_creator_tags(metadata)
-#
-#        # Extract services tags
-#        if self.collect_service_tag:
-#            for service in self.match_services_for_pod(metadata):
-#                if service is not None:
-#                    podtags.append(u'kube_service:%s' % service)
-#
-#        # Extract labels
-#        for k, v in labels.iteritems():
-#            if k in excluded_keys:
-#                continue
-#            podtags.append(u"%s%s:%s" % (label_prefix, k, v))
-
-    def extract_metadata_labels(self, metadata, excluded_keys={}, add_kube_prefix=True):
-        """
-        Extract labels from metadata section coming from the kubelet API.
-        """
-        kube_labels = defaultdict(list)
-        name = metadata.get("name")
-        namespace = metadata.get("namespace")
-        labels = metadata.get("labels")
-        if name and labels:
-            if namespace:
+            name = metadata.get("name")
+            namespace = metadata.get("namespace")
+            labels = metadata.get("labels", {})
+            if name and namespace:
                 key = "%s/%s" % (namespace, name)
-            else:
-                key = name
-                # kube_labels[key].append(u"kube_%s:%s" % (k, v)) # TODO sts code
-                # kube_labels[key] = podtags # TODO 5.16 code
 
-            for k, v in labels.iteritems():
-                if k in excluded_keys:
-                    continue
-                if add_kube_prefix:
-                    kube_labels[key].append(u"kube_%s:%s" % (k, v))
-                else:
-                    kube_labels[key].append(u"%s:%s" % (k, v))
+                # Extract creator tags
+                podtags = self.get_pod_creator_tags(metadata)
+
+                # Extract services tags
+                if self.collect_service_tag:
+                    for service in self.match_services_for_pod(metadata):
+                        if service is not None:
+                            podtags.append(u'kube_service:%s' % service)
+
+                # Extract labels
+                for k, v in labels.iteritems():
+                    if k in excluded_keys:
+                        continue
+                    podtags.append(u"%s%s:%s" % (label_prefix, k, v))
+
+                kube_labels[key] = podtags
+
         return kube_labels
 
     def retrieve_pods_list(self):
@@ -329,8 +302,7 @@ class KubeUtil:
 
         TODO: the list of pods could be cached with some policy to be decided.
         """
-        return self.perform_kubelet_query(self.pods_list_url).json()
-        # return self.retrieve_json_with_optional_auth(url=self.pods_list_url) # TODO sts version
+        return self.retrieve_kubelet_json_with_optional_auth(url=self.pods_list_url)
 
     def retrieve_endpoints_list(self):
         """
@@ -363,6 +335,15 @@ class KubeUtil:
         Retrieve the list of services for this cluster querying the kublet API.
         """
         return self.retrieve_json_with_optional_auth(url=self.services_list_url)
+
+    def retrieve_kubelet_json_auth(self, url, verbose=True, timeout=10):
+        return self.perform_kubelet_query(url, verbose, timeout).json()
+
+    def retrieve_kubelet_json_with_optional_auth(self, url, verbose=True, timeout=10):
+        if self.use_kube_auth:
+            return self.retrieve_kubelet_json_auth(url, verbose, timeout)
+        else:
+            return requests.get(url, timeout=timeout, params={'verbose': verbose}).json()
 
     def retrieve_json_with_optional_auth(self, url):
         if self.use_kube_auth:
