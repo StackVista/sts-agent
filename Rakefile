@@ -26,7 +26,7 @@ unless ENV['CI']
   ENV['VOLATILE_DIR'] = '/tmp/dd-agent-testing'
   ENV['CONCURRENCY'] = ENV['CONCURRENCY'] || '2'
   ENV['NOSE_FILTER'] = 'not windows'
-  ENV['JMXFETCH_URL'] = "file://" + File.join(rakefile_dir, "binaries")
+  ENV['JMXFETCH_URL'] = 'file://' + File.join(rakefile_dir, 'binaries')
 end
 
 desc 'Setup a development environment for the Agent'
