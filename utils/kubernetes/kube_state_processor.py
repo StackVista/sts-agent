@@ -70,7 +70,7 @@ class KubeStateProcessor:
     def process(self, message, **kwargs):
         """
         Handle a message according to the following flow:
-            - search self.metric_to_gauge for a prometheus.metric <--> datadog.metric mapping
+            - search self.metric_to_gauge for a prometheus.metric <--> stackstate.metric mapping
             - call check method with the same name as the metric
             - log some info if none of the above worked
         """
