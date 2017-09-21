@@ -80,6 +80,7 @@ set -u
 #######################################################################
 PRE_SDK_RELEASE="5.11.3"
 LAST_JMXFETCH_BUNDLE_RELEASE="5.13.2"
+JMXFETCH_URL="https://s3-eu-west-1.amazonaws.com/sts-jmxfetch"
 REPORT_FAILURE_URL="https://app.datadoghq.com/agent_stats/report_failure"
 REPORT_FAILURE_EMAIL="support@datadoghq.com"
 
@@ -140,7 +141,6 @@ DOG="
 
 LOGFILE="$DD_HOME/ddagent-install.log"
 BASE_GITHUB_URL="https://raw.githubusercontent.com/StackVista/sts-agent/$AGENT_VERSION"
-JMXFETCH_URL="$BASE_GITHUB_URL/binaries"
 
 #######################################################################
 # Error reporting helpers
