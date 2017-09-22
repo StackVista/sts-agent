@@ -55,20 +55,19 @@ class KubeUtil:
     KUBELET_HEALTH_PATH = '/healthz'
     MACHINE_INFO_PATH = '/api/v1.3/machine/'
     METRICS_PATH = '/api/v1.3/subcontainers/'
+    KUBELET_PODS_LIST_PATH = 'pods/'
+    MASTER_PODS_LIST_PATH = 'pods/'
     DEPLOYMENTS_LIST_PATH = 'deployments/'
     REPLICASETS_LIST_PATH = 'replicasets/'
-    PODS_LIST_PATH = 'pods/'
     SERVICES_LIST_PATH = 'services/'
     NODES_LIST_PATH = 'nodes/'
     ENDPOINTS_LIST_PATH = 'endpoints/'
     DEFAULT_CADVISOR_PORT = 4194
     DEFAULT_HTTP_KUBELET_PORT = 10255
     DEFAULT_HTTPS_KUBELET_PORT = 10250
-    DEFAULT_MASTER_METHOD = 'https'
-    DEFAULT_MASTER_PORT = 8080
     DEFAULT_MASTER_PORT = 443
     DEFAULT_MASTER_NAME = 'kubernetes'  # DNS name to reach the master from a pod.
-    DEFAULT_USE_KUBE_AUTH = False
+    DEFAULT_MASTER_USE_KUBE_AUTH = True # We make kube authentication optional to also be able to access the master api though a non-auth proxy
     DEFAULT_LABEL_PREFIX = 'kube_'
     DEFAULT_COLLECT_SERVICE_TAG = True
     CA_CRT_PATH = '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
@@ -79,7 +78,9 @@ class KubeUtil:
     NAMESPACE_LABEL = "io.kubernetes.pod.namespace"
     CONTAINER_NAME_LABEL = "io.kubernetes.container.name"
 
-    def __init__(self, instance=None):
+    # StackState: We introduced use_kubelet to be able to express explicitly in the kubernetes_topology check that
+    # we only use the master kubernetes node, not the kubelet.
+    def __init__(self, instance=None, use_kubelet=True):
         self.docker_util = DockerUtil()
         if instance is None:
             try:
@@ -100,52 +101,51 @@ class KubeUtil:
         self.method = instance.get('method', KubeUtil.DEFAULT_METHOD)
         self._node_ip = self._node_name = None  # lazy evaluation
         self.host_name = os.environ.get('HOSTNAME')
+        self.master_use_kube_auth = instance.get('master_use_kube_auth', KubeUtil.DEFAULT_MASTER_USE_KUBE_AUTH)
         self.tls_settings = self._init_tls_settings(instance)
 
         # apiserver
-        self.master_method = instance.get('master_method', KubeUtil.DEFAULT_MASTER_METHOD)
-        self.master_name = instance.get('master_name', KubeUtil.DEFAULT_MASTER_NAME)
-        self.master_port = instance.get('master_port', KubeUtil.DEFAULT_MASTER_PORT)
-        self.use_kube_auth = instance.get('use_kube_auth', KubeUtil.DEFAULT_USE_KUBE_AUTH)
-
-        self.master_host = os.environ.get('KUBERNETES_SERVICE_HOST') or ('%s:%d' % (self.master_name, self.master_port))
-        self.kubernetes_api_extension_url = '%s://%s/apis/extensions/v1beta1/' % (self.master_method, self.master_host)
-
         if 'api_server_url' in instance:
             self.kubernetes_api_root_url = instance.get('api_server_url')
         else:
-            master_host = os.environ.get('KUBERNETES_SERVICE_HOST') or self.DEFAULT_MASTER_NAME
-            master_port = os.environ.get('KUBERNETES_SERVICE_PORT') or self.DEFAULT_MASTER_PORT
-            self.kubernetes_api_root_url = 'https://%s:%s' % (master_host, master_port)
+            master_method = "https" if self.master_use_kube_auth else "http"
+            master_host = os.environ.get('KUBERNETES_SERVICE_HOST') or instance.get('master_name', KubeUtil.DEFAULT_MASTER_NAME)
+            master_port = os.environ.get('KUBERNETES_SERVICE_PORT') or instance.get('master_port', KubeUtil.DEFAULT_MASTER_PORT)
+            self.kubernetes_api_root_url = '%s://%s:%s' % (master_method, master_host, master_port)
 
-        self.kubernetes_api_url = '%s/api/v1' % self.kubernetes_api_root_url
+        self.kubernetes_api_url = '%s/api/v1/' % self.kubernetes_api_root_url
+        self.kubernetes_api_extension_url = '%s/apis/extensions/v1beta1/' % self.kubernetes_api_root_url
 
-        # kubelet
-        try:
-            self.kubelet_api_url = self._locate_kubelet(instance)
-            if not self.kubelet_api_url:
-                raise Exception("Couldn't find a method to connect to kubelet.")
-        except Exception as ex:
-            log.error("Kubernetes check exiting, cannot run without access to kubelet.")
-            raise ex
-
-        # Service mapping helper class
-        self._service_mapper = PodServiceMapper(self)
-
-        self.kubelet_host = self.kubelet_api_url.split(':')[1].lstrip('/')
-        self.pods_list_url = urljoin(self.kubelet_api_url, KubeUtil.PODS_LIST_PATH)
-        self.kube_health_url = urljoin(self.kubelet_api_url, KubeUtil.KUBELET_HEALTH_PATH)
-        self.nodes_list_url = urljoin(self.kubelet_api_url, KubeUtil.NODES_LIST_PATH)
-        self.services_list_url = urljoin(self.kubelet_api_url, KubeUtil.SERVICES_LIST_PATH)
-        self.endpoints_list_url = urljoin(self.kubelet_api_url, KubeUtil.ENDPOINTS_LIST_PATH)
+        # Extra StackState endpoints
+        self.master_pods_list_url = urljoin(self.kubernetes_api_url, KubeUtil.MASTER_PODS_LIST_PATH)
+        self.nodes_list_url = urljoin(self.kubernetes_api_url, KubeUtil.NODES_LIST_PATH)
+        self.services_list_url = urljoin(self.kubernetes_api_url, KubeUtil.SERVICES_LIST_PATH)
+        self.endpoints_list_url = urljoin(self.kubernetes_api_url, KubeUtil.ENDPOINTS_LIST_PATH)
         self.deployments_list_url = urljoin(self.kubernetes_api_extension_url, KubeUtil.DEPLOYMENTS_LIST_PATH)
-        self.kube_label_prefix = instance.get('label_to_tag_prefix', KubeUtil.DEFAULT_LABEL_PREFIX)
 
-        # cadvisor
-        self.cadvisor_port = instance.get('port', KubeUtil.DEFAULT_CADVISOR_PORT)
-        self.cadvisor_url = '%s://%s:%d' % (self.method, self.kubelet_host, self.cadvisor_port)
-        self.metrics_url = urljoin(self.cadvisor_url, KubeUtil.METRICS_PATH)
-        self.machine_info_url = urljoin(self.cadvisor_url, KubeUtil.MACHINE_INFO_PATH)
+        if use_kubelet:
+            # kubelet
+            try:
+                self.kubelet_api_url = self._locate_kubelet(instance)
+                if not self.kubelet_api_url:
+                    raise Exception("Couldn't find a method to connect to kubelet.")
+            except Exception as ex:
+                log.error("Kubernetes check exiting, cannot run without access to kubelet.")
+                raise ex
+
+            # Service mapping helper class
+            self._service_mapper = PodServiceMapper(self)
+
+            self.kubelet_host = self.kubelet_api_url.split(':')[1].lstrip('/')
+            self.kubelet_pods_list_url = urljoin(self.kubelet_api_url, KubeUtil.KUBELET_PODS_LIST_PATH)
+            self.kube_health_url = urljoin(self.kubelet_api_url, KubeUtil.KUBELET_HEALTH_PATH)
+            self.kube_label_prefix = instance.get('label_to_tag_prefix', KubeUtil.DEFAULT_LABEL_PREFIX)
+
+            # cadvisor
+            self.cadvisor_port = instance.get('port', KubeUtil.DEFAULT_CADVISOR_PORT)
+            self.cadvisor_url = '%s://%s:%d' % (self.method, self.kubelet_host, self.cadvisor_port)
+            self.metrics_url = urljoin(self.cadvisor_url, KubeUtil.METRICS_PATH)
+            self.machine_info_url = urljoin(self.cadvisor_url, KubeUtil.MACHINE_INFO_PATH)
 
         from config import _is_affirmative
         self.collect_service_tag = _is_affirmative(instance.get('collect_service_tags', KubeUtil.DEFAULT_COLLECT_SERVICE_TAG))
@@ -183,7 +183,8 @@ class KubeUtil:
         else:
             tls_settings['kubelet_verify'] = instance.get('kubelet_tls_verify', DEFAULT_TLS_VERIFY)
 
-        if ('apiserver_client_cert' not in tls_settings) or ('kubelet_client_cert' not in tls_settings):
+        if self.master_use_kube_auth and\
+                (('apiserver_client_cert' not in tls_settings) or ('kubelet_client_cert' not in tls_settings)):
             # Only lookup token if we don't have client certs for both
             token = self.get_auth_token(instance)
             if token:
@@ -302,7 +303,19 @@ class KubeUtil:
 
         TODO: the list of pods could be cached with some policy to be decided.
         """
-        return self.retrieve_kubelet_json_with_optional_auth(url=self.pods_list_url)
+        return self.perform_kubelet_query(self.kubelet_pods_list_url).json()
+
+    def retrieve_machine_info(self):
+        """
+        Retrieve machine info from Cadvisor.
+        """
+        return retrieve_json(self.machine_info_url)
+
+    def retrieve_metrics(self):
+        """
+        Retrieve metrics from Cadvisor.
+        """
+        return retrieve_json(self.metrics_url)
 
     def retrieve_endpoints_list(self):
         """
@@ -312,41 +325,26 @@ class KubeUtil:
         """
         return self.retrieve_json_with_optional_auth(url=self.endpoints_list_url)
 
-    def retrieve_machine_info(self):
+    def retrieve_master_pods_list(self):
         """
-        Retrieve machine info from Cadvisor.
+        Retrieve the list of pods for this cluster querying the kubernetes API.
         """
-        return self.retrieve_json_with_optional_auth(url=self.machine_info_url)
-
-    def retrieve_metrics(self):
-        """
-        Retrieve metrics from Cadvisor.
-        """
-        return self.retrieve_json_with_optional_auth(url=self.metrics_url)
+        return self.retrieve_json_with_optional_auth(self.master_pods_list_url)
 
     def retrieve_nodes_list(self):
         """
-        Retrieve the list of nodes for this cluster querying the kublet API.
+        Retrieve the list of nodes for this cluster querying the kubernetes API.
         """
         return self.retrieve_json_with_optional_auth(self.nodes_list_url)
 
     def retrieve_services_list(self):
         """
-        Retrieve the list of services for this cluster querying the kublet API.
+        Retrieve the list of services for this cluster querying the kubernetes API.
         """
         return self.retrieve_json_with_optional_auth(url=self.services_list_url)
 
-    def retrieve_kubelet_json_auth(self, url, verbose=True, timeout=10):
-        return self.perform_kubelet_query(url, verbose, timeout).json()
-
-    def retrieve_kubelet_json_with_optional_auth(self, url, verbose=True, timeout=10):
-        if self.use_kube_auth:
-            return self.retrieve_kubelet_json_auth(url, verbose, timeout)
-        else:
-            return requests.get(url, timeout=timeout, params={'verbose': verbose}).json()
-
     def retrieve_json_with_optional_auth(self, url):
-        if self.use_kube_auth:
+        if self.master_use_kube_auth:
             return self.retrieve_json_auth(url=url, timeout=self.timeoutSeconds)
         else:
             return retrieve_json(url=url, timeout=self.timeoutSeconds)
