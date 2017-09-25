@@ -113,15 +113,15 @@ class KubeUtil:
             master_port = os.environ.get('KUBERNETES_SERVICE_PORT') or instance.get('master_port', KubeUtil.DEFAULT_MASTER_PORT)
             self.kubernetes_api_root_url = '%s://%s:%s' % (master_method, master_host, master_port)
 
-        self.kubernetes_api_url = '%s/api/v1/' % self.kubernetes_api_root_url
+        self.kubernetes_api_url = '%s/api/v1' % self.kubernetes_api_root_url
         self.kubernetes_api_extension_url = '%s/apis/extensions/v1beta1/' % self.kubernetes_api_root_url
 
         # Extra StackState endpoints
-        self.master_pods_list_url = urljoin(self.kubernetes_api_url, KubeUtil.MASTER_PODS_LIST_PATH)
-        self.nodes_list_url = urljoin(self.kubernetes_api_url, KubeUtil.NODES_LIST_PATH)
-        self.services_list_url = urljoin(self.kubernetes_api_url, KubeUtil.SERVICES_LIST_PATH)
-        self.endpoints_list_url = urljoin(self.kubernetes_api_url, KubeUtil.ENDPOINTS_LIST_PATH)
-        self.deployments_list_url = urljoin(self.kubernetes_api_extension_url, KubeUtil.DEPLOYMENTS_LIST_PATH)
+        self.master_pods_list_url = "%s/%s" % (self.kubernetes_api_url, KubeUtil.MASTER_PODS_LIST_PATH)
+        self.nodes_list_url = "%s/%s" % (self.kubernetes_api_url, KubeUtil.NODES_LIST_PATH)
+        self.services_list_url = "%s/%s" % (self.kubernetes_api_url, KubeUtil.SERVICES_LIST_PATH)
+        self.endpoints_list_url = "%s/%s" % (self.kubernetes_api_url, KubeUtil.ENDPOINTS_LIST_PATH)
+        self.deployments_list_url = "%s%s" % (self.kubernetes_api_extension_url, KubeUtil.DEPLOYMENTS_LIST_PATH)
 
         if use_kubelet:
             # kubelet
