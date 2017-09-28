@@ -1,17 +1,12 @@
-# Contributing to Datadog Agent
+# Contributing to StackState Agent
 
 :tada: First of all, thanks for contributing! :tada:
 
 This document aims to provide some basic guidelines to contribute to this repository, but keep in mind that these are just guidelines, not rules; use your best judgment and feel free to propose changes to this document in a pull request.
 
-Want help with your PRs on this project? We offer [office hours](https://github.com/DataDog/dd-agent/wiki/Community-Office-Hours) twice a month via Slack and Google Hangouts.
-
 ## Submitting issues
 
-- You can first take a look at the [Troubleshooting](https://datadog.zendesk.com/hc/en-us/sections/200766955-Troubleshooting) section of our [Knowledge base](https://datadog.zendesk.com/hc/en-us).
-- If you can't find anything useful, please contact our [support](http://docs.datadoghq.com/help/) and [send them your logs](https://github.com/DataDog/dd-agent/wiki/Send-logs-to-support).
-- Finally, you can open a Github issue respecting this [convention](#commits-titles) (it helps us triage).
-
+You can open a Github issue respecting this [convention](#commits-titles) (it helps us triage).
 
 ## Pull Requests
 
@@ -24,21 +19,19 @@ In order to ease/speed up our review, here are some items you can check/improve 
 - [ ] preferably make sure that all [tests pass locally](tests/README.md).
 - [ ] summarize your PR with a [good title](#commits-titles) and a message describing your changes, cross-referencing any related bugs/PRs.
 
-Your Pull Request **must** always pass the Travis/Appveyor tests before being merged, if you think the error is not due to your changes, you can have a talk with us on IRC (#datadog freenode) or send us an email to support _at_ datadoghq _dot_ com)
-
 _If you are adding a dependency (python module, library, ...), please check the [corresponding section](#add-dependencies)._
 
-## [Integrations](https://github.com/DataDog/integrations-core)
+## [Integrations](https://github.com/StackVista/sts-integrations-core)
 
-All checks have been moved to the [Integration SDK](https://github.com/DataDog/integrations-core). Please look there to submit related issues, PRs, or review the latest changes.
+All checks have been moved to the [Integration SDK](https://github.com/StackVista/sts-integrations-core). Please look there to submit related issues, PRs, or review the latest changes.
 
-For new integrations, please open a pull request in the [integrations extras repo](https://github.com/DataDog/integrations-extras)
+For new integrations, please open a pull request in the [integrations extras repo](https://github.com/StackVista/sts-integrations-extras)
 
 ## Commits
 
 ### Keep it small, focused
 
-Avoid changing too many things at once, for instance if you're fixing the redis integration and at the same time shipping a dogstatsd improvement, it makes reviewing harder (devs specialize in different parts of the code) and the change _time-to-release_ longer.
+Avoid changing too many things at once, for instance if you're fixing the redis integration and at the same time shipping a stsstatsd improvement, it makes reviewing harder (devs specialize in different parts of the code) and the change _time-to-release_ longer.
 
 ### Bisectability
 
@@ -62,11 +55,6 @@ The commit message should describe the reason for the change and give extra deta
 
 If your commit is only shipping documentation changes or example files, and is a complete no-op for the test suite, please add **[skip ci]** in the commit message body to skip the build and let you build slot to someone else _in need :wink:_
 
-Examples, see:
-  * https://github.com/DataDog/dd-agent/commit/44bc927aaaf2925ef081768b5888bbb20a5bb3bd
-  * https://github.com/DataDog/dd-agent/commit/677417fe12b1914e4322ac2c1fd1645cb0f1de31
-  * and for more general guidance, [this should help](http://chris.beams.io/posts/git-commit/)
-
 ### Commits titles
 
 Every commit title, PR or issue should be named like the following example:
@@ -76,7 +64,7 @@ Every commit title, PR or issue should be named like the following example:
 
 `category` can be:
 * _core_: for the agent internals, or the common interfaces
-* _dogstatsd_: for the embedded dogstatsd server
+* _stsstatsd_: for the embedded stsstatsd server
 * _tests_: related to CI, integration & unit testing
 * _dev_: related to development or tooling
 * _check_name_: specific to one check
@@ -104,7 +92,7 @@ Please refer to this [document](tests/README.md).
 You wrote a new agent check which uses a python module not embedded in the agent yet? You're at the right place to correct this!
 
 We use [Omnibus](https://github.com/chef/omnibus) to build our agent and bundle all dependencies.
-We define what are the agent dependencies in the [dd-agent-omnibus](https://github.com/DataDog/dd-agent-omnibus) repository, and we define how to build/add these dependencies in the [omnibus-software](https://github.com/DataDog/omnibus-software) repository.
+We define what are the agent dependencies in the [sts-agent-omnibus](https://github.com/StackVista/sts-agent-omnibus) repository, and we define how to build/add these dependencies in the [omnibus-software](https://github.com/StackVista/omnibus-software) repository.
 
 To add a new module, you will have to update both.
 
@@ -135,11 +123,11 @@ And replace, `my_module` with your module name, `default_version` by the version
 
 And it's done for `omnibus-software`!
 
-#### dd-agent-omnibus
+#### sts-agent-omnibus
 
 First, fork `omnibus-software`, and create your branch.
 
-Then add `dependency "my_module"` to `config/projects/datadog-agent.rb`: (please respect alphabetical sort)
+Then add `dependency "my_module"` to `config/projects/stckstate-agent.rb`: (please respect alphabetical sort)
 ```ruby
 # Check dependencies
 dependency "kafka-python"
@@ -207,15 +195,15 @@ end
 
 And replace, `my_module` with your module name, `default_version` with the version you want, `my_lib` with the name of the required lib, then provide a URL to the module license (replacing `"https://url.to.my/LICENSE.txt"`).
 
-If you need to install it with `python setup.py install`, take a look at this [example](https://github.com/DataDog/omnibus-software/blob/macos-clean/config/software/guidata.rb). (which also demonstrate the use of a patch).
+If you need to install it with `python setup.py install`, take a look at this [example](https://github.com/StackVista/omnibus-software/blob/macos-clean/config/software/guidata.rb). (which also demonstrate the use of a patch).
 
 And it's done for `omnibus-software`!
 
-#### dd-agent-omnibus
+#### sts-agent-omnibus
 
 First, fork `omnibus-software`, and create your branch.
 
-Then add `dependency "my_module"` to `config/projects/datadog-agent.rb`: (please respect alphabetical sort)
+Then add `dependency "my_module"` to `config/projects/stackstate-agent.rb`: (please respect alphabetical sort)
 ```ruby
 # Check dependencies
 dependency "kafka-python"

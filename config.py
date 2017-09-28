@@ -41,7 +41,7 @@ from utils.windows_configuration import get_registry_conf, get_windows_sdk_check
 STACKSTATE_CONF = "stackstate.conf"
 UNIX_CONFIG_PATH = '/etc/sts-agent'
 MAC_CONFIG_PATH = '/opt/stackstate-agent/etc'
-AGENT_VERSION = "5.16.0"
+AGENT_VERSION = "x.x.x" # Sts: We turn this into a bogus version to not confuse the user with a non-existing agent version. This is only used to report the agent version when a check fails, so no biggy.
 JMX_VERSION = "0.15.0"
 DEFAULT_CHECK_FREQUENCY = 15   # seconds
 LOGGING_MAX_BYTES = 10 * 1024 * 1024
@@ -1217,14 +1217,14 @@ def get_logging_config(cfg_path=None):
     if system_os == 'windows':
         logging_config['collector_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'collector.log')
         logging_config['forwarder_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'forwarder.log')
-        logging_config['dogstatsd_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'dogstatsd.log')
+        logging_config['dogstatsd_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'stsstatsd.log')
         logging_config['jmxfetch_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'jmxfetch.log')
         logging_config['service_log_file'] = os.path.join(_windows_commondata_path(), 'StackState', 'logs', 'service.log')
         logging_config['log_to_syslog'] = False
     else:
         logging_config['collector_log_file'] = '/var/log/stackstate/collector.log'
         logging_config['forwarder_log_file'] = '/var/log/stackstate/forwarder.log'
-        logging_config['dogstatsd_log_file'] = '/var/log/stackstate/dogstatsd.log'
+        logging_config['dogstatsd_log_file'] = '/var/log/stackstate/stsstatsd.log'
         logging_config['jmxfetch_log_file'] = '/var/log/stackstate/jmxfetch.log'
         logging_config['go-metro_log_file'] = '/var/log/stackstate/go-metro.log'
         logging_config['trace-agent_log_file'] = '/var/log/stackstate/trace-agent.log'

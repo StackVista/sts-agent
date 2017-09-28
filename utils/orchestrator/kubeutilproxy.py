@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2017
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 from utils.kubernetes import KubeUtil
 from utils.platform import Platform
