@@ -127,7 +127,7 @@ And it's done for `omnibus-software`!
 
 First, fork `omnibus-software`, and create your branch.
 
-Then add `dependency "my_module"` to `config/projects/stckstate-agent.rb`: (please respect alphabetical sort)
+Then add `dependency "my_module"` to `config/projects/stackstate-agent.rb`: (please respect alphabetical sort)
 ```ruby
 # Check dependencies
 dependency "kafka-python"
