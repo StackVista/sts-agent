@@ -21,9 +21,9 @@ In order to ease/speed up our review, here are some items you can check/improve 
 
 _If you are adding a dependency (python module, library, ...), please check the [corresponding section](#add-dependencies)._
 
-## [Integrations](https://github.com/StackVista/sts-integrations-core)
+## [Integrations](https://github.com/StackVista/sts-agent-integrations-core)
 
-All checks have been moved to the [Integration SDK](https://github.com/StackVista/sts-integrations-core). Please look there to submit related issues, PRs, or review the latest changes.
+All checks have been moved to the [Integration SDK](https://github.com/StackVista/sts-agent-integrations-core). Please look there to submit related issues, PRs, or review the latest changes.
 
 For new integrations, please open a pull request in the [integrations extras repo](https://github.com/StackVista/sts-integrations-extras)
 

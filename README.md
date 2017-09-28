@@ -6,9 +6,9 @@ The StackState Agent collects events and metrics and brings them to your
 It includes telemetry information from various sources, as well as topology
 information based on [connbeat](https://github.com/raboof/connbeat).
 
-# [Integration SDK](https://github.com/StackVista/sts-integrations-core)
+# [Integration SDK](https://github.com/StackVista/sts-agent-integrations-core)
 
-All checks have been moved to the [Integration SDK](https://github.com/StackVista/sts-integrations-core). Please look there to submit related issues, PRs, or review the latest changes.
+All checks have been moved to the [Integration SDK](https://github.com/StackVista/sts-agent-integrations-core). Please look there to submit related issues, PRs, or review the latest changes.
 
 ## Setup your environment
 
