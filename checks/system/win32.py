@@ -111,10 +111,10 @@ class Memory(Check):
         self.gauge('system.mem.usable')
         self.gauge('system.mem.pct_usable')
         #  details about the usage of the pagefile.
-        self.gauge('system.mem.page_total')
-        self.gauge('system.mem.page_used')
-        self.gauge('system.mem.page_free')
-        self.gauge('system.mem.page_pct_free')
+        self.gauge('system.mem.pagefile.total')
+        self.gauge('system.mem.pagefile.used')
+        self.gauge('system.mem.pagefile.free')
+        self.gauge('system.mem.pagefile.pct_free')
 
     def check(self, agentConfig):
         try:
@@ -184,12 +184,14 @@ class Memory(Check):
             pct_usable = float(usable) / total
             self.save_sample('system.mem.pct_usable', pct_usable)
 
-        page = psutil.virtual_memory()
+        # swap_memory pulls from the pagefile data,
+        # rather than from the whole virtual memory data.
+        page = psutil.swap_memory()
         if page.total is not None:
-            self.save_sample('system.mem.page_total', page.total / B2MB)
-            self.save_sample('system.mem.page_used', page.used / B2MB)
-            self.save_sample('system.mem.page_free', page.available / B2MB)
-            self.save_sample('system.mem.page_pct_free', (100 - page.percent) / 100)
+            self.save_sample('system.mem.pagefile.total', page.total)
+            self.save_sample('system.mem.pagefile.used', page.used)
+            self.save_sample('system.mem.pagefile.free', page.free)
+            self.save_sample('system.mem.pagefile.pct_free', (100 - page.percent) / 100)
 
         return self.get_metrics()
 
@@ -212,51 +214,6 @@ class Cpu(Check):
         self.save_sample('system.cpu.interrupt', 100 * cpu_percent.interrupt / psutil.cpu_count())
 
         return self.get_metrics()
-
-
-class Network(Check):
-    def __init__(self, logger):
-        Check.__init__(self, logger)
-
-        # Sampler(s)
-        self.wmi_sampler = WMISampler(
-            logger,
-            "Win32_PerfRawData_Tcpip_NetworkInterface",
-            ["Name", "BytesReceivedPerSec", "BytesSentPerSec"]
-        )
-
-        self.gauge('system.net.bytes_rcvd')
-        self.gauge('system.net.bytes_sent')
-
-    def check(self, agentConfig):
-        try:
-            self.wmi_sampler.sample()
-        except TimeoutException:
-            self.logger.warning(
-                u"Timeout while querying Win32_PerfRawData_Tcpip_NetworkInterface WMI class."
-                u" Network metrics will be returned at next iteration."
-            )
-            return []
-
-        if not (len(self.wmi_sampler)):
-            self.logger.warning('Missing Win32_PerfRawData_Tcpip_NetworkInterface WMI class.'
-                             ' No network metrics will be returned')
-            return []
-
-        for iface in self.wmi_sampler:
-            name = iface.get('Name')
-            bytes_received_per_sec = iface.get('BytesReceivedPerSec')
-            bytes_sent_per_sec = iface.get('BytesSentPerSec')
-
-            name = self.normalize_device_name(name)
-            if bytes_received_per_sec is not None:
-                self.save_sample('system.net.bytes_rcvd', bytes_received_per_sec,
-                                 device_name=name)
-            if bytes_sent_per_sec is not None:
-                self.save_sample('system.net.bytes_sent', bytes_sent_per_sec,
-                                 device_name=name)
-        return self.get_metrics()
-
 
 class IO(Check):
     def __init__(self, logger):

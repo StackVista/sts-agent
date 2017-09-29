@@ -1,6 +1,3 @@
-# (C) Datadog, Inc. 2010-2016
-# All rights reserved
-# Licensed under Simplified BSD License (see LICENSE)
 
 # stdlib
 import logging
@@ -82,10 +79,15 @@ def get_hostname(config=None):
             hostname = docker_hostname
 
         elif Platform.is_k8s(): # Let's try from the kubelet
-            kube_util = KubeUtil()
-            _, kube_hostname = kube_util.get_node_info()
-            if kube_hostname is not None and is_valid_hostname(kube_hostname):
-                hostname = kube_hostname
+            try:
+                kube_util = KubeUtil()
+            except Exception as ex:
+                log.error("Couldn't instantiate the kubernetes client, "
+                    "getting the k8s hostname won't work. Error: %s" % str(ex))
+            else:
+                _, kube_hostname = kube_util.get_node_info()
+                if kube_hostname is not None and is_valid_hostname(kube_hostname):
+                    hostname = kube_hostname
 
     # then move on to os-specific detection
     if hostname is None:
@@ -94,8 +96,9 @@ def get_hostname(config=None):
             if unix_hostname and is_valid_hostname(unix_hostname):
                 hostname = unix_hostname
 
-    # if we have an ec2 default hostname, see if there's an instance-id available
-    if (Platform.is_ecs_instance()) or (hostname is not None and EC2.is_default(hostname)):
+    # if we don't have a hostname, or we have an ec2 default hostname,
+    # see if there's an instance-id available
+    if not Platform.is_windows() and (hostname is None or Platform.is_ecs_instance() or EC2.is_default(hostname)):
         instanceid = EC2.get_instance_id(config)
         if instanceid:
             hostname = instanceid

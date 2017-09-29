@@ -23,8 +23,14 @@ api_key: none
 # Force the hostname to whatever you want. (default: auto-detected)
 # hostname: mymachine.mydomain
 
+# Enable the trace agent.
+# apm_enabled: false
+
 # Set the host's tags (optional)
 # tags: mytag, env:prod, role:database
+
+# Collect docker orchestrator name and version as agent tags
+# collect_orchestrator_tags: yes
 
 # Timeout in seconds for requests to for StackState intake api
 http_emitter_timeout=60
@@ -53,6 +59,8 @@ http_emitter_timeout=60
 # developer_mode: no
 # In developer mode, the number of runs to be included in a single collector profile
 # collector_profile_interval: 20
+# In developer mode, disable profiling altogether, but still collect fine-grained agent metrics
+# allow_profiling: False
 
 # use unique hostname for GCE hosts, see http://dtdg.co/1eAynZk
 # when not specified, default: no
@@ -116,10 +124,21 @@ gce_updated_hostname: yes
 # sd_backend_host: 127.0.0.1
 # sd_backend_port: 4001
 #
+# If you use etcd, you can set a username and password for auth
+#
+# sd_backend_username:
+# sd_backend_password:
+#
 # By default, the agent will look for the configuration templates under the
 # `/stackstate/check_configs` key in the back-end. If you wish otherwise, uncomment this option
 # and modify its value.
 # sd_template_dir: /stackstate/check_configs
+#
+# If you Consul store requires token authentication for service discovery, you can define that token here.
+# consul_token:
+#
+# Enable JMX checks for service discovery
+# sd_jmx_enable: no
 #
 # ========================================================================== #
 # Other                                                                      #

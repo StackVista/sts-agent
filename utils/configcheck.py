@@ -69,13 +69,14 @@ def get_sd_configcheck(agentConfig, configs):
 
 
 def print_containers():
-    containers = DockerUtil().client.containers()
+    dockerutil = DockerUtil()
+    containers = dockerutil.client.containers()
     print("\nContainers info:\n")
     print("Number of containers found: %s" % len(containers))
     for co in containers:
         c_id = 'ID: %s' % co.get('Id')[:12]
-        c_image = 'image: %s' % co.get('Image')
-        c_name = 'name: %s' % DockerUtil.container_name_extractor(co)[0]
+        c_image = 'image: %s' % dockerutil.image_name_extractor(co)
+        c_name = 'name: %s' % dockerutil.container_name_extractor(co)[0]
         print("\t- %s %s %s" % (c_id, c_image, c_name))
     print('\n')
 
@@ -91,10 +92,10 @@ def print_templates(agentConfig):
         except Exception as ex:
             print("Failed to extract configuration templates from the backend:\n%s" % str(ex))
 
-        for img, tpl in templates.iteritems():
+        for ident, tpl in templates.iteritems():
             print(
-                "- Image %s:\n\tcheck names: %s\n\tinit_configs: %s\n\tinstances: %s" % (
-                    img,
+                "- Identifier %s:\n\tcheck names: %s\n\tinit_configs: %s\n\tinstances: %s" % (
+                    ident,
                     tpl.get('check_names'),
                     tpl.get('init_configs'),
                     tpl.get('instances'),

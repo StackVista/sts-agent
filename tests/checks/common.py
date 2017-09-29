@@ -15,7 +15,7 @@ import json
 
 # project
 from checks import AgentCheck
-from config import get_checksd_path
+from config import get_checksd_path, get_sdk_integrations_path
 
 from utils.debug import get_check  # noqa -  FIXME 5.5.0 AgentCheck tests should not use this
 from utils.hostname import get_hostname
@@ -23,16 +23,39 @@ from utils.platform import get_os
 
 log = logging.getLogger('tests')
 
-
 def _is_sdk():
     return "SDK_TESTING" in os.environ
 
-def get_check_class(name):
-    checksd_path = get_checksd_path(get_os())
-    if checksd_path not in sys.path:
-        sys.path.append(checksd_path)
+def _load_sdk_module(name):
+    sdk_path = get_sdk_integrations_path(get_os())
+    module_path = os.path.join(sdk_path, name)
+    sdk_module_name = "_{}".format(name)
+    if sdk_module_name in sys.modules:
+        return sys.modules[sdk_module_name]
 
-    check_module = __import__(name)
+    if sdk_path not in sys.path:
+        sys.path.append(sdk_path)
+    if module_path not in sys.path:
+        sys.path.append(module_path)
+
+    fd, filename, desc = imp.find_module('check', [module_path])
+    module = imp.load_module("_{}".format(name), fd, filename, desc)
+    if fd:
+        fd.close()
+    # module = __import__(module_name, fromlist=['check'])
+
+    return module
+
+def get_check_class(name):
+    if not _is_sdk():
+        checksd_path = get_checksd_path(get_os())
+        if checksd_path not in sys.path:
+            sys.path.append(checksd_path)
+
+        check_module = __import__(name)
+    else:
+        check_module = _load_sdk_module(name)
+
     check_class = None
     classes = inspect.getmembers(check_module, inspect.isclass)
     for _, clsmember in classes:
@@ -47,15 +70,19 @@ def get_check_class(name):
 
     return check_class
 
-
 def load_class(check_name, class_name):
     """
     Retrieve a class with the given name within the given check module.
     """
-    checksd_path = get_checksd_path(get_os())
-    if checksd_path not in sys.path:
-        sys.path.append(checksd_path)
-    check_module = __import__(check_name)
+    check_module_name = check_name
+    if not _is_sdk():
+        checksd_path = get_checksd_path(get_os())
+        if checksd_path not in sys.path:
+            sys.path.append(checksd_path)
+        check_module = __import__(check_module_name)
+    else:
+        check_module = _load_sdk_module(check_name)
+
     classes = inspect.getmembers(check_module, inspect.isclass)
     for name, clsmember in classes:
         if name == class_name:
@@ -66,13 +93,13 @@ def load_class(check_name, class_name):
 
 def load_check(name, config, agentConfig):
     if not _is_sdk():
-        checksd_path = get_checksd_path(get_os())
+        checksd_path = agentConfig.get('additional_checksd', get_checksd_path(get_os()))
 
         # find (in checksd_path) and load the check module
         fd, filename, desc = imp.find_module(name, [checksd_path])
         check_module = imp.load_module(name, fd, filename, desc)
     else:
-        check_module = __import__("check")
+        check_module = _load_sdk_module(name) # parent module
 
     check_class = None
     classes = inspect.getmembers(check_module, inspect.isclass)
@@ -114,25 +141,28 @@ class Fixtures(object):
         raise Exception('No integration test file in stack')
 
     @staticmethod
-    def directory():
+    def directory(sdk_dir=None):
+        if sdk_dir:
+            return os.path.join(sdk_dir, 'fixtures')
+
         return os.path.join(os.path.dirname(__file__), 'fixtures',
                             Fixtures.integration_name())
 
     @staticmethod
-    def file(file_name):
-        return os.path.join(Fixtures.directory(), file_name)
+    def file(file_name, sdk_dir=None):
+        return os.path.join(Fixtures.directory(sdk_dir), file_name)
 
     @staticmethod
-    def read_file(file_name, string_escape=True):
-        with open(Fixtures.file(file_name)) as f:
+    def read_file(file_name, string_escape=True, sdk_dir=None):
+        with open(Fixtures.file(file_name, sdk_dir)) as f:
             contents = f.read()
             if string_escape:
                 contents = contents.decode('string-escape')
             return contents.decode("utf-8")
 
     @staticmethod
-    def read_json_file(file_name, string_escape=True):
-        return json.loads(Fixtures.read_file(file_name, string_escape=string_escape))
+    def read_json_file(file_name, string_escape=True, sdk_dir=None):
+        return json.loads(Fixtures.read_file(file_name, string_escape=string_escape, sdk_dir=sdk_dir))
 
 class AgentCheckTest(unittest.TestCase):
     DEFAULT_AGENT_CONFIG = {
@@ -151,6 +181,28 @@ class AgentCheckTest(unittest.TestCase):
 
     def is_travis(self):
         return "TRAVIS" in os.environ
+
+
+    def wait_for_async(self, method, attribute, count, results_timeout):
+        """
+        Loop on `self.check.method` until `self.check.attribute >= count`.
+        Raise after
+        """
+
+        # Check the initial values to see if we already have results before waiting for the async
+        # instances to finish
+        initial_values = getattr(self, attribute)
+
+        i = 0
+        while i < results_timeout:
+            self.check._process_results()
+            if len(getattr(self.check, attribute)) + len(initial_values) >= count:
+                return getattr(self.check, method)() + initial_values
+            time.sleep(1.1)
+            i += 1
+        raise Exception("Didn't get the right count of service checks in time, {0}/{1} in {2}s: {3}"
+                        .format(len(getattr(self.check, attribute)), count, i,
+                                getattr(self.check, attribute)))
 
     def load_check(self, config, agent_config=None):
         agent_config = agent_config or self.DEFAULT_AGENT_CONFIG

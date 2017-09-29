@@ -16,7 +16,7 @@ from nose.plugins.attrib import attr
 # needed because of the subprocess calls
 sys.path.append(os.getcwd())
 from stsagent import Application
-from util import Watchdog
+from utils.watchdog import WatchdogPosix as Watchdog
 
 
 class WatchdogKill(Exception):
@@ -40,7 +40,7 @@ class TestWatchdog(unittest.TestCase):
         Helper, a context manager to set the current time value.
         """
         # Set the current time within `util` module
-        mock_time = patch("util.time.time")
+        mock_time = patch("utils.timer.time.time")
         mock_time.start().return_value = time
 
         # Yield
