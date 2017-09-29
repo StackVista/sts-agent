@@ -132,32 +132,8 @@ class KubeUtil:
         self.endpoints_list_url = "%s/%s" % (self.kubernetes_api_url, KubeUtil.ENDPOINTS_LIST_PATH)
         self.deployments_list_url = "%s%s" % (self.kubernetes_api_extension_url, KubeUtil.DEPLOYMENTS_LIST_PATH)
 
-        # StackState: We introduced use_kubelet to be able to express explicitly in the kubernetes_topology check that
-        # we only use the master kubernetes node, not the kubelet.
-        if 'use_kubelet' in kwargs and kwargs['use_kubelet']:
-            # kubelet
-            try:
-                self.kubelet_api_url = self._locate_kubelet(instance)
-                if not self.kubelet_api_url:
-                    raise Exception("Couldn't find a method to connect to kubelet.")
-            except Exception as ex:
-                log.error("Kubernetes check exiting, cannot run without access to kubelet.")
-                raise ex
-
-            # Service mapping helper class
-            self._service_mapper = PodServiceMapper(self)
-
-            self.kubelet_host = self.kubelet_api_url.split(':')[1].lstrip('/')
-            self.pods_list_url = urljoin(self.kubelet_api_url, KubeUtil.PODS_LIST_PATH)
-            self.kube_health_url = urljoin(self.kubelet_api_url, KubeUtil.KUBELET_HEALTH_PATH)
-            self.kube_label_prefix = instance.get('label_to_tag_prefix', KubeUtil.DEFAULT_LABEL_PREFIX)
-
-            # cadvisor
-            self.cadvisor_port = instance.get('port', KubeUtil.DEFAULT_CADVISOR_PORT)
-            self.cadvisor_url = '%s://%s:%d' % (self.method, self.kubelet_host, self.cadvisor_port)
-            self.metrics_url = urljoin(self.cadvisor_url, KubeUtil.METRICS_PATH)
-            self.machine_info_url = urljoin(self.cadvisor_url, KubeUtil.MACHINE_INFO_PATH)
-
+        # Service mapping helper class
+        self._service_mapper = PodServiceMapper(self)
         from config import _is_affirmative
         self.collect_service_tag = _is_affirmative(instance.get('collect_service_tags', KubeUtil.DEFAULT_COLLECT_SERVICE_TAG))
 
@@ -174,7 +150,8 @@ class KubeUtil:
         self.init_retry_interval = init_config.get('init_retry_interval', DEFAULT_RETRY_INTERVAL)
         self.last_init_retry = None
         self.left_init_retries = init_config.get('init_retries', DEFAULT_INIT_RETRIES) + 1
-        self.init_kubelet(instance)
+        if 'use_kubelet' not in kwargs or kwargs['use_kubelete']:
+            self.init_kubelet(instance)
 
         self.kube_label_prefix = instance.get('label_to_tag_prefix', KubeUtil.DEFAULT_LABEL_PREFIX)
         self.kube_node_labels = instance.get('node_labels_to_host_tags', {})
@@ -252,7 +229,7 @@ class KubeUtil:
         self.init_success = True
 
         self.kubelet_host = self.kubelet_api_url.split(':')[1].lstrip('/')
-        self.pods_list_url = urljoin(self.kubelet_api_url, KubeUtil.PODS_LIST_PATH)
+        self.pods_list_url = urljoin(self.kubelet_api_url, KubeUtil.KUBELET_PODS_LIST_PATH)
         self.kube_health_url = urljoin(self.kubelet_api_url, KubeUtil.KUBELET_HEALTH_PATH)
 
         # namespace of the agent pod

@@ -48,7 +48,7 @@ class TestFunctions(TestCase):
         args, _ = s.call_args
         self.assertEqual(args[1], '0.0.0.0')
 
-    @mock.patch('dogstatsd.get_config_path')
+    @mock.patch('stsstatsd.get_config_path')
     def test_init6(self, gcp):
         cfg = defaultdict(str)
         cfg['api_key'] = "deadbeeffeebdaed"
@@ -62,7 +62,7 @@ class TestFunctions(TestCase):
         self.assertEqual(env.get('DD_API_KEY'), cfg['api_key'])
         self.assertEqual(env.get('DD_DOGSTATSD_STATS_PORT'), str(cfg['dogstatsd6_stats_port']))
 
-    @mock.patch('dogstatsd.Server')
+    @mock.patch('stsstatsd.Server')
     def test_init_with_so_rcvbuf(self, s):
         cfg = defaultdict(str)
         cfg['use_dogstatsd'] = True
