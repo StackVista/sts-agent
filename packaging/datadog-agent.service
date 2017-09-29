@@ -5,6 +5,8 @@ After=network.target
 [Service]
 Type=forking
 User=sts-agent
+EnvironmentFile=-/etc/default/stackstate-agent
+EnvironmentFile=-/etc/sysconfig/stackstate-agent
 ExecStart=/opt/stackstate-agent/bin/start_agent.sh
 ExecStop=/opt/stackstate-agent/bin/supervisorctl -c /etc/sts-agent/supervisor.conf shutdown
 

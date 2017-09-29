@@ -30,11 +30,8 @@ from config import AGENT_VERSION, _is_affirmative
 from util import get_next_id, yLoader
 from utils.hostname import get_hostname
 from utils.proxy import get_proxy
-from utils.platform import Platform
 from utils.profile import pretty_statistics
 from utils.proxy import get_no_proxy_from_env, config_proxy_skip
-if Platform.is_windows():
-    from utils.debug import run_check  # noqa - windows debug purpose
 
 log = logging.getLogger(__name__)
 
@@ -442,14 +439,14 @@ class AgentCheck(object):
     def set_manifest_path(self, manifest_path):
         self.manifest_path = manifest_path
 
-    def set_check_version(self, manifest=None):
-        version = AGENT_VERSION
+    def set_check_version(self, version=None, manifest=None):
+        _version = version or AGENT_VERSION
 
         if manifest is not None:
-            version = "{core}:{sdk}".format(core=AGENT_VERSION,
+            _version = "{core}:{sdk}".format(core=AGENT_VERSION,
                                         sdk=manifest.get('version', 'unknown'))
 
-        self.check_version = version
+        self.check_version = _version
 
     def get_instance_proxy(self, instance, uri):
         proxies = self.proxies.copy()
@@ -1164,12 +1161,17 @@ def create_service_check(check_name, status, tags=None, timestamp=None,
     """
     if check_run_id is None:
         check_run_id = get_next_id('service_check')
-    return {
+    service_check = {
         'id': check_run_id,
         'check': check_name,
         'status': status,
-        'host_name': hostname,
-        'tags': tags,
         'timestamp': float(timestamp or time.time()),
-        'message': message
     }
+    if hostname is not None:
+        service_check['host_name'] = hostname
+    if tags is not None:
+        service_check['tags'] = tags
+    if message is not None:
+        service_check["message"] = message
+
+    return service_check

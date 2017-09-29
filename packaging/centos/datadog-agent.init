@@ -4,14 +4,15 @@
 # Provides: stackstate-agent
 # Short-Description: Start and start stackstate-agent
 # Description: stackstate-agent is the monitoring agent component for StackState
-# Required-Start:
-# Required-Stop:
+# Required-Start: $remote_fs $network
+# Required-Stop: $remote_fs $network
 # Default-Start: 2 3 4 5
 # Default-Stop: 0 1 6
 ### END INIT INFO
 
 AGENTPATH="/opt/stackstate-agent/agent/agent.py"
 AGENTCONF="/etc/sts-agent/stackstate.conf"
+AGENTSYSCONFIG="/etc/sysconfig/datadog-agent"
 DOGSTATSDPATH="/opt/stackstate-agent/agent/stsstatsd.py"
 KILL_PATH="/opt/stackstate-agent/embedded/bin/kill"
 AGENTUSER="sts-agent"
@@ -33,6 +34,8 @@ DD_OPT_PROC_REGEX="dogstatsd|jmxfetch|go-metro|trace-agent|process-agent"
 # Source function library.
 . /etc/rc.d/init.d/functions
 
+# pull in sysconfig settings
+[ -f $AGENTSYSCONFIG ] && . $AGENTSYSCONFIG
 
 check_status() {
     # run checks to determine if the service is running or use generic status
@@ -119,6 +122,11 @@ start() {
     if [ ! -f $AGENTCONF ]; then
         echo "$AGENTCONF not found. Exiting."
         exit 3
+    fi
+
+    if [ "$DATADOG_ENABLED" = "no" ]; then
+        echo "Disabled via $AGENTSYSCONFIG. Exiting."
+        exit 0
     fi
 
     su $AGENTUSER -c "$AGENTPATH configcheck" > /dev/null 2>&1

@@ -127,7 +127,24 @@ class TestCore(unittest.TestCase):
         timestamp = time.time()
 
         check = AgentCheck('test', {}, {'checksd_hostname':'foo'})
-        check.service_check(check_name, status, tags, timestamp, host_name)
+        # No "message"/"tags" field
+        check.service_check(check_name, status, timestamp=timestamp, hostname=host_name)
+        self.assertEquals(len(check.service_checks), 1, check.service_checks)
+        val = check.get_service_checks()
+        self.assertEquals(len(val), 1)
+        check_run_id = val[0].get('id', None)
+        self.assertNotEquals(check_run_id, None)
+        self.assertEquals([{
+            'id': check_run_id,
+            'check': check_name,
+            'status': status,
+            'host_name': host_name,
+            'timestamp': timestamp,
+        }], val)
+        self.assertEquals(len(check.service_checks), 0, check.service_checks)
+
+        # With "message" field
+        check.service_check(check_name, status, tags, timestamp, host_name, message='foomessage')
         self.assertEquals(len(check.service_checks), 1, check.service_checks)
         val = check.get_service_checks()
         self.assertEquals(len(val), 1)
@@ -140,7 +157,7 @@ class TestCore(unittest.TestCase):
             'host_name': host_name,
             'tags': tags,
             'timestamp': timestamp,
-            'message': None,
+            'message': 'foomessage',
         }], val)
         self.assertEquals(len(check.service_checks), 0, check.service_checks)
 
