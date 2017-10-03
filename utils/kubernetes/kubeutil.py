@@ -150,7 +150,7 @@ class KubeUtil:
         self.init_retry_interval = init_config.get('init_retry_interval', DEFAULT_RETRY_INTERVAL)
         self.last_init_retry = None
         self.left_init_retries = init_config.get('init_retries', DEFAULT_INIT_RETRIES) + 1
-        if 'use_kubelet' not in kwargs or kwargs['use_kubelete']:
+        if 'use_kubelet' not in kwargs or kwargs['use_kubelet']:
             self.init_kubelet(instance)
 
         self.kube_label_prefix = instance.get('label_to_tag_prefix', KubeUtil.DEFAULT_LABEL_PREFIX)
