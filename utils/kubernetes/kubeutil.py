@@ -229,7 +229,7 @@ class KubeUtil:
         self.init_success = True
 
         self.kubelet_host = self.kubelet_api_url.split(':')[1].lstrip('/')
-        self.pods_list_url = urljoin(self.kubelet_api_url, KubeUtil.KUBELET_PODS_LIST_PATH)
+        self.kubelet_pods_list_url = urljoin(self.kubelet_api_url, KubeUtil.KUBELET_PODS_LIST_PATH)
         self.kube_health_url = urljoin(self.kubelet_api_url, KubeUtil.KUBELET_HEALTH_PATH)
 
         # namespace of the agent pod
