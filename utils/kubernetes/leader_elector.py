@@ -9,7 +9,7 @@ log = logging.getLogger('collector')
 
 HEALTH_ENDPOINT = '/healthz'
 CM_ENDPOINT = '/namespaces/{namespace}/configmaps'
-CM_NAME = 'datadog-leader-elector'
+CM_NAME = 'stackstate-leader-elector'
 CREATOR_ANNOTATION = 'creator'
 ACQUIRE_TIME_ANNOTATION = 'acquired_time'
 DEFAULT_LEASE_DURATION = 5 * 60  # seconds

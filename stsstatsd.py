@@ -652,7 +652,7 @@ def init6(agent_config=None, config_path=None, args=None):
         env['DD_DOGSTATSD_STATS_PORT'] = str(agent_config['dogstatsd6_stats_port'])
     env['DD_LOG_LEVEL'] = agent_config.get('log_level', 'info')
     env['DD_CONF_PATH'] = os.path.join(
-        os.path.dirname(get_config_path(cfg_path=config_path)), "datadog.yaml")
+        os.path.dirname(get_config_path(cfg_path=config_path)), "stackstate.yaml")
     # metadata is sent by the collector, disable it in dogstatsd6 to avoid sending conflicting metadata
     env['DD_ENABLE_METADATA_COLLECTION'] = 'false'
 

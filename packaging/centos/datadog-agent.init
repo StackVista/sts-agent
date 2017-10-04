@@ -12,7 +12,7 @@
 
 AGENTPATH="/opt/stackstate-agent/agent/agent.py"
 AGENTCONF="/etc/sts-agent/stackstate.conf"
-AGENTSYSCONFIG="/etc/sysconfig/datadog-agent"
+AGENTSYSCONFIG="/etc/sysconfig/stackstate-agent"
 DOGSTATSDPATH="/opt/stackstate-agent/agent/stsstatsd.py"
 KILL_PATH="/opt/stackstate-agent/embedded/bin/kill"
 AGENTUSER="sts-agent"
@@ -124,7 +124,7 @@ start() {
         exit 3
     fi
 
-    if [ "$DATADOG_ENABLED" = "no" ]; then
+    if [ "$STACKSTATE_ENABLED" = "no" ]; then
         echo "Disabled via $AGENTSYSCONFIG. Exiting."
         exit 0
     fi
