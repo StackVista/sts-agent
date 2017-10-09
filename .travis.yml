@@ -3,7 +3,6 @@ sudo: false
 branches:
   only:
     - master
-    - updateTo5.17.2
     - /^\d+\.\d+\.x$/ # release forked patches branch
 
 language: python
