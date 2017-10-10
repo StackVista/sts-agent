@@ -8,6 +8,7 @@ import json
 
 # project
 from utils.kubernetes import KubeUtil
+from .test_orchestrator import MockResponse
 
 class KubeTestCase(unittest.TestCase):
     # Patch _locate_kubelet that is used by KubeUtil.__init__
@@ -28,6 +29,10 @@ class KubeTestCase(unittest.TestCase):
                 json_array.append(json.load(data_file))
         return json_array
 
+    @classmethod
+    def _load_resp_array(cls, names):
+        json_array = cls._load_json_array(names)
+        return map(lambda x: MockResponse(x, 200), json_array)
 
 class TestKubeUtilDeploymentTag(KubeTestCase):
     def test_deployment_name_nominal(self):
@@ -48,6 +53,10 @@ class TestKubeUtilCreatorTags(KubeTestCase):
     def test_with_replicaset(self):
         self.assertEqual(['kube_replica_set:test-5432', 'kube_deployment:test'],
                          self.kube.get_pod_creator_tags(self._fake_pod("ReplicaSet", "test-5432")))
+
+    def test_with_statefulset(self):
+        self.assertEqual(['kube_stateful_set:test-5432'],
+                         self.kube.get_pod_creator_tags(self._fake_pod("StatefulSet", "test-5432")))
 
     def test_with_legacy_repcontroller(self):
         self.assertEqual(['kube_daemon_set:test', 'kube_replication_controller:test'],

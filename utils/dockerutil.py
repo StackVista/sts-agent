@@ -9,6 +9,7 @@ import time
 
 # 3rd party
 from docker import Client, tls
+from docker.errors import NotFound
 
 # project
 from utils.singleton import Singleton
@@ -38,9 +39,11 @@ DEFAULT_TIMEOUT = 5
 DEFAULT_VERSION = 'auto'
 CHECK_NAME = 'docker_daemon'
 CONFIG_RELOAD_STATUS = ['start', 'die', 'stop', 'kill']  # used to trigger service discovery
+DEFAULT_INIT_RETRIES = 0
+DEFAULT_RETRY_INTERVAL = 20  # seconds
 
 # only used if no exclude rule was defined
-DEFAULT_CONTAINER_EXCLUDE = ["docker_image:gcr.io/google_containers/pause.*"]
+DEFAULT_CONTAINER_EXCLUDE = ["docker_image:gcr.io/google_containers/pause.*", "image_name:openshift/origin-pod"]
 
 log = logging.getLogger(__name__)
 
@@ -57,12 +60,20 @@ class DockerUtil:
         self.hostname = None
         self._default_gateway = None
 
+        # Keeps record of conffile lookup error, to disable log spam when
+        # the docker integration is not configured (dockerless host)
+        self._no_conf_file = False
+
         if 'init_config' in kwargs and 'instance' in kwargs:
             init_config = kwargs.get('init_config')
             instance = kwargs.get('instance')
         else:
             init_config, instance = self.get_check_config()
         self.set_docker_settings(init_config, instance)
+        self.last_init_retry = None
+        self.init_retry_interval = init_config.get('init_retry_interval', DEFAULT_RETRY_INTERVAL)
+        self.left_init_retries = init_config.get('init_retries', DEFAULT_INIT_RETRIES) + 1
+        self._client = None
 
         # At first run we'll just collect the events from the latest 60 secs
         self._latest_event_collection_ts = int(time.time()) - 60
@@ -70,32 +81,14 @@ class DockerUtil:
         # Memory cache for sha256 to image name mapping
         self._image_sha_to_name_mapping = {}
 
-        # Try to detect if we are on Swarm
-        self.fetch_swarm_state()
-
-        # Try to detect if an orchestrator is running
+        # orchestrator detection
         self._is_ecs = False
         self._is_rancher = False
         self._is_k8s = False
 
-        try:
-            containers = self.client.containers()
-            for co in containers:
-                if '/ecs-agent' in co.get('Names', ''):
-                    self._is_ecs = True
-                    break
-                elif '/rancher-agent' in co.get('Names', ''):
-                    self._is_rancher = True
-                    break
-        except Exception as e:
-            log.warning("Error while detecting orchestrator: %s" % e)
-            pass
-
-        try:
-            from utils.kubernetes import detect_is_k8s
-            self._is_k8s = detect_is_k8s()
-        except Exception:
-            self._is_k8s = False
+        # if we can't reach docker server there's no point in trying
+        if self.client:
+            self._init_orchestrators()
 
         # Build include/exclude patterns for containers
         self._include, self._exclude = instance.get('include', []), instance.get('exclude', [])
@@ -115,6 +108,59 @@ class DockerUtil:
         if self.filtering_enabled:
             self.build_filters()
 
+    @property
+    def client(self):
+        if self._client:
+            return self._client
+
+        # tried too many times, failing permanently
+        if self.left_init_retries == 0:
+            raise Exception("Docker client initialization failed permanently. "
+                "Docker-related features will fail.")
+
+        now = time.time()
+
+        # last retry was less than retry_interval ago
+        if self.last_init_retry and now <= self.last_init_retry + self.init_retry_interval:
+            return None
+        # else it's the first try, or last retry was long enough ago
+        self.last_init_retry = now
+        self.left_init_retries -= 1
+        try:
+            self._client = Client(**self.settings)
+            self._client.ping()
+            return self._client
+        except Exception as ex:
+            log.error("Failed to initialize the docker client. Docker-related features "
+                "will fail. Will retry %s time(s). Error: %s" % (self.left_init_retries, str(ex)))
+            self._client = None
+            return
+
+    def _init_orchestrators(self):
+        # Try to detect if we are on Swarm
+        self.fetch_swarm_state()
+        try:
+            containers = self.client.containers()
+            for co in containers:
+                if '/ecs-agent' in co.get('Names', ''):
+                    self._is_ecs = True
+                    break
+                elif '/rancher-agent' in co.get('Names', ''):
+                    self._is_rancher = True
+                    break
+        except Exception as e:
+            if self._no_conf_file:
+                log.debug("Error while detecting orchestrator: %s" % e)
+            else:
+                log.warning("Error while detecting orchestrator: %s" % e)
+            pass
+
+        try:
+            from utils.kubernetes import detect_is_k8s
+            self._is_k8s = detect_is_k8s()
+        except Exception:
+            self._is_k8s = False
+
     def get_check_config(self):
         """Read the config from docker_daemon.yaml"""
         from util import check_yaml
@@ -124,6 +170,7 @@ class DockerUtil:
             conf_path = get_conf_path(CHECK_NAME)
         except IOError:
             log.debug("Couldn't find docker settings, trying with defaults.")
+            self._no_conf_file = True
             return init_config, {}
 
         if conf_path is not None and os.path.exists(conf_path):
@@ -172,6 +219,10 @@ class DockerUtil:
     def get_events(self):
         self.events = []
         changed_container_ids = set()
+        if not self.client:
+            self.warning("Docker client is not initialized, events won't be collected.")
+            return self.events, changed_container_ids
+
         now = int(time.time())
 
         event_generator = self.client.events(since=self._latest_event_collection_ts,
@@ -240,6 +291,9 @@ class DockerUtil:
 
     def get_host_tags(self):
         tags = []
+        if not self.client:
+            log.warning("Docker client is not initialized, host tags will be missing.")
+            return tags
         version = self.client.version()
         if version and 'Version' in version:
             tags.append('docker_version:%s' % version['Version'])
@@ -250,10 +304,6 @@ class DockerUtil:
             tags.append('docker_swarm:active')
 
         return tags
-
-    @property
-    def client(self):
-        return Client(**self.settings)
 
     def set_docker_settings(self, init_config, instance):
         """Update docker settings"""
@@ -519,33 +569,36 @@ class DockerUtil:
         Result is cached for performance, no invalidation planned as image
         churn is low on typical hosts.
         """
-        if "Image" in co:
-            image = co.get('Image', '')
-            if image.startswith('sha256:'):
-                # Some orchestrators setup containers with image checksum instead of image name
-                try:
-                    if image in self._image_sha_to_name_mapping:
-                        return self._image_sha_to_name_mapping[image]
-                    else:
+        return self.image_name_resolver(co.get('Image', ''))
+
+    def image_name_resolver(self, image):
+        if image.startswith('sha256:'):
+            # Some orchestrators setup containers with image checksum instead of image name
+            try:
+                if image in self._image_sha_to_name_mapping:
+                    return self._image_sha_to_name_mapping[image]
+                else:
+                    try:
                         image_spec = self.client.inspect_image(image)
-                        try:
-                            name = image_spec['RepoTags'][0]
-                            self._image_sha_to_name_mapping[image] = name
-                            return name
-                        except (LookupError, TypeError) as e:
-                            log.debug("Failed finding image name in RepoTag, trying RepoDigests: %s", e)
-                        try:
-                            name = image_spec['RepoDigests'][0]
-                            name = name.split('@')[0]   # Last resort, we get the name with no tag
-                            self._image_sha_to_name_mapping[image] = name
-                            return name
-                        except (LookupError, TypeError) as e:
-                            log.warning("Failed finding image name in RepoTag and RepoDigests: %s", e)
-                except Exception:
-                    log.exception("Exception getting docker image name")
-            else:
-                return image
-        return None
+                    except NotFound:
+                        return
+                    try:
+                        name = image_spec['RepoTags'][0]
+                        self._image_sha_to_name_mapping[image] = name
+                        return name
+                    except (LookupError, TypeError) as e:
+                        log.debug("Failed finding image name in RepoTag, trying RepoDigests: %s", e)
+                    try:
+                        name = image_spec['RepoDigests'][0]
+                        name = name.split('@')[0]   # Last resort, we get the name with no tag
+                        self._image_sha_to_name_mapping[image] = name
+                        return name
+                    except (LookupError, TypeError) as e:
+                        log.debug("Failed finding image name in RepoTag and RepoDigests: %s", e)
+            except Exception as ex:
+                log.error("Exception getting docker image name: %s" % str(ex))
+        else:
+            return image
 
     @classmethod
     def container_name_extractor(cls, co):
@@ -594,7 +647,6 @@ class DockerUtil:
         except KeyError as e:
             log.exception("Missing container key: %s", e)
             raise ValueError("Invalid container dict")
-
 
     def inspect_container(self, co_id):
         """

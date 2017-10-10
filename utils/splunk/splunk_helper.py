@@ -1,14 +1,19 @@
 import time
 import requests
+import logging
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
-
+from requests.exceptions import HTTPError
 from checks import CheckException
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
 class SplunkHelper(object):
+
+    def __init__(self):
+        self.log = logging.getLogger('%s' % __name__)
+
     def saved_searches(self, instance_config):
         """
         Retrieves a list of saved searches from splunk
@@ -79,5 +84,9 @@ class SplunkHelper(object):
             'Content-Type': 'application/x-www-form-urlencoded'
         }
         resp = requests.post(url, headers=headers, data=payload, auth=auth, timeout=request_timeout_seconds, verify=verify_ssl_certificate)
-        resp.raise_for_status()
+        try:
+            resp.raise_for_status()
+        except HTTPError as error:
+            self.log.error("Received error response with status {} and body {}".format(resp.status_code, resp.content))
+            raise error
         return resp
