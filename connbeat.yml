@@ -2,8 +2,8 @@ connbeat:
   expose_process_info: true
   expose_cmdline: true
   expose_environ: false
-  aggregation: 10s
-  poll_interval: 2s
+  aggregation: 60s
+  poll_interval: 10s
   enable_tcp_diag: false
   enable_local_connections: true
   enable_docker: false
