@@ -1241,7 +1241,7 @@ def get_logging_config(cfg_path=None):
         logging_config['go-metro_log_file'] = '/var/log/stackstate/go-metro.log'
         logging_config['trace-agent_log_file'] = '/var/log/stackstate/trace-agent.log'
         logging_config['process-agent_log_file'] = '/var/log/stackstate/process-agent.log'
-        logging_config['log_to_syslog'] = True
+        logging_config['log_to_syslog'] = False
 
     config_path = get_config_path(cfg_path, os_name=system_os)
     config = ConfigParser.ConfigParser()
