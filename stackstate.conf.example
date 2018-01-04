@@ -1,7 +1,7 @@
 [Main]
 
 # The host of the StackState intake server to send Agent data to
-dd_url: http://localhost:7070/stsAgent/
+dd_url: http://localhost:7077/stsAgent/
 
 # If you need a proxy to connect to the Internet, provide the settings here (default: disabled)
 # proxy_host: my-proxy.com
