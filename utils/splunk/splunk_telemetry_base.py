@@ -79,7 +79,7 @@ class SplunkTelemetryBase(AgentCheck):
                     if message['type'] == "INFO" and message['text'] == "No matching fields exist":
                         self.log.info("Saved search %s did not produce any data." % saved_search.name)
                     else:
-                        self.log.info("Received unhandled message on saved search %, got: '%s'." % (saved_search.name, str(message)))
+                        self.log.info("Received unhandled message on saved search %s, got: '%s'." % (saved_search.name, str(message)))
 
             for data_point in self._extract_telemetry(saved_search, instance, response, sent_events):
                 count += 1
