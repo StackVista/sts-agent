@@ -12,7 +12,8 @@ connbeat:
 output:
   http:
     hosts: ["${STSURL}connbeat?api_key=${APIKEY}"]
-
+    compression_level: 6
+    
   #kafka:
   #  hosts: ["localhost:9092"]
   #  topic: connbeat
