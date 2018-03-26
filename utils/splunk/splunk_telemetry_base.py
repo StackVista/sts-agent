@@ -41,7 +41,7 @@ class SplunkTelemetryBase(AgentCheck):
         instance.update_status(current_time, self.status)
 
         try:
-            instance.instance_config.set_auth_session_key(self.splunkHelper.auth_session(instance.instance_config))
+            instance.instance_config.set_auth_session_key(self._auth_session(instance.instance_config))
 
             saved_searches = self._saved_searches(instance.instance_config)
             instance.saved_searches.update_searches(self.log, saved_searches)
@@ -185,6 +185,10 @@ class SplunkTelemetryBase(AgentCheck):
 
         response_body = self._do_post(dispatch_url, auth_session_key, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
         return response_body['sid']
+
+    def _auth_session(self, instance_config):
+        """ This method is mocked for testing. Do not change its behavior """
+        return self.splunkHelper.auth_session(instance_config)
 
     def _do_post(self, url, auth_session_key, payload, timeout, verify_ssl):
         """ This method is mocked for testing. Do not change its behavior """
