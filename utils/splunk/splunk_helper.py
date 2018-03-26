@@ -96,8 +96,6 @@ class SplunkHelper(object):
         return response
 
     def do_post(self, url, auth_session_key, payload, request_timeout_seconds, verify_ssl_certificate):
-        self.log.info("url %s" % url)
-        self.log.info("auth_session " + auth_session_key)
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Authorization': 'Splunk %s' % auth_session_key
