@@ -4,7 +4,6 @@ branches:
   only:
     - master
     - /^\d+\.\d+\.x$/ # release forked patches branch
-    - splunk_reduce_logins
 
 language: python
 python:
