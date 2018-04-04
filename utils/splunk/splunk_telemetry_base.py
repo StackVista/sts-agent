@@ -25,7 +25,7 @@ class SplunkTelemetryBase(AgentCheck):
 
     def check(self, instance):
         if 'url' not in instance:
-            raise CheckException('Splunk event instance missing "url" value.')
+            raise CheckException('Splunk metric/event instance missing "url" value.')
 
         current_time = self._current_time_seconds()
         url = instance["url"]
@@ -34,7 +34,7 @@ class SplunkTelemetryBase(AgentCheck):
 
         instance = self.instance_data[url]
         if not instance.initial_time_done(current_time):
-            self.log.debug("Skipping splunk event instance %s, waiting for initial time to expire" % url)
+            self.log.debug("Skipping splunk metric/event instance %s, waiting for initial time to expire" % url)
             return
 
         self.load_status()
@@ -48,7 +48,7 @@ class SplunkTelemetryBase(AgentCheck):
                 self._dispatch_and_await_search(instance, saved_searches)
         except Exception as e:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=instance.tags, message=str(e))
-            self.log.exception("Splunk event exception: %s" % str(e))
+            self.log.exception("Splunk exception: %s" % str(e))
             raise CheckException("Cannot connect to Splunk, please check your configuration. Message: " + str(e))
         else:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
@@ -76,7 +76,10 @@ class SplunkTelemetryBase(AgentCheck):
         for response in self._search(search_id, saved_search, instance):
             for message in response['messages']:
                 if message['type'] != "FATAL":
-                    self.log.info("Received unhandled message, got: " + str(message))
+                    if message['type'] == "INFO" and message['text'] == "No matching fields exist":
+                        self.log.info("Saved search %s did not produce any data." % saved_search.name)
+                    else:
+                        self.log.info("Received unhandled message on saved search %s, got: '%s'." % (saved_search.name, str(message)))
 
             for data_point in self._extract_telemetry(saved_search, instance, response, sent_events):
                 count += 1
@@ -171,13 +174,13 @@ class SplunkTelemetryBase(AgentCheck):
             current_time = self._current_time_seconds()
 
             if latest_time_epoch >= current_time:
-                self.log.warn("Caught up with old splunk data since %s" % parameters["dispatch.earliest_time"])
+                self.log.info("Caught up with old splunk data for saved search %s since %s" % (saved_search.name, parameters["dispatch.earliest_time"]))
                 saved_search.last_recover_latest_time_epoch_seconds = None
             else:
                 saved_search.last_recover_latest_time_epoch_seconds = latest_time_epoch
                 latest_epoch_datetime = get_utc_time(latest_time_epoch)
                 parameters["dispatch.latest_time"] = latest_epoch_datetime.strftime(self.TIME_FMT)
-                self.log.warn("Catching up with old splunk data from %s to %s " % (parameters["dispatch.earliest_time"],parameters["dispatch.latest_time"]))
+                self.log.info("Catching up with old splunk data for saved search %s from %s to %s " % (saved_search.name, parameters["dispatch.earliest_time"],parameters["dispatch.latest_time"]))
 
         self.log.debug("Dispatching saved search: %s starting at %s." % (saved_search.name, parameters["dispatch.earliest_time"]))
 
