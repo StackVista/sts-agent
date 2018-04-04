@@ -827,7 +827,7 @@ class ForwarderStatus(AgentStatus):
             "Transactions received: %s" % self.transactions_received,
             "Transactions flushed: %s" % self.transactions_flushed,
             "Transactions rejected: %s" % self.transactions_rejected,
-            "API Key Status: %s" % validate_api_key(config=get_config()),
+            # "API Key Status: %s" % validate_api_key(config=get_config()),
             "",
         ]
 
