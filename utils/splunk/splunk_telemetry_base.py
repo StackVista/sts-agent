@@ -25,7 +25,7 @@ class SplunkTelemetryBase(AgentCheck):
 
     def check(self, instance):
         if 'url' not in instance:
-            raise CheckException('Splunk event instance missing "url" value.')
+            raise CheckException('Splunk metric/event instance missing "url" value.')
 
         current_time = self._current_time_seconds()
         url = instance["url"]
@@ -34,13 +34,15 @@ class SplunkTelemetryBase(AgentCheck):
 
         instance = self.instance_data[url]
         if not instance.initial_time_done(current_time):
-            self.log.debug("Skipping splunk event instance %s, waiting for initial time to expire" % url)
+            self.log.debug("Skipping splunk metric/event instance %s, waiting for initial time to expire" % url)
             return
 
         self.load_status()
         instance.update_status(current_time, self.status)
 
         try:
+            instance.instance_config.set_auth_session_key(self._auth_session(instance.instance_config))
+
             saved_searches = self._saved_searches(instance.instance_config)
             instance.saved_searches.update_searches(self.log, saved_searches)
 
@@ -95,7 +97,10 @@ class SplunkTelemetryBase(AgentCheck):
         for response in self._search(search_id, saved_search, instance):
             for message in response['messages']:
                 if message['type'] != "FATAL":
-                    self.log.info("Received unhandled message, got: " + str(message))
+                    if message['type'] == "INFO" and message['text'] == "No matching fields exist":
+                        self.log.info("Saved search %s did not produce any data." % saved_search.name)
+                    else:
+                        self.log.info("Received unhandled message on saved search %s, got: '%s'." % (saved_search.name, str(message)))
 
             for data_point in self._extract_telemetry(saved_search, instance, response, sent_events):
                 count += 1
@@ -170,7 +175,7 @@ class SplunkTelemetryBase(AgentCheck):
         :return:
         """
         dispatch_url = '%s/services/saved/searches/%s/dispatch' % (instance_config.base_url, quote(saved_search.name))
-        auth = instance_config.get_auth_tuple()
+        auth_session_key = instance_config.get_auth_session_key()
 
         parameters = saved_search.parameters
         # json output_mode is mandatory for response parsing
@@ -190,22 +195,26 @@ class SplunkTelemetryBase(AgentCheck):
             current_time = self._current_time_seconds()
 
             if latest_time_epoch >= current_time:
-                self.log.warn("Caught up with old splunk data since %s" % parameters["dispatch.earliest_time"])
+                self.log.info("Caught up with old splunk data for saved search %s since %s" % (saved_search.name, parameters["dispatch.earliest_time"]))
                 saved_search.last_recover_latest_time_epoch_seconds = None
             else:
                 saved_search.last_recover_latest_time_epoch_seconds = latest_time_epoch
                 latest_epoch_datetime = get_utc_time(latest_time_epoch)
                 parameters["dispatch.latest_time"] = latest_epoch_datetime.strftime(self.TIME_FMT)
-                self.log.warn("Catching up with old splunk data from %s to %s " % (parameters["dispatch.earliest_time"],parameters["dispatch.latest_time"]))
+                self.log.info("Catching up with old splunk data for saved search %s from %s to %s " % (saved_search.name, parameters["dispatch.earliest_time"],parameters["dispatch.latest_time"]))
 
         self.log.debug("Dispatching saved search: %s starting at %s." % (saved_search.name, parameters["dispatch.earliest_time"]))
 
-        response_body = self._do_post(dispatch_url, auth, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
+        response_body = self._do_post(dispatch_url, auth_session_key, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
         return response_body['sid']
 
-    def _do_post(self, url, auth, payload, timeout, verify_ssl):
+    def _auth_session(self, instance_config):
         """ This method is mocked for testing. Do not change its behavior """
-        return self.splunkHelper.do_post(url, auth, payload, timeout, verify_ssl)
+        return self.splunkHelper.auth_session(instance_config)
+
+    def _do_post(self, url, auth_session_key, payload, timeout, verify_ssl):
+        """ This method is mocked for testing. Do not change its behavior """
+        return self.splunkHelper.do_post(url, auth_session_key, payload, timeout, verify_ssl)
 
     def _saved_searches(self, instance_config):
         """ This method is mocked for testing. Do not change its behavior """
