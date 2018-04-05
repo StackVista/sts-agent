@@ -44,12 +44,17 @@ class SplunkTelemetryBase(AgentCheck):
             saved_searches = self._saved_searches(instance.instance_config)
             instance.saved_searches.update_searches(self.log, saved_searches)
 
+            executed_searches = False
             for saved_searches in chunks(instance.saved_searches.searches, instance.saved_searches_parallel):
-                self._dispatch_and_await_search(instance, saved_searches)
+                executed_searches |= self._dispatch_and_await_search(instance, saved_searches)
+
+            if len(instance.saved_searches.searches) != 0 and not executed_searches:
+                raise CheckException("No saved search was successfully executed")
+
         except Exception as e:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=instance.tags, message=str(e))
             self.log.exception("Splunk event exception: %s" % str(e))
-            raise CheckException("Cannot connect to Splunk, please check your configuration. Message: " + str(e))
+            raise CheckException("Error getting Splunk data, please check your configuration. Message: " + str(e))
         else:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
 
@@ -58,14 +63,28 @@ class SplunkTelemetryBase(AgentCheck):
 
     def _dispatch_and_await_search(self, instance, saved_searches):
         start_time = self._current_time_seconds()
-        search_ids = [(self._dispatch_saved_search(instance.instance_config, saved_search), saved_search)
-                      for saved_search in saved_searches]
+        search_ids = []
 
+        for saved_search in saved_searches:
+            try:
+                sid = self._dispatch_saved_search(instance.instance_config, saved_search)
+                search_ids.append((sid, saved_search))
+            except Exception as e:
+                self.log.warn("Failed to dispatch saved search %s due to: %s" % (saved_search.name, e.message))
+
+        executed_searches = False
         for (sid, saved_search) in search_ids:
-            self.log.debug("Processing saved search: %s." % saved_search.name)
-            count = self._process_saved_search(sid, saved_search, instance)
-            duration = self._current_time_seconds() - start_time
-            self.log.debug("Save search done: %s in time %d with results %d" % (saved_search.name, duration, count))
+            try:
+                self.log.debug("Processing saved search: %s." % saved_search.name)
+                count = self._process_saved_search(sid, saved_search, instance)
+                duration = self._current_time_seconds() - start_time
+                self.log.debug("Save search done: %s in time %d with results %d" % (saved_search.name, duration, count))
+                executed_searches = True
+            except Exception as e:
+                self.log.warn("Failed to execute dispatched search %s with id %s due to: %s" % (saved_search.name, sid, e.message))
+
+        return executed_searches
+
 
     def _process_saved_search(self, search_id, saved_search, instance):
         count = 0
