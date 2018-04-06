@@ -27,7 +27,7 @@ class SplunkHelper(object):
         """
         auth_url = '%s/services/auth/login?output_mode=json' % instance_config.base_url
         auth_username, auth_password = instance_config.get_auth_tuple()
-        payload = urlencode({'username': auth_username, 'password': auth_password})
+        payload = urlencode({'username': auth_username, 'password': auth_password, 'cookie': 1})
         response = self.do_post(auth_url, "", payload, instance_config.default_request_timeout_seconds, instance_config.verify_ssl_certificate).json()
         session_key = response["sessionKey"]
         return session_key
