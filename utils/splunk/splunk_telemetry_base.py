@@ -41,7 +41,7 @@ class SplunkTelemetryBase(AgentCheck):
         instance.update_status(current_time, self.status)
 
         try:
-            instance.instance_config.set_auth_session_key(self._auth_session(instance.instance_config))
+            self._auth_session(instance.instance_config)
 
             saved_searches = self._saved_searches(instance.instance_config)
             instance.saved_searches.update_searches(self.log, saved_searches)
@@ -51,7 +51,7 @@ class SplunkTelemetryBase(AgentCheck):
                 executed_searches |= self._dispatch_and_await_search(instance, saved_searches)
 
             if len(instance.saved_searches.searches) != 0 and not executed_searches:
-                raise CheckException("No saved search was successfully executed")
+                raise CheckException("No saved search was successfully executed.")
 
         except Exception as e:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=instance.tags, message=str(e))
@@ -175,7 +175,6 @@ class SplunkTelemetryBase(AgentCheck):
         :return:
         """
         dispatch_url = '%s/services/saved/searches/%s/dispatch' % (instance_config.base_url, quote(saved_search.name))
-        auth_session_key = instance_config.get_auth_session_key()
 
         parameters = saved_search.parameters
         # json output_mode is mandatory for response parsing
@@ -205,16 +204,16 @@ class SplunkTelemetryBase(AgentCheck):
 
         self.log.debug("Dispatching saved search: %s starting at %s." % (saved_search.name, parameters["dispatch.earliest_time"]))
 
-        response_body = self._do_post(dispatch_url, auth_session_key, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
+        response_body = self._do_post(dispatch_url, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
         return response_body['sid']
 
     def _auth_session(self, instance_config):
         """ This method is mocked for testing. Do not change its behavior """
-        return self.splunkHelper.auth_session(instance_config)
+        self.splunkHelper.auth_session(instance_config)
 
-    def _do_post(self, url, auth_session_key, payload, timeout, verify_ssl):
+    def _do_post(self, url, payload, timeout, verify_ssl):
         """ This method is mocked for testing. Do not change its behavior """
-        return self.splunkHelper.do_post(url, auth_session_key, payload, timeout, verify_ssl)
+        return self.splunkHelper.do_post(url, payload, timeout, verify_ssl)
 
     def _saved_searches(self, instance_config):
         """ This method is mocked for testing. Do not change its behavior """

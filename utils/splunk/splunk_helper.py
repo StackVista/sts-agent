@@ -14,23 +14,31 @@ class SplunkHelper(object):
 
     def __init__(self):
         self.log = logging.getLogger('%s' % __name__)
+        self.requests_session = requests.session()
 
     def auth_session(self, instance_config):
         """
         retrieves a session token from Splunk to be used in subsequent requests
         session key expires after default 1 hour, configurable in Splunk: Settings -> Server -> General -> Session timeout
         Splunk returns the same key for the username/password combination.
+        Side affecting function.
         An expired key results in a 401 Unauthorized response with content:
           {"messages":[{"type":"WARN","text":"call not properly authenticated"}]}%
         :param instance_config: InstanceConfig, current check configuration
-        :return: session key, string
+        :return: nothing
         """
         auth_url = '%s/services/auth/login?output_mode=json' % instance_config.base_url
         auth_username, auth_password = instance_config.get_auth_tuple()
         payload = urlencode({'username': auth_username, 'password': auth_password, 'cookie': 1})
-        response = self.do_post(auth_url, "", payload, instance_config.default_request_timeout_seconds, instance_config.verify_ssl_certificate).json()
-        session_key = response["sessionKey"]
-        return session_key
+        response = self.do_post(auth_url, payload, instance_config.default_request_timeout_seconds, instance_config.verify_ssl_certificate)
+        response.raise_for_status()
+        response_json = response.json()
+
+        if 'Set-Cookie' in response.headers:
+            self.requests_session.headers.update({'Set-Cookie': response.headers['Set-Cookie']})
+        else:  # fallback to header, ref: http://docs.splunk.com/Documentation/Splunk/7.0.3/RESTREF/RESTaccess
+            session_key = response_json["sessionKey"]
+            self.requests_session.headers.update({'Authentication': "Splunk %s" % session_key})
 
     def saved_searches(self, instance_config):
         """
@@ -39,9 +47,7 @@ class SplunkHelper(object):
         :return: list of names of saved searches
         """
         search_url = '%s/services/saved/searches?output_mode=json&count=-1' % instance_config.base_url
-        auth_session_key = instance_config.get_auth_session_key()
-
-        response = self._do_get(search_url, auth_session_key, instance_config.default_request_timeout_seconds, instance_config.verify_ssl_certificate)
+        response = self._do_get(search_url, instance_config.default_request_timeout_seconds, instance_config.verify_ssl_certificate)
         return [entry["name"] for entry in response.json()["entry"]]
 
     def _search_chunk(self, instance_config, saved_search, search_id, offset, count):
@@ -55,8 +61,7 @@ class SplunkHelper(object):
         :return: raw json response from splunk
         """
         search_url = '%s/services/search/jobs/%s/results?output_mode=json&offset=%s&count=%s' % (instance_config.base_url, search_id, offset, count)
-        auth_session_key = instance_config.get_auth_session_key()
-        response = self._do_get(search_url, auth_session_key, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate)
+        response = self._do_get(search_url, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate)
         retry_count = 0
 
         # retry until information is available.
@@ -65,7 +70,7 @@ class SplunkHelper(object):
                 raise CheckException("maximum retries reached for " + instance_config.base_url + " with search id " + search_id)
             retry_count += 1
             time.sleep(saved_search.search_seconds_between_retries)
-            response = self._do_get(search_url, auth_session_key, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate)
+            response = self._do_get(search_url, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate)
 
         return response.json()
 
@@ -89,18 +94,16 @@ class SplunkHelper(object):
             offset += nr_of_results
         return results
 
-    def _do_get(self, url, auth_session_key, request_timeout_seconds, verify_ssl_certificate):
-        headers = {'Authorization': 'Splunk %s' % auth_session_key}
-        response = requests.get(url, headers=headers, timeout=request_timeout_seconds, verify=verify_ssl_certificate)
+    def _do_get(self, url, request_timeout_seconds, verify_ssl_certificate):
+        response = self.requests_session.get(url, timeout=request_timeout_seconds, verify=verify_ssl_certificate)
         response.raise_for_status()
         return response
 
-    def do_post(self, url, auth_session_key, payload, request_timeout_seconds, verify_ssl_certificate):
+    def do_post(self, url, payload, request_timeout_seconds, verify_ssl_certificate):
         headers = {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': 'Splunk %s' % auth_session_key
+            'Content-Type': 'application/x-www-form-urlencoded'
         }
-        resp = requests.post(url, headers=headers, data=payload, timeout=request_timeout_seconds, verify=verify_ssl_certificate)
+        resp = self.requests_session.post(url, headers=headers, data=payload, timeout=request_timeout_seconds, verify=verify_ssl_certificate)
         try:
             resp.raise_for_status()
         except HTTPError as error:
