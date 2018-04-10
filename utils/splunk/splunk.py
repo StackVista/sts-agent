@@ -81,19 +81,12 @@ class SplunkInstanceConfig(object):
         self.base_url = instance['url']
         self.username = instance['username']
         self.password = instance['password']
-        self.auth_session_key = None
 
     def get_or_default(self, field):
         return self.init_config.get(field, self.defaults[field])
 
     def get_auth_tuple(self):
         return self.username, self.password
-
-    def set_auth_session_key(self, session_key):
-        self.auth_session_key = session_key
-
-    def get_auth_session_key(self):
-        return self.auth_session_key
 
 
 class SplunkTelemetryInstanceConfig(SplunkInstanceConfig):
