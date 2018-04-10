@@ -53,15 +53,20 @@ class SplunkTelemetryBase(AgentCheck):
             if len(instance.saved_searches.searches) != 0 and not executed_searches:
                 raise CheckException("No saved search was successfully executed.")
 
+            # If no service checks were produced, everything is ok
+            if len(self.service_checks) is 0:
+                self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
         except Exception as e:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=instance.tags, message=str(e))
             self.log.exception("Splunk event exception: %s" % str(e))
             raise CheckException("Error getting Splunk data, please check your configuration. Message: " + str(e))
-        else:
-            self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
 
     def get_instance(self, instance, current_time):
         raise NotImplementedError
+
+    def _log_warning(self, instance, msg):
+        self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.WARNING, tags=instance.tags, message=msg)
+        self.log.warn(msg)
 
     def _dispatch_and_await_search(self, instance, saved_searches):
         start_time = self._current_time_seconds()
@@ -72,7 +77,7 @@ class SplunkTelemetryBase(AgentCheck):
                 sid = self._dispatch_saved_search(instance.instance_config, saved_search)
                 search_ids.append((sid, saved_search))
             except Exception as e:
-                self.log.warn("Failed to dispatch saved search %s due to: %s" % (saved_search.name, e.message))
+                self._log_warning(instance, "Failed to dispatch saved search '%s' due to: %s" % (saved_search.name, e.message))
 
         executed_searches = False
         for (sid, saved_search) in search_ids:
@@ -83,13 +88,13 @@ class SplunkTelemetryBase(AgentCheck):
                 self.log.debug("Save search done: %s in time %d with results %d" % (saved_search.name, duration, count))
                 executed_searches = True
             except Exception as e:
-                self.log.warn("Failed to execute dispatched search %s with id %s due to: %s" % (saved_search.name, sid, e.message))
+                self._log_warning(instance, "Failed to execute dispatched search '%s' with id %s due to: %s" % (saved_search.name, sid, e.message))
 
         return executed_searches
 
-
     def _process_saved_search(self, search_id, saved_search, instance):
-        count = 0
+        produced_count = 0
+        fail_count = 0
 
         sent_events = saved_search.last_observed_telemetry
         saved_search.last_observed_telemetry = set()
@@ -103,33 +108,39 @@ class SplunkTelemetryBase(AgentCheck):
                         self.log.info("Received unhandled message on saved search %s, got: '%s'." % (saved_search.name, str(message)))
 
             for data_point in self._extract_telemetry(saved_search, instance, response, sent_events):
-                count += 1
-                self._apply(**data_point)
+                if data_point is None:
+                    fail_count += 1
+                else:
+                    self._apply(**data_point)
+                    produced_count += 1
 
-        return count
+        if fail_count > 0:
+            self._log_warning(instance, "%d telemetry records failed to process when running saved search '%s'" % (fail_count, saved_search.name))
+
+        return produced_count
 
     def _extract_telemetry(self, saved_search, instance, result, sent_already):
         for data in result["results"]:
             # We need a unique identifier for splunk events, according to https://answers.splunk.com/answers/334613/is-there-a-unique-event-id-for-each-event-in-the-i.html
             # this can be (server, index, _cd)
 
-            if not saved_search.unique_key_fields:  # empty list, whole record
-                current_id = tuple(data)
-            else:
-                current_id = tuple(data[field] for field in saved_search.unique_key_fields)
-
-            timestamp = time_to_seconds(take_required_field("_time", data))
-
-            if timestamp > saved_search.last_observed_timestamp:
-                saved_search.last_observed_telemetry = {current_id}  # make a new set
-                saved_search.last_observed_timestamp = timestamp
-            elif timestamp == saved_search.last_observed_timestamp:
-                saved_search.last_observed_telemetry.add(current_id)
-
-            if current_id in sent_already:
-                continue
-
             try:
+                if not saved_search.unique_key_fields:  # empty list, whole record
+                    current_id = tuple(data)
+                else:
+                    current_id = tuple(data[field] for field in saved_search.unique_key_fields)
+
+                timestamp = time_to_seconds(take_required_field("_time", data))
+
+                if timestamp > saved_search.last_observed_timestamp:
+                    saved_search.last_observed_telemetry = {current_id}  # make a new set
+                    saved_search.last_observed_timestamp = timestamp
+                elif timestamp == saved_search.last_observed_timestamp:
+                    saved_search.last_observed_telemetry.add(current_id)
+
+                if current_id in sent_already:
+                    continue
+
                 telemetry = saved_search.retrieve_fields(data)
                 event_tags = [
                     "%s:%s" % (key, value)
@@ -138,9 +149,8 @@ class SplunkTelemetryBase(AgentCheck):
                 event_tags.extend(instance.tags)
                 telemetry.update({"tags": event_tags, "timestamp": timestamp})
                 yield telemetry
-            except LookupError as e:
-                # Error in retrieving fields, skip this item and continue with next item in results
-                self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.WARNING, tags=instance.tags, message=str(e))
+            except Exception:
+                yield None
 
     def _apply(self, **kwargs):
         """ How the telemetry info should be sent by the check, e.g., as event, guage, etc. """
