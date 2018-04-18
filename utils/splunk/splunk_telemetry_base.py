@@ -1,11 +1,9 @@
 import time
-from urllib import quote
 
 from checks.check_status import CheckData
 from checks import AgentCheck, CheckException
 
 from utils.splunk.splunk import chunks, take_required_field, time_to_seconds, get_utc_time
-from utils.splunk.splunk_helper import SplunkHelper
 
 
 class SplunkTelemetryBase(AgentCheck):
@@ -19,7 +17,6 @@ class SplunkTelemetryBase(AgentCheck):
         # Data to keep over check runs, keyed by instance url
         self.persistence_check_name = persistence_check_name
         self.instance_data = dict()
-        self.splunkHelper = SplunkHelper()
         self.status = None
         self.load_status()
 
@@ -41,9 +38,9 @@ class SplunkTelemetryBase(AgentCheck):
         instance.update_status(current_time, self.status)
 
         try:
-            self._auth_session(instance.instance_config)
+            self._auth_session(instance)
 
-            saved_searches = self._saved_searches(instance.instance_config)
+            saved_searches = self._saved_searches(instance)
             instance.saved_searches.update_searches(self.log, saved_searches)
 
             executed_searches = False
@@ -74,7 +71,7 @@ class SplunkTelemetryBase(AgentCheck):
 
         for saved_search in saved_searches:
             try:
-                sid = self._dispatch_saved_search(instance.instance_config, saved_search)
+                sid = self._dispatch_saved_search(instance, saved_search)
                 search_ids.append((sid, saved_search))
             except Exception as e:
                 self._log_warning(instance, "Failed to dispatch saved search '%s' due to: %s" % (saved_search.name, e.message))
@@ -177,15 +174,13 @@ class SplunkTelemetryBase(AgentCheck):
         """
         pass
 
-    def _dispatch_saved_search(self, instance_config, saved_search):
+    def _dispatch_saved_search(self, instance, saved_search):
         """
         Initiate a saved search, returning the search id
-        :param instance_config: Configuration of the splunk instance
+        :param instance: Configuration of the splunk instance
         :param saved_search: Configuration of the saved search
         :return:
         """
-        dispatch_url = '%s/services/saved/searches/%s/dispatch' % (instance_config.base_url, quote(saved_search.name))
-
         parameters = saved_search.parameters
         # json output_mode is mandatory for response parsing
         parameters["output_mode"] = "json"
@@ -214,24 +209,23 @@ class SplunkTelemetryBase(AgentCheck):
 
         self.log.debug("Dispatching saved search: %s starting at %s." % (saved_search.name, parameters["dispatch.earliest_time"]))
 
-        response_body = self._do_post(dispatch_url, parameters, saved_search.request_timeout_seconds, instance_config.verify_ssl_certificate).json()
-        return response_body['sid']
+        return self._dispatch(instance, saved_search, parameters)
 
-    def _auth_session(self, instance_config):
+    def _auth_session(self, instance):
         """ This method is mocked for testing. Do not change its behavior """
-        self.splunkHelper.auth_session(instance_config)
+        instance.splunkHelper.auth_session(instance.instance_config)
 
-    def _do_post(self, url, payload, timeout, verify_ssl):
+    def _dispatch(self, instance, saved_search, parameters):
         """ This method is mocked for testing. Do not change its behavior """
-        return self.splunkHelper.do_post(url, payload, timeout, verify_ssl)
+        return instance.splunkHelper.dispatch(saved_search, parameters)
 
-    def _saved_searches(self, instance_config):
+    def _saved_searches(self, instance):
         """ This method is mocked for testing. Do not change its behavior """
-        return self.splunkHelper.saved_searches(instance_config)
+        return instance.splunkHelper.saved_searches(instance.instance_config)
 
     def _search(self, search_id, saved_search, instance):
         """ This method is mocked for testing. Do not change its behavior """
-        return self.splunkHelper.saved_search_results(search_id, saved_search, instance.instance_config)
+        return instance.splunkHelper.saved_search_results(search_id, saved_search, instance.instance_config)
 
     def _current_time_seconds(self):
         """ This method is mocked for testing. Do not change its behavior """
