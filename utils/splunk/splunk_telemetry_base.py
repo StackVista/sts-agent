@@ -213,7 +213,7 @@ class SplunkTelemetryBase(AgentCheck):
 
     def _auth_session(self, instance):
         """ This method is mocked for testing. Do not change its behavior """
-        instance.splunkHelper.auth_session(instance.instance_config)
+        instance.splunkHelper.auth_session()
 
     def _dispatch(self, instance, saved_search, parameters):
         """ This method is mocked for testing. Do not change its behavior """
@@ -221,11 +221,11 @@ class SplunkTelemetryBase(AgentCheck):
 
     def _saved_searches(self, instance):
         """ This method is mocked for testing. Do not change its behavior """
-        return instance.splunkHelper.saved_searches(instance.instance_config)
+        return instance.splunkHelper.saved_searches()
 
     def _search(self, search_id, saved_search, instance):
         """ This method is mocked for testing. Do not change its behavior """
-        return instance.splunkHelper.saved_search_results(search_id, saved_search, instance.instance_config)
+        return instance.splunkHelper.saved_search_results(search_id, saved_search)
 
     def _current_time_seconds(self):
         """ This method is mocked for testing. Do not change its behavior """
