@@ -1,4 +1,5 @@
 from utils.splunk.splunk import SplunkSavedSearch
+from utils.splunk.splunk_helper import SplunkHelper
 
 
 class SplunkTelemetrySavedSearch(SplunkSavedSearch):
@@ -39,6 +40,7 @@ class SplunkTelemetrySavedSearch(SplunkSavedSearch):
 class SplunkTelemetryInstance(object):
     def __init__(self, current_time, instance, instance_config, saved_searches):
         self.instance_config = instance_config
+        self.splunkHelper = SplunkHelper(instance_config)
 
         # no saved searches may be configured
         if not isinstance(instance['saved_searches'], list):
