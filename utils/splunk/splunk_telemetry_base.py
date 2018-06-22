@@ -220,7 +220,7 @@ class SplunkTelemetryBase(AgentCheck):
 
     def _dispatch(self, instance, saved_search, splunk_user, splunk_app, parameters):
         """ This method is mocked for testing. Do not change its behavior """
-        return instance.splunkHelper.dispatch(saved_search, splunk_owner, splunk_app, parameters)
+        return instance.splunkHelper.dispatch(saved_search, splunk_user, splunk_app, parameters)
 
     def _saved_searches(self, instance):
         """ This method is mocked for testing. Do not change its behavior """

@@ -90,15 +90,15 @@ class SplunkHelper(object):
             offset += nr_of_results
         return results
 
-    def dispatch(self, saved_search, splunk_owner, splunk_app, parameters):
+    def dispatch(self, saved_search, splunk_user, splunk_app, parameters):
         """
         :param saved_search: The saved search to dispatch
-        :param splunk_owner: Splunk user that dispatches the saved search
+        :param splunk_user: Splunk user that dispatches the saved search
         :param splunk_app: Splunk App under which the saved search is located
         :param parameters: Parameters of the saved search
         :return: the sid of the saved search
         """
-        dispatch_path = '/servicesNS/%s/%s/saved/searches/%s/dispatch' % (splunk_owner, splunk_app, quote(saved_search.name))
+        dispatch_path = '/servicesNS/%s/%s/saved/searches/%s/dispatch' % (splunk_user, splunk_app, quote(saved_search.name))
         response_body = self._do_post(dispatch_path, parameters, saved_search.request_timeout_seconds).json()
         return response_body["sid"]
 
