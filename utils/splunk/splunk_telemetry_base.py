@@ -8,7 +8,7 @@ from utils.splunk.splunk import chunks, take_required_field, time_to_seconds, ge
 
 class SplunkTelemetryBase(AgentCheck):
     SERVICE_CHECK_NAME = None  # must be set in the subclasses
-    basic_default_fields = {'host', 'index', 'linecount', 'punct', 'source', 'sourcetype', 'splunk_server', 'timestamp'}
+    basic_default_fields = {'index', 'linecount', 'punct', 'source', 'sourcetype', 'splunk_server', 'timestamp'}
     date_default_fields = {'date_hour', 'date_mday', 'date_minute', 'date_month', 'date_second', 'date_wday', 'date_year', 'date_zone', 'timestartpos', 'timeendpos'}
     TIME_FMT = "%Y-%m-%dT%H:%M:%S.%f%z"
 
