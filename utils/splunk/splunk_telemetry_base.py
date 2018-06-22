@@ -146,7 +146,8 @@ class SplunkTelemetryBase(AgentCheck):
                 event_tags.extend(instance.tags)
                 telemetry.update({"tags": event_tags, "timestamp": timestamp})
                 yield telemetry
-            except Exception:
+            except Exception as e:
+                self.log.exception(e)
                 yield None
 
     def _apply(self, **kwargs):
