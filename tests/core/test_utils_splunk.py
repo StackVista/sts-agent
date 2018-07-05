@@ -67,7 +67,8 @@ class TestUtilsSplunk(TestCase):
             'default_verify_ssl_certificate': False,
             'default_batch_size': 1000,
             'default_saved_searches_parallel': 3,
-            'default_unique_key_fields': ["_bkt", "_cd"]
+            'default_unique_key_fields': ["_bkt", "_cd"],
+            'default_app': 'default'
         })
 
         splunk_helper = SplunkHelper(instance_config)
@@ -99,7 +100,8 @@ class TestUtilsSplunk(TestCase):
             'default_verify_ssl_certificate': False,
             'default_batch_size': 1000,
             'default_saved_searches_parallel': 3,
-            'default_unique_key_fields': ["_bkt", "_cd"]
+            'default_unique_key_fields': ["_bkt", "_cd"],
+            'default_app': 'default'
         })
 
         splunk_helper = SplunkHelper(instance_config)
@@ -127,6 +129,8 @@ class TestUtilsSplunk(TestCase):
 
     def test_splunk_dispatch(self):
 
+        username = "admin"
+        appname = "myapp"
         instance_config = SplunkInstanceConfig({
             'url': 'dummy', 'username': 'admin', 'password': 'admin'
         }, {}, {
@@ -136,7 +140,8 @@ class TestUtilsSplunk(TestCase):
             'default_verify_ssl_certificate': False,
             'default_batch_size': 1000,
             'default_saved_searches_parallel': 3,
-            'default_unique_key_fields': ["_bkt", "_cd"]
+            'default_unique_key_fields': ["_bkt", "_cd"],
+            'default_app': 'default'
         })
 
         splunk_helper = SplunkHelper(instance_config)
@@ -145,7 +150,7 @@ class TestUtilsSplunk(TestCase):
 
         def _mocked_do_post(*args, **kwargs):
             self.assertEquals(args,
-                              ('/services/saved/searches/%s/dispatch' % quote(saved_search.name),
+                              ('/servicesNS/%s/%s/saved/searches/%s/dispatch' % (username, appname, quote(saved_search.name)),
                                params,
                                5
                                ))
@@ -158,7 +163,7 @@ class TestUtilsSplunk(TestCase):
 
         setattr(splunk_helper, "_do_post", _mocked_do_post)
 
-        res = splunk_helper.dispatch(saved_search, params)
+        res = splunk_helper.dispatch(saved_search, username, appname, params)
         self.assertEquals(res, "zesid")
 
 class TestSavedSearches(TestCase):
@@ -176,7 +181,8 @@ class TestSavedSearches(TestCase):
             'default_verify_ssl_certificate': False,
             'default_batch_size': 1000,
             'default_saved_searches_parallel': 3,
-            'default_unique_key_fields': ["_bkt", "_cd"]
+            'default_unique_key_fields': ["_bkt", "_cd"],
+            'default_app': 'default'
         })
 
         saved_search_components = SplunkSavedSearch(instance_config, {"name": "components", "parameters": {}})
