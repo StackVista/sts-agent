@@ -56,7 +56,7 @@ class SplunkHelper(object):
         :param count: the maximum number of elements expecting to be returned by the API call
         :return: raw json response from splunk
         """
-        search_path = '/services/search/jobs/%s/results?output_mode=json&offset=%s&count=%s' % (search_id, offset, count)
+        search_path = '/servicesNS/-/-/search/jobs/%s/results?output_mode=json&offset=%s&count=%s' % (search_id, offset, count)
         response = self._do_get(search_path, saved_search.request_timeout_seconds, self.instance_config.verify_ssl_certificate)
         retry_count = 0
 
@@ -90,13 +90,15 @@ class SplunkHelper(object):
             offset += nr_of_results
         return results
 
-    def dispatch(self, saved_search, parameters):
+    def dispatch(self, saved_search, splunk_user, splunk_app, parameters):
         """
         :param saved_search: The saved search to dispatch
+        :param splunk_user: Splunk user that dispatches the saved search
+        :param splunk_app: Splunk App under which the saved search is located
         :param parameters: Parameters of the saved search
         :return: the sid of the saved search
         """
-        dispatch_path = '/services/saved/searches/%s/dispatch' % quote(saved_search.name)
+        dispatch_path = '/servicesNS/%s/%s/saved/searches/%s/dispatch' % (splunk_user, splunk_app, quote(saved_search.name))
         response_body = self._do_post(dispatch_path, parameters, saved_search.request_timeout_seconds).json()
         return response_body["sid"]
 

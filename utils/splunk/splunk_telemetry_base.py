@@ -146,7 +146,8 @@ class SplunkTelemetryBase(AgentCheck):
                 event_tags.extend(instance.tags)
                 telemetry.update({"tags": event_tags, "timestamp": timestamp})
                 yield telemetry
-            except Exception:
+            except Exception as e:
+                self.log.exception(e)
                 yield None
 
     def _apply(self, **kwargs):
@@ -186,6 +187,8 @@ class SplunkTelemetryBase(AgentCheck):
         parameters["output_mode"] = "json"
 
         earliest_epoch_datetime = get_utc_time(saved_search.last_observed_timestamp)
+        splunk_user = instance.instance_config.username
+        splunk_app = saved_search.app
 
         parameters["dispatch.time_format"] = self.TIME_FMT
         parameters["dispatch.earliest_time"] = earliest_epoch_datetime.strftime(self.TIME_FMT)
@@ -209,15 +212,15 @@ class SplunkTelemetryBase(AgentCheck):
 
         self.log.debug("Dispatching saved search: %s starting at %s." % (saved_search.name, parameters["dispatch.earliest_time"]))
 
-        return self._dispatch(instance, saved_search, parameters)
+        return self._dispatch(instance, saved_search, splunk_user, splunk_app, parameters)
 
     def _auth_session(self, instance):
         """ This method is mocked for testing. Do not change its behavior """
         instance.splunkHelper.auth_session()
 
-    def _dispatch(self, instance, saved_search, parameters):
+    def _dispatch(self, instance, saved_search, splunk_user, splunk_app, parameters):
         """ This method is mocked for testing. Do not change its behavior """
-        return instance.splunkHelper.dispatch(saved_search, parameters)
+        return instance.splunkHelper.dispatch(saved_search, splunk_user, splunk_app, parameters)
 
     def _saved_searches(self, instance):
         """ This method is mocked for testing. Do not change its behavior """
