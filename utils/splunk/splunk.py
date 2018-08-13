@@ -24,8 +24,7 @@ class SplunkSavedSearch(object):
         self.optional_fields = None  # allowed to be absent
         self.fixed_fields = None  # fields that are filled in by the check
 
-        self.parameters = saved_search_instance['parameters']
-
+        self.parameters = dict(saved_search_instance.get("parameters", instance_config.default_parameters))
         self.request_timeout_seconds = int(saved_search_instance.get('request_timeout_seconds', instance_config.default_request_timeout_seconds))
         self.search_max_retry_count = int(saved_search_instance.get('search_max_retry_count', instance_config.default_search_max_retry_count))
         self.search_seconds_between_retries = int(saved_search_instance.get('search_seconds_between_retries', instance_config.default_search_seconds_between_retries))
@@ -78,6 +77,7 @@ class SplunkInstanceConfig(object):
         self.default_batch_size = self.get_or_default('default_batch_size')
         self.default_saved_searches_parallel = self.get_or_default('default_saved_searches_parallel')
         self.default_app = self.get_or_default('default_app')
+        self.default_parameters = self.get_or_default('default_parameters')
 
         self.verify_ssl_certificate = bool(instance.get('verify_ssl_certificate', self.default_verify_ssl_certificate))
         self.base_url = instance['url']
