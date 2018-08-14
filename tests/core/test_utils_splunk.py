@@ -68,7 +68,8 @@ class TestUtilsSplunk(TestCase):
             'default_batch_size': 1000,
             'default_saved_searches_parallel': 3,
             'default_unique_key_fields': ["_bkt", "_cd"],
-            'default_app': 'default'
+            'default_app': 'default',
+            'default_parameters': {}
         })
 
         splunk_helper = SplunkHelper(instance_config)
@@ -101,7 +102,8 @@ class TestUtilsSplunk(TestCase):
             'default_batch_size': 1000,
             'default_saved_searches_parallel': 3,
             'default_unique_key_fields': ["_bkt", "_cd"],
-            'default_app': 'default'
+            'default_app': 'default',
+            'default_parameters': {}
         })
 
         splunk_helper = SplunkHelper(instance_config)
@@ -141,7 +143,8 @@ class TestUtilsSplunk(TestCase):
             'default_batch_size': 1000,
             'default_saved_searches_parallel': 3,
             'default_unique_key_fields': ["_bkt", "_cd"],
-            'default_app': 'default'
+            'default_app': 'default',
+            'default_parameters': {}
         })
 
         splunk_helper = SplunkHelper(instance_config)
@@ -182,7 +185,8 @@ class TestSavedSearches(TestCase):
             'default_batch_size': 1000,
             'default_saved_searches_parallel': 3,
             'default_unique_key_fields': ["_bkt", "_cd"],
-            'default_app': 'default'
+            'default_app': 'default',
+            'default_parameters': {}
         })
 
         saved_search_components = SplunkSavedSearch(instance_config, {"name": "components", "parameters": {}})
