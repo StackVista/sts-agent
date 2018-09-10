@@ -1,3 +1,9 @@
+import defusedxml
+
+# believed to make XMLRPC parser safe
+# from various XML based attacks
+defusedxml.defuse_stdlib()
+
 try:
     # try to import accelerated backed by c library parser
     import xml.etree.cElementTree as ET
