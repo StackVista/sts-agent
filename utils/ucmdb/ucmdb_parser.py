@@ -1,9 +1,9 @@
 try:
     # try to import accelerated backed by c library parser
-    import xml.etree.cElementTree as ET
+    import defusedxml.cElementTree as ET
 except ImportError:
     # failover to pure python implementation of parser
-    import xml.etree.ElementTree as ET
+    import defusedxml.ElementTree as ET
 
 class UcmdbCIParser(object):
     # SAX style parser for UCMDB TQL query result xml

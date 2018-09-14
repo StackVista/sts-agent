@@ -18,6 +18,7 @@
 ###########################################################
 
 boto==2.46.1
+defusedxml==0.5.0
 # utils/platform.py
 docker-py==1.10.6
 # utils/service_discovery/config_stores.py

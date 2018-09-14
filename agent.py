@@ -11,9 +11,14 @@ import signal
 import sys
 import time
 import xmlrpclib
+import defusedxml
 
 # For pickle & PID files, see issue 293
 os.umask(022)
+
+# believed to make XMLRPC parser safe
+# from various XML based attacks
+defusedxml.defuse_stdlib()
 
 # 3p
 try:
