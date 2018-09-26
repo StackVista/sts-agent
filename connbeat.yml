@@ -9,6 +9,9 @@ connbeat:
   enable_docker: false
   docker_environment: ["PATH", "MESOS_TASK_ID"]
 
+processors:
+  - add_cloud_metadata:
+
 output:
   http:
     hosts: ["${STSURL}connbeat?api_key=${APIKEY}"]
