@@ -395,7 +395,8 @@ class TestCore(unittest.TestCase):
             'https': 'http://localhost:3128',
             'no': '127.0.0.1,localhost,169.254.169.254'
         }
-        environ_proxies = get_environ_proxies("https://www.google.com")
+        environ_proxies = {k:v for k,v in get_environ_proxies("https://www.google.com").iteritems()
+                           if k in ["http", "https", "no"]}
         self.assertEquals(expected_proxies, environ_proxies,
                           (expected_proxies, environ_proxies))
 
