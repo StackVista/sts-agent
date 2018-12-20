@@ -257,27 +257,43 @@ class TransactionManager(object):
         self._running_flushes -= 1
         self._finished_flushes += 1
         tr.inc_error_count()
-        tr.compute_next_flush(self._MAX_WAIT_FOR_REPLAY)
-        log.warn("Transaction %d in error (%s error%s), it will be replayed after %s",
-                 tr.get_id(),
-                 tr.get_error_count(),
-                 plural(tr.get_error_count()),
-                 tr.get_next_flush())
-        self._endpoints_errors[tr._endpoint] = self._endpoints_errors.get(tr._endpoint, 0) + 1
-        # Endpoint failed too many times, it's probably an enpoint issue
-        # Let's avoid blocking on it
-        if self._endpoints_errors[tr._endpoint] == self._MAX_ENDPOINT_ERRORS:
-            new_trs_to_flush = []
-            for transaction in self._trs_to_flush:
-                if transaction._endpoint != tr._endpoint:
-                    new_trs_to_flush.append(transaction)
-                else:
-                    transaction.compute_next_flush(self._MAX_WAIT_FOR_REPLAY)
-            log.debug('Endpoint %s seems down, removed %s transaction from current flush',
-                      tr._endpoint,
-                      len(self._trs_to_flush) - len(new_trs_to_flush))
+        if tr.get_error_count() > self._MAX_ENDPOINT_ERRORS:
+            log.warn("Transaction %d failed too many (%d) times, removing",
+                     tr.get_id(),
+                     tr.get_error_count())
+            self._remove(tr)
+            self._transactions_flushed += 1
+            self.print_queue_stats()
+            self._transactions_rejected += 1
+            ForwarderStatus(
+                queue_length=self._total_count,
+                queue_size=self._total_size,
+                flush_count=self._flush_count,
+                transactions_received=self._transactions_received,
+                transactions_flushed=self._transactions_flushed,
+                transactions_rejected=self._transactions_rejected).persist()
+        else:
+            tr.compute_next_flush(self._MAX_WAIT_FOR_REPLAY)
+            log.warn("Transaction %d in error (%s error%s), it will be replayed after %s",
+                     tr.get_id(),
+                     tr.get_error_count(),
+                     plural(tr.get_error_count()),
+                     tr.get_next_flush())
+            self._endpoints_errors[tr._endpoint] = self._endpoints_errors.get(tr._endpoint, 0) + 1
+            # Endpoint failed too many times, it's probably an enpoint issue
+            # Let's avoid blocking on it
+            if self._endpoints_errors[tr._endpoint] == self._MAX_ENDPOINT_ERRORS:
+                new_trs_to_flush = []
+                for transaction in self._trs_to_flush:
+                    if transaction._endpoint != tr._endpoint:
+                        new_trs_to_flush.append(transaction)
+                    else:
+                        transaction.compute_next_flush(self._MAX_WAIT_FOR_REPLAY)
+                log.debug('Endpoint %s seems down, removed %s transaction from current flush',
+                          tr._endpoint,
+                          len(self._trs_to_flush) - len(new_trs_to_flush))
 
-            self._trs_to_flush = new_trs_to_flush
+                self._trs_to_flush = new_trs_to_flush
 
     def tr_error_reject_request(self, tr, response_code):
         self._running_flushes -= 1

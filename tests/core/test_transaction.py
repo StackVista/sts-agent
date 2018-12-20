@@ -283,6 +283,22 @@ class TestTransaction(unittest.TestCase):
         trManager.flush()
         self.assertEqual(len(trManager._transactions), 0)
 
+    def test_drop_repeated_error(self):
+        trManager = TransactionManager(timedelta(seconds=0), MAX_QUEUE_SIZE,
+                                       timedelta(seconds=0), max_endpoint_errors=1)
+
+        # Fail it once
+        oneTrSize = 10
+        trManager.append(memTransaction(oneTrSize, trManager))
+
+        # It should still be there after flush
+        trManager.flush()
+        self.assertEqual(len(trManager._transactions), 1)
+
+        #Try again, now it should be gone
+        trManager.flush()
+        self.assertEqual(len(trManager._transactions), 0)
+
     @attr('unix')
     def test_parallelism(self):
         step = 4

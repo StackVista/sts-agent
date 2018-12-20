@@ -23,7 +23,7 @@ git clone git@github.com:StackVista/sts-agent.git
 # Create a virtual environment and install the dependencies:
 cd sts-agent
 bundle install
-rake setup_env
+bundle exec rake setup_env
 # NOTE: on mac osx python2 might be missing as an exectuable, failing the setup_env. Add this as a symlink
 
 # Activate the virtual environment
