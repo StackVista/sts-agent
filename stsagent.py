@@ -80,10 +80,7 @@ MAX_WAIT_FOR_REPLAY = timedelta(seconds=90)
 MAX_QUEUE_SIZE = 30 * 1024 * 1024  # 30MB
 
 # Some responses should be rejected, rather than replayed. This list will be rejected.
-# We add 599 here aswell (client-side timeout),
-# because the server was not able to respond in time, leaving us
-# guessing what is going on.
-RESPONSES_TO_REJECT = [413, 403, 401, 400, 599]
+RESPONSES_TO_REJECT = [413, 400]
 
 THROTTLING_DELAY = timedelta(microseconds=1000000 / 2)  # 2 msg/second
 
