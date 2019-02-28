@@ -155,7 +155,8 @@ class TestUtilsSplunk(TestCase):
             self.assertEquals(args,
                               ('/servicesNS/%s/%s/saved/searches/%s/dispatch' % (username, appname, quote(saved_search.name)),
                                params,
-                               5
+                               5,
+                               'true'
                                ))
 
             class MockedResponse():
