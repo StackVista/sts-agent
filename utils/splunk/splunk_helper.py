@@ -120,6 +120,7 @@ class SplunkHelper(object):
             if not splunk_ignore_config:
                 self.log.error("Received error response with status {} and body {}".format(resp.status_code, resp.content))
                 raise error
+            self.log.warn("Received response with status {} and body {}".format(resp.status_code, resp.content))
         except Timeout as error:
             self.log.error("Got a timeout error")
             raise error
