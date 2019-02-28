@@ -4,7 +4,7 @@ import logging
 from urllib import urlencode, quote
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, ConnectionError, Timeout
 from checks import CheckException
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -117,8 +117,13 @@ class SplunkHelper(object):
         try:
             resp.raise_for_status()
         except HTTPError as error:
-            self.log.warn("Received response with status {} and body {}".format(resp.status_code, resp.content))
             if not splunk_ignore_config:
+                self.log.error("Received error response with status {} and body {}".format(resp.status_code, resp.content))
                 raise error
-            pass
+        except Timeout as error:
+            self.log.error("Got a timeout error")
+            raise error
+        except ConnectionError as error:
+            self.log.error("Received error response with status {} and body {}".format(resp.status_code, resp.content))
+            raise error
         return resp
