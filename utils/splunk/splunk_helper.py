@@ -100,7 +100,7 @@ class SplunkHelper(object):
         """
         dispatch_path = '/servicesNS/%s/%s/saved/searches/%s/dispatch' % (splunk_user, splunk_app, quote(saved_search.name))
         response_body = self._do_post(dispatch_path, parameters, saved_search.request_timeout_seconds, splunk_ignore_config).json()
-        return response_body["sid"]
+        return response_body.get("sid")
 
     def _do_get(self, path, request_timeout_seconds, verify_ssl_certificate):
         url = "%s%s" % (self.instance_config.base_url, path)
