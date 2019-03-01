@@ -90,7 +90,7 @@ class SplunkHelper(object):
             offset += nr_of_results
         return results
 
-    def dispatch(self, saved_search, splunk_user, splunk_app, splunk_ignore_config, parameters):
+    def dispatch(self, saved_search, splunk_user, splunk_app, splunk_ignore_saved_search_errors, parameters):
         """
         :param saved_search: The saved search to dispatch
         :param splunk_user: Splunk user that dispatches the saved search
@@ -99,7 +99,7 @@ class SplunkHelper(object):
         :return: the sid of the saved search
         """
         dispatch_path = '/servicesNS/%s/%s/saved/searches/%s/dispatch' % (splunk_user, splunk_app, quote(saved_search.name))
-        response_body = self._do_post(dispatch_path, parameters, saved_search.request_timeout_seconds, splunk_ignore_config).json()
+        response_body = self._do_post(dispatch_path, parameters, saved_search.request_timeout_seconds, splunk_ignore_saved_search_errors).json()
         return response_body.get("sid")
 
     def _do_get(self, path, request_timeout_seconds, verify_ssl_certificate):
@@ -108,7 +108,7 @@ class SplunkHelper(object):
         response.raise_for_status()
         return response
 
-    def _do_post(self, path, payload, request_timeout_seconds, splunk_ignore_config='true'):
+    def _do_post(self, path, payload, request_timeout_seconds, splunk_ignore_saved_search_errors=True):
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
@@ -117,16 +117,18 @@ class SplunkHelper(object):
         try:
             resp.raise_for_status()
         except HTTPError as error:
-            if not splunk_ignore_config:
+            if not splunk_ignore_saved_search_errors:
                 self.log.error("Received error response with status {} and body {}".format(resp.status_code, resp.content))
                 raise error
             self.log.warn("Received response with status {} and body {}".format(resp.status_code, resp.content))
         except Timeout as error:
-            if not splunk_ignore_config:
+            if not splunk_ignore_saved_search_errors:
                 self.log.error("Got a timeout error")
                 raise error
+            self.log.warn("Ignoring the timeout error as the flag ignore_saved_search_errors is true")
         except ConnectionError as error:
-            if not splunk_ignore_config:
+            if not splunk_ignore_saved_search_errors:
                 self.log.error("Received error response with status {} and body {}".format(resp.status_code, resp.content))
                 raise error
+            self.log.warn("Ignoring the connection error as the flag ignore_saved_search_errors is true")
         return resp
