@@ -155,7 +155,8 @@ class TestUtilsSplunk(TestCase):
             self.assertEquals(args,
                               ('/servicesNS/%s/%s/saved/searches/%s/dispatch' % (username, appname, quote(saved_search.name)),
                                params,
-                               5
+                               5,
+                               'true'
                                ))
 
             class MockedResponse():
@@ -166,7 +167,7 @@ class TestUtilsSplunk(TestCase):
 
         setattr(splunk_helper, "_do_post", _mocked_do_post)
 
-        res = splunk_helper.dispatch(saved_search, username, appname, params)
+        res = splunk_helper.dispatch(saved_search, username, appname, 'true', params)
         self.assertEquals(res, "zesid")
 
 class TestSavedSearches(TestCase):
