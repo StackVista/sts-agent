@@ -120,4 +120,3 @@ class TestSplunkHelper(unittest.TestCase):
         helper.requests_session.post.return_value = FakeResponse(status_code=200, text="done")
         helper.finalize_sid("admin_comp1", mocked_saved_search())
         self.assertTrue(True)
-
