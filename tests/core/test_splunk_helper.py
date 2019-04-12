@@ -110,3 +110,14 @@ class TestSplunkHelper(unittest.TestCase):
         helper.requests_session.post.return_value = MockResponse({"reason": "Not Found", "status_code": 404, "url": path})
 
         self.assertRaises(HTTPError, helper.dispatch, mocked_saved_search(), "admin", "search", helper.instance_config.ignore_saved_search_errors, None)
+
+    def test_finalize_sid(self):
+        """
+        Test finalize_sid method to successfully pass
+        """
+        helper = SplunkHelper(FakeInstanceConfig())
+        helper.requests_session.post = mock.MagicMock()
+        helper.requests_session.post.return_value = FakeResponse(status_code=200, text="done")
+        helper.finalize_sid("admin_comp1", mocked_saved_search())
+        self.assertTrue(True)
+
