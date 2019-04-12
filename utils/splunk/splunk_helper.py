@@ -102,6 +102,17 @@ class SplunkHelper(object):
         response_body = self._do_post(dispatch_path, parameters, saved_search.request_timeout_seconds, splunk_ignore_saved_search_errors).json()
         return response_body.get("sid")
 
+    def finalize_sid(self, search_id, saved_search):
+        """
+        :param search_id: The saved search id to finish
+        :param saved_search: The saved search to finish
+        """
+        finish_path = '/services/search/jobs/%s/control' % (search_id)
+        payload = "action=finalize"
+        self._do_post(finish_path, payload, saved_search.request_timeout_seconds)
+
+        self.log.info("Saved Search ID %s finished successfully" % search_id)
+
     def _do_get(self, path, request_timeout_seconds, verify_ssl_certificate):
         url = "%s%s" % (self.instance_config.base_url, path)
         response = self.requests_session.get(url, timeout=request_timeout_seconds, verify=verify_ssl_certificate)

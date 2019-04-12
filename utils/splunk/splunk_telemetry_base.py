@@ -71,7 +71,15 @@ class SplunkTelemetryBase(AgentCheck):
 
         for saved_search in saved_searches:
             try:
+                persist_status_key = instance.instance_config.base_url + saved_search.name
+                if self.status.data.get(persist_status_key) is not None:
+                    for (sid, saved_search) in self.status.data[persist_status_key]:
+                        instance.splunkHelper.finalize_sid(sid, saved_search)
+                    self.status.data[persist_status_key] = []
                 sid = self._dispatch_saved_search(instance, saved_search)
+                if self.status.data.get(persist_status_key) is None:
+                    self.status.data[persist_status_key] = []
+                self.status.data[persist_status_key].append((sid, saved_search))
                 search_ids.append((sid, saved_search))
             except Exception as e:
                 self._log_warning(instance, "Failed to dispatch saved search '%s' due to: %s" % (saved_search.name, e.message))
