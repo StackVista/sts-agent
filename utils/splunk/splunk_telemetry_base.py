@@ -76,10 +76,12 @@ class SplunkTelemetryBase(AgentCheck):
                     for (sid, saved_search) in self.status.data[persist_status_key]:
                         instance.splunkHelper.finalize_sid(sid, saved_search)
                     self.status.data[persist_status_key] = []
+                    self.status.persist(self.persistence_check_name)
                 sid = self._dispatch_saved_search(instance, saved_search)
                 if self.status.data.get(persist_status_key) is None:
                     self.status.data[persist_status_key] = []
                 self.status.data[persist_status_key].append((sid, saved_search))
+                self.status.persist(self.persistence_check_name)
                 search_ids.append((sid, saved_search))
             except Exception as e:
                 self._log_warning(instance, "Failed to dispatch saved search '%s' due to: %s" % (saved_search.name, e.message))
