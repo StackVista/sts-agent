@@ -75,7 +75,7 @@ class SplunkTelemetryBase(AgentCheck):
                 if self.status.data.get(persist_status_key) is not None:
                     for (sid, saved_search) in self.status.data[persist_status_key]:
                         instance.splunkHelper.finalize_sid(sid, saved_search)
-                    self.update_persistent_status(persist_status_key)
+                    self.update_persistent_status(persist_status_key, None)
                 sid = self._dispatch_saved_search(instance, saved_search)
                 self.update_persistent_status(persist_status_key, (sid, saved_search))
                 search_ids.append((sid, saved_search))
@@ -255,11 +255,11 @@ class SplunkTelemetryBase(AgentCheck):
     def _include_as_tag(self, key):
         return not key.startswith('_') and key not in self.basic_default_fields.union(self.date_default_fields)
 
-    def update_persistent_status(self, key, data=None):
+    def update_persistent_status(self, key, data):
         if data:
             if self.status.data.get(key) is None:
                 self.status.data[key] = []
             self.status.data.get(key).append(data)
         else:
-            self.status.data[key] = []
+            self.status.data[key] = None
         self.status.persist(self.persistence_check_name)
