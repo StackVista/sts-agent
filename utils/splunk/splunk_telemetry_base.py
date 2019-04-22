@@ -272,10 +272,13 @@ class SplunkTelemetryBase(AgentCheck):
             self.status.data.get(key).remove(data)
             if not self.status.data[key]:
                 self.status.data[key] = None
+                self.status.data.clear()
         elif action == 'add':
             if self.status.data.get(key) is None:
                 self.status.data[key] = []
             self.status.data.get(key).append(data)
+        elif action == 'clear':
+            self.status.data.clear()
         else:
             self.status.data[key] = data
         self.status.persist(self.persistence_check_name)
