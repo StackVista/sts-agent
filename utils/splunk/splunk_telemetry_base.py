@@ -71,13 +71,17 @@ class SplunkTelemetryBase(AgentCheck):
 
         for saved_search in saved_searches:
             try:
+                # a unique saved search key to persist the data
                 persist_status_key = instance.instance_config.base_url + saved_search.name
                 if self.status.data.get(persist_status_key) is not None:
                     for (sid, saved_search) in self.status.data[persist_status_key]:
-                        instance.splunkHelper.finalize_sid(sid, saved_search)
-                    self.update_persistent_status(persist_status_key, None)
+                        res_code = instance.splunkHelper.finalize_sid(sid, saved_search)
+                        if res_code == 200:
+                            self.update_persistent_status(instance.instance_config.base_url, saved_search.name,
+                                                          (sid, saved_search), 'remove')
                 sid = self._dispatch_saved_search(instance, saved_search)
-                self.update_persistent_status(persist_status_key, (sid, saved_search))
+                self.update_persistent_status(instance.instance_config.base_url, saved_search.name,
+                                              (sid, saved_search), "add")
                 search_ids.append((sid, saved_search))
             except Exception as e:
                 self._log_warning(instance, "Failed to dispatch saved search '%s' due to: %s" % (saved_search.name, e.message))
@@ -171,8 +175,7 @@ class SplunkTelemetryBase(AgentCheck):
     def commit_succeeded(self, instance):
         instance = self.instance_data[instance["url"]]
         status_dict, continue_after_commit = instance.get_status()
-        self.status.data[instance.instance_config.base_url] = status_dict
-        self.status.persist(self.persistence_check_name)
+        self.update_persistent_status(instance.instance_config.base_url, None, status_dict, 'assign')
         return continue_after_commit
 
     def commit_failed(self, instance):
@@ -255,11 +258,24 @@ class SplunkTelemetryBase(AgentCheck):
     def _include_as_tag(self, key):
         return not key.startswith('_') and key not in self.basic_default_fields.union(self.date_default_fields)
 
-    def update_persistent_status(self, key, data):
-        if data:
+    def update_persistent_status(self, base_url, qualifier, data, action):
+        """
+        :param base_url: base_url of the instance
+        :param qualifier: a string used for making a unique key
+        :param data: data to append, remove or assign
+        :param action: action like append, remove or assign to perform
+
+        This method persists the storage for the key when it is modified
+        """
+        key = base_url + qualifier if qualifier else base_url
+        if action == 'remove':
+            self.status.data.get(key).remove(data)
+            if not self.status.data[key]:
+                self.status.data[key] = None
+        elif action == 'add':
             if self.status.data.get(key) is None:
                 self.status.data[key] = []
             self.status.data.get(key).append(data)
         else:
-            self.status.data[key] = None
+            self.status.data[key] = data
         self.status.persist(self.persistence_check_name)

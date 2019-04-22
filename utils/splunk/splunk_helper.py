@@ -109,9 +109,22 @@ class SplunkHelper(object):
         """
         finish_path = '/services/search/jobs/%s/control' % (search_id)
         payload = "action=finalize"
-        self._do_post(finish_path, payload, saved_search.request_timeout_seconds)
-
-        self.log.info("Saved Search ID %s finished successfully" % search_id)
+        try:
+            res = self._do_post(finish_path, payload, saved_search.request_timeout_seconds, splunk_ignore_saved_search_errors=False)
+            if res.status_code == 200:
+                self.log.info("Saved Search ID %s finished successfully." % search_id)
+            if res.status_code == 404:
+                self.log.info("Saved Search ID %s is not found." % search_id)
+        except HTTPError:
+            self.log.error("Search job not finalized and received response with status {} and body {}".format
+                          (res.status_code, res.content))
+        except Timeout:
+            self.log.error("Search job not finalized as the timeout error occured and received response with status {} "
+                           "and body {}".format(res.status_code, res.content))
+        except ConnectionError:
+            self.log.error("Search job not finalized and received response with status {} and body {}".format
+                           (res.status_code, res.content))
+        return res.status_code
 
     def _do_get(self, path, request_timeout_seconds, verify_ssl_certificate):
         url = "%s%s" % (self.instance_config.base_url, path)

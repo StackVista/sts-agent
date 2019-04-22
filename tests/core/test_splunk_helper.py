@@ -118,5 +118,5 @@ class TestSplunkHelper(unittest.TestCase):
         helper = SplunkHelper(FakeInstanceConfig())
         helper.requests_session.post = mock.MagicMock()
         helper.requests_session.post.return_value = FakeResponse(status_code=200, text="done")
-        helper.finalize_sid("admin_comp1", mocked_saved_search())
-        self.assertTrue(True)
+        res_code = helper.finalize_sid("admin_comp1", mocked_saved_search())
+        self.assertEqual(res_code, 200)
