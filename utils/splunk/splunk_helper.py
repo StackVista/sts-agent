@@ -5,7 +5,7 @@ from urllib import urlencode, quote
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.exceptions import HTTPError, ConnectionError, Timeout
-from checks import CheckException
+from checks import CheckException, FinalizeException
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -101,6 +101,34 @@ class SplunkHelper(object):
         dispatch_path = '/servicesNS/%s/%s/saved/searches/%s/dispatch' % (splunk_user, splunk_app, quote(saved_search.name))
         response_body = self._do_post(dispatch_path, parameters, saved_search.request_timeout_seconds, splunk_ignore_saved_search_errors).json()
         return response_body.get("sid")
+
+    def finalize_sid(self, search_id, saved_search):
+        """
+        :param search_id: The saved search id to finish
+        :param saved_search: The saved search to finish
+        """
+        finish_path = '/services/search/jobs/%s/control' % (search_id)
+        payload = "action=finalize"
+        try:
+            res = self._do_post(finish_path, payload, saved_search.request_timeout_seconds, splunk_ignore_saved_search_errors=False)
+            # api returns 200 in general and even in case when saved search is already finalized
+            if res.status_code == 200:
+                self.log.info("Saved Search ID %s finished successfully." % search_id)
+        # when api returns status code between 400 and 600, HTTPError will occur
+        except HTTPError as error:
+            # if status code except 404 throw error
+            if error.response.status_code != 404:
+                self.log.error("Search job not finalized and received response with status {} and body {}".format
+                          (error.response.status_code, error.response.reason))
+                raise FinalizeException(error.response.status_code, error.response.reason)
+        # in case of timeout like read timeout or request timeout
+        except Timeout as error:
+            self.log.error("Search job not finalized as the timeout error occured %s" % error.message)
+            raise FinalizeException(None, error.message)
+        # in case of network issue
+        except ConnectionError as error:
+            self.log.error("Search job not finalized as connection error occured %s" % error.message)
+            raise FinalizeException(None, error.message)
 
     def _do_get(self, path, request_timeout_seconds, verify_ssl_certificate):
         url = "%s%s" % (self.instance_config.base_url, path)
