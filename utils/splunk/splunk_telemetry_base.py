@@ -81,7 +81,7 @@ class SplunkTelemetryBase(AgentCheck):
                 self.update_persistent_status(instance.instance_config.base_url, saved_search.name, sid, "add")
                 search_ids.append((sid, saved_search))
             except FinalizeException as e:
-                self.log.error("Got an error %s while finalizing the saved search %s".format(e.message, saved_search.name))
+                self.log.error("Got an error %s while finalizing the saved search %s" % (e.message, saved_search.name))
                 raise e
             except Exception as e:
                 self._log_warning(instance, "Failed to dispatch saved search '%s' due to: %s" % (saved_search.name, e.message))
