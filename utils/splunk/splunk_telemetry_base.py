@@ -262,8 +262,8 @@ class SplunkTelemetryBase(AgentCheck):
         """
         :param base_url: base_url of the instance
         :param qualifier: a string used for making a unique key
-        :param data: data to append, remove or assign
-        :param action: action like append, remove or assign to perform
+        :param data: data of the key
+        :param action: action like remove, clear and add to perform
 
         This method persists the storage for the key when it is modified
         """
