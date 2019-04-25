@@ -1,7 +1,7 @@
 import time
 
 from checks.check_status import CheckData
-from checks import AgentCheck, CheckException
+from checks import AgentCheck, CheckException, FinalizeException
 
 from utils.splunk.splunk import chunks, take_required_field, time_to_seconds, get_utc_time
 
@@ -74,15 +74,15 @@ class SplunkTelemetryBase(AgentCheck):
                 # a unique saved search key to persist the data
                 persist_status_key = instance.instance_config.base_url + saved_search.name
                 if self.status.data.get(persist_status_key) is not None:
-                    for (sid, saved_search) in self.status.data[persist_status_key]:
-                        res_code = instance.splunkHelper.finalize_sid(sid, saved_search)
-                        if res_code == 200:
-                            self.update_persistent_status(instance.instance_config.base_url, saved_search.name,
-                                                          (sid, saved_search), 'remove')
+                    sid = self.status.data[persist_status_key]
+                    instance.splunkHelper.finalize_sid(sid, saved_search)
+                    self.update_persistent_status(instance.instance_config.base_url, saved_search.name, sid, 'remove')
                 sid = self._dispatch_saved_search(instance, saved_search)
-                self.update_persistent_status(instance.instance_config.base_url, saved_search.name,
-                                              (sid, saved_search), "add")
+                self.update_persistent_status(instance.instance_config.base_url, saved_search.name, sid, "add")
                 search_ids.append((sid, saved_search))
+            except FinalizeException as e:
+                self.log.error("Got an error %s while finalizing the saved search %s".format(e.message, saved_search.name))
+                raise e
             except Exception as e:
                 self._log_warning(instance, "Failed to dispatch saved search '%s' due to: %s" % (saved_search.name, e.message))
 
@@ -175,7 +175,7 @@ class SplunkTelemetryBase(AgentCheck):
     def commit_succeeded(self, instance):
         instance = self.instance_data[instance["url"]]
         status_dict, continue_after_commit = instance.get_status()
-        self.update_persistent_status(instance.instance_config.base_url, None, status_dict, 'assign')
+        self.update_persistent_status(instance.instance_config.base_url, None, status_dict, 'add')
         return continue_after_commit
 
     def commit_failed(self, instance):
@@ -269,14 +269,7 @@ class SplunkTelemetryBase(AgentCheck):
         """
         key = base_url + qualifier if qualifier else base_url
         if action == 'remove':
-            self.status.data.get(key).remove(data)
-            if not self.status.data[key]:
-                self.status.data[key] = None
-                self.status.data.clear()
-        elif action == 'add':
-            if self.status.data.get(key) is None:
-                self.status.data[key] = []
-            self.status.data.get(key).append(data)
+            self.status.data.pop(key, None)
         elif action == 'clear':
             self.status.data.clear()
         else:

@@ -58,6 +58,14 @@ class UnknownValue(CheckException):
     pass
 
 
+class FinalizeException(Exception):
+    """
+       A custom exception for the finalize_sid method
+    """
+    def __init__(self, code, message):
+        self.code = code
+        self.message = message
+
 
 #==============================================================================
 # DEPRECATED

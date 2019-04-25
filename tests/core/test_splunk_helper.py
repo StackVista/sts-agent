@@ -4,11 +4,12 @@ import unittest
 # 3p
 import mock
 import json
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, ConnectionError, Timeout
 from requests import Response
 
 # project
 from utils.splunk.splunk_helper import SplunkHelper
+from checks import FinalizeException
 
 
 class FakeInstanceConfig(object):
@@ -27,6 +28,7 @@ class FakeResponse(object):
         self.status_code = status_code
         self.payload = text
         self.headers = headers
+        self.content = text
 
     def json(self):
         return json.loads(self.payload)
@@ -115,8 +117,25 @@ class TestSplunkHelper(unittest.TestCase):
         """
         Test finalize_sid method to successfully pass
         """
+        url = FakeInstanceConfig().base_url
         helper = SplunkHelper(FakeInstanceConfig())
         helper.requests_session.post = mock.MagicMock()
         helper.requests_session.post.return_value = FakeResponse(status_code=200, text="done")
-        res_code = helper.finalize_sid("admin_comp1", mocked_saved_search())
-        self.assertEqual(res_code, 200)
+        # return None when response is 200
+        self.assertEqual(helper.finalize_sid("admin_comp1", mocked_saved_search()), None)
+
+        helper.requests_session.post.return_value = MockResponse({"reason": "Unknown Sid", "status_code": 404, "url": url})
+        # return None when sid not found because we want to continue
+        self.assertEqual(helper.finalize_sid("admin_comp1", mocked_saved_search()), None)
+
+        helper.requests_session.post.return_value = MockResponse({"reason": "Internal Server error", "status_code": 500, "url": url})
+        # return finalize exception when api returns 500
+        self.assertRaises(FinalizeException, helper.finalize_sid, "admin_comp1", mocked_saved_search())
+
+        helper.requests_session.post = mock.MagicMock(side_effect=Timeout())
+        # return finalize exception when timeout occurs
+        self.assertRaises(FinalizeException, helper.finalize_sid, "admin_comp1", mocked_saved_search())
+
+        helper.requests_session.post = mock.MagicMock(side_effect=ConnectionError())
+        # return finalize exception when connection error occurs
+        self.assertRaises(FinalizeException, helper.finalize_sid, "admin_comp1", mocked_saved_search())
