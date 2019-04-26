@@ -75,7 +75,7 @@ class SplunkTelemetryBase(AgentCheck):
                 persist_status_key = instance.instance_config.base_url + saved_search.name
                 if self.status.data.get(persist_status_key) is not None:
                     sid = self.status.data[persist_status_key]
-                    instance.splunkHelper.finalize_sid(sid, saved_search)
+                    self._finalize_sid(instance, sid, saved_search)
                     self.update_persistent_status(instance.instance_config.base_url, saved_search.name, sid, 'remove')
                 sid = self._dispatch_saved_search(instance, saved_search)
                 self.update_persistent_status(instance.instance_config.base_url, saved_search.name, sid, "add")
@@ -230,6 +230,10 @@ class SplunkTelemetryBase(AgentCheck):
     def _dispatch(self, instance, saved_search, splunk_user, splunk_app, parameters):
         """ This method is mocked for testing. Do not change its behavior """
         return instance.splunkHelper.dispatch(saved_search, splunk_user, splunk_app, parameters)
+
+    def _finalize_sid(self, instance, sid, saved_search):
+        """ This method is mocked for testing. Do not change its behavior """
+        return instance.splunkHelper.finalize_sid(sid, saved_search)
 
     def _saved_searches(self, instance):
         """ This method is mocked for testing. Do not change its behavior """
