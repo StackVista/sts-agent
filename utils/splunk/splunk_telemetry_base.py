@@ -198,6 +198,7 @@ class SplunkTelemetryBase(AgentCheck):
         earliest_epoch_datetime = get_utc_time(saved_search.last_observed_timestamp)
         splunk_user = instance.instance_config.username
         splunk_app = saved_search.app
+        ignore_saved_search_errors = instance.instance_config.ignore_saved_search_errors
 
         parameters["dispatch.time_format"] = self.TIME_FMT
         parameters["dispatch.earliest_time"] = earliest_epoch_datetime.strftime(self.TIME_FMT)
@@ -221,15 +222,15 @@ class SplunkTelemetryBase(AgentCheck):
 
         self.log.debug("Dispatching saved search: %s starting at %s." % (saved_search.name, parameters["dispatch.earliest_time"]))
 
-        return self._dispatch(instance, saved_search, splunk_user, splunk_app, parameters)
+        return self._dispatch(instance, saved_search, splunk_user, splunk_app, ignore_saved_search_errors, parameters)
 
     def _auth_session(self, instance):
         """ This method is mocked for testing. Do not change its behavior """
         instance.splunkHelper.auth_session()
 
-    def _dispatch(self, instance, saved_search, splunk_user, splunk_app, parameters):
+    def _dispatch(self, instance, saved_search, splunk_user, splunk_app, ignore_saved_search_errors, parameters):
         """ This method is mocked for testing. Do not change its behavior """
-        return instance.splunkHelper.dispatch(saved_search, splunk_user, splunk_app, parameters)
+        return instance.splunkHelper.dispatch(saved_search, splunk_user, splunk_app, ignore_saved_search_errors, parameters)
 
     def _finalize_sid(self, instance, sid, saved_search):
         """ This method is mocked for testing. Do not change its behavior """
