@@ -198,7 +198,7 @@ class SplunkTelemetryBase(AgentCheck):
         earliest_epoch_datetime = get_utc_time(saved_search.last_observed_timestamp)
         splunk_user = instance.instance_config.username
         splunk_app = saved_search.app
-        ignore_saved_search_errors = instance.ignore_saved_search_errors
+        ignore_saved_search_errors = instance.instance_config.ignore_saved_search_errors
 
         parameters["dispatch.time_format"] = self.TIME_FMT
         parameters["dispatch.earliest_time"] = earliest_epoch_datetime.strftime(self.TIME_FMT)
