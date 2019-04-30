@@ -83,6 +83,7 @@ class SplunkInstanceConfig(object):
         self.base_url = instance['url']
         self.username = instance['username']
         self.password = instance['password']
+        self.ignore_saved_search_errors = instance.get('ignore_saved_search_errors', False)
 
     def get_or_default(self, field):
         return self.init_config.get(field, self.defaults[field])
