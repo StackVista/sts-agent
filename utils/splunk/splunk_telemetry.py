@@ -81,12 +81,12 @@ class SplunkTelemetryInstance(object):
         for saved_search in self.saved_searches.searches:
             # Do we still need to recover?
             last_committed = self.get_search_data(data, saved_search.name)
-            if saved_search.last_recover_latest_time_epoch_seconds is not None or last_committed is None:
-                if last_committed is None:  # Is this the first time we start?
-                    saved_search.last_observed_timestamp = current_time - saved_search.config['initial_history_time_seconds']
-                else:  # Continue running or restarting, add one to not duplicate the last events.
-                    saved_search.last_observed_timestamp = last_committed + 1
-                    if current_time - saved_search.last_observed_timestamp > saved_search.config['max_restart_history_seconds']:
-                        saved_search.last_observed_timestamp = current_time - saved_search.config['max_restart_history_seconds']
-            else:
-                saved_search.last_observed_timestamp = last_committed
+            # if saved_search.last_recover_latest_time_epoch_seconds is not None or last_committed is None:
+            if last_committed is None:  # Is this the first time we start?
+                saved_search.last_observed_timestamp = current_time - saved_search.config['initial_history_time_seconds']
+            else:  # Continue running or restarting, add one to not duplicate the last events.
+                saved_search.last_observed_timestamp = last_committed + 1
+                if current_time - saved_search.last_observed_timestamp > saved_search.config['max_restart_history_seconds']:
+                    saved_search.last_observed_timestamp = current_time - saved_search.config['max_restart_history_seconds']
+            # else:
+            #     saved_search.last_observed_timestamp = last_committed
