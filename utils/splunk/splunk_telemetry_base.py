@@ -206,9 +206,7 @@ class SplunkTelemetryBase(AgentCheck):
         if "dispatch.latest_time" in parameters:
             del parameters["dispatch.latest_time"]
 
-        # See whether we should recover events from the past
-        # if saved_search.last_recover_latest_time_epoch_seconds is not None:
-        # Always observe the lat time for data
+        # Always observe the last time for data and use max query chunk seconds
         latest_time_epoch = saved_search.last_observed_timestamp + saved_search.config['max_query_chunk_seconds']
         current_time = self._current_time_seconds()
 
