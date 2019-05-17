@@ -62,7 +62,7 @@ from utils.windows_configuration import get_sdk_integration_paths
 # Constants
 PID_NAME = "sts-agent"
 PID_DIR = None
-WATCHDOG_MULTIPLIER = 10
+WATCHDOG_MULTIPLIER = 100
 RESTART_INTERVAL = 4 * 24 * 60 * 60  # Defaults to 4 days
 
 JMX_SUPERVISOR_ENTRY = 'stackstate-agent:jmxfetch'
