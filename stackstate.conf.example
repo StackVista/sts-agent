@@ -40,6 +40,9 @@ http_emitter_timeout=60
 # It will only be deleted if the forwarder queue becomes too big. (30 MB by default)
 # forwarder_timeout: 20
 
+# increase the value if agent gets killed when hangs for too long.
+watchdog_multiplier: 10
+
 # Set timeout in seconds for integrations that use HTTP to fetch metrics, since
 # unbounded timeouts can potentially block the collector indefinitely and cause
 # problems!

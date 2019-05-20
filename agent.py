@@ -62,7 +62,7 @@ from utils.windows_configuration import get_sdk_integration_paths
 # Constants
 PID_NAME = "sts-agent"
 PID_DIR = None
-WATCHDOG_MULTIPLIER = 100
+WATCHDOG_MULTIPLIER = 10
 RESTART_INTERVAL = 4 * 24 * 60 * 60  # Defaults to 4 days
 
 JMX_SUPERVISOR_ENTRY = 'stackstate-agent:jmxfetch'
@@ -402,8 +402,9 @@ class Agent(Daemon):
 
     def _get_watchdog(self, check_freq):
         watchdog = None
+        watchdog_multiplier = self._agentConfig.get("watchdog_multiplier", WATCHDOG_MULTIPLIER)
         if self._agentConfig.get("watchdog", True):
-            watchdog = Watchdog.create(check_freq * WATCHDOG_MULTIPLIER)
+            watchdog = Watchdog.create(check_freq * watchdog_multiplier)
             watchdog.reset()
         return watchdog
 
