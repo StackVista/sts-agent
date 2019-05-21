@@ -41,7 +41,7 @@ http_emitter_timeout=60
 # forwarder_timeout: 20
 
 # increase the value if agent gets killed when hangs for too long.
-watchdog_multiplier: 10
+watchdog_multiplier: 100
 
 # Set timeout in seconds for integrations that use HTTP to fetch metrics, since
 # unbounded timeouts can potentially block the collector indefinitely and cause
