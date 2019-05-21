@@ -402,7 +402,7 @@ class Agent(Daemon):
 
     def _get_watchdog(self, check_freq):
         watchdog = None
-        watchdog_multiplier = self._agentConfig.get("watchdog_multiplier", WATCHDOG_MULTIPLIER)
+        watchdog_multiplier = int(self._agentConfig.get("watchdog_multiplier", WATCHDOG_MULTIPLIER))
         if self._agentConfig.get("watchdog", True):
             watchdog = Watchdog.create(check_freq * watchdog_multiplier)
             watchdog.reset()
