@@ -20,7 +20,6 @@ PIDPATH="/var/run/sts-agent/"
 PROG="stackstate-agent"
 LOCKFILE=/var/lock/subsys/$PROG
 FORWARDERPATH="/opt/stackstate-agent/agent/stsagent.py"
-TRACEAGENTPATH="/opt/stackstate-agent/bin/trace-agent"
 SUPERVISORD_PATH="PATH=/opt/stackstate-agent/embedded/bin:/opt/stackstate-agent/bin:$PATH /opt/stackstate-agent/bin/supervisord"
 SUPERVISORCTL_PATH="/opt/stackstate-agent/bin/supervisorctl"
 SUPERVISOR_CONF="/etc/sts-agent/supervisor.conf"
@@ -29,7 +28,7 @@ SUPERVISOR_PIDFILE="/opt/stackstate-agent/run/stackstate-supervisord.pid"
 COLLECTOR_PIDFILE="/opt/stackstate-agent/run/sts-agent.pid"
 
 # Captures processes in the supervisord group that are 'optional' i.e. not essential for the agent to run
-DD_OPT_PROC_REGEX="dogstatsd|jmxfetch|go-metro|trace-agent|process-agent"
+DD_OPT_PROC_REGEX="dogstatsd|jmxfetch|go-metro|process-agent"
 
 # Source function library.
 . /etc/rc.d/init.d/functions
@@ -183,8 +182,8 @@ info() {
     DOGSTATSD_RETURN=$?
     su $AGENTUSER -c "$FORWARDERPATH info"
     FORWARDER_RETURN=$?
-    su $AGENTUSER -c "$TRACEAGENTPATH -info"
-    TRACEAGENT_RETURN=$? # not used for now, Trace/APM not a core feature yet
+    # su $AGENTUSER -c "$TRACEAGENTPATH -info"
+    # TRACEAGENT_RETURN=$? # not used for now, Trace/APM not a core feature yet
     exit $(($FORWARDER_RETURN+$COLLECTOR_RETURN+$DOGSTATSD_RETURN))
 }
 
