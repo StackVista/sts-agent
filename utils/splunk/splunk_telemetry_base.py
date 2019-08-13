@@ -55,10 +55,10 @@ class SplunkTelemetryBase(AgentCheck):
                 self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
         except Exception as e:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=instance.tags, message=str(e))
+            self.log.exception("Splunk event exception: %s" % str(e))
             if not instance.instance_config.ignore_saved_search_errors:
-                self.log.exception("Splunk event exception: %s" % str(e))
                 raise CheckException("Error getting Splunk data, please check your configuration. Message: " + str(e))
-            self.log.warning("An exception occured in splunk telemetry and ignored as ignore_saved_search_errors flag is true.")
+            self.log.warning("Ignoring the exception since the flag ignore_saved_search_errors is true")
 
     def get_instance(self, instance, current_time):
         raise NotImplementedError
@@ -83,8 +83,8 @@ class SplunkTelemetryBase(AgentCheck):
                 self.update_persistent_status(instance.instance_config.base_url, saved_search.name, sid, "add")
                 search_ids.append((sid, saved_search))
             except FinalizeException as e:
+                self.log.exception("Got an error %s while finalizing the saved search %s" % (e.message, saved_search.name))
                 if not instance.instance_config.ignore_saved_search_errors:
-                    self.log.error("Got an error %s while finalizing the saved search %s" % (e.message, saved_search.name))
                     raise e
                 self.log.warning("Ignoring the finalize exception as ignore_saved_search_errors flag is true")
             except Exception as e:
