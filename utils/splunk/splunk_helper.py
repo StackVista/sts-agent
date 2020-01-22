@@ -63,7 +63,7 @@ class SplunkHelper(object):
         # retry until information is available.
         while response.status_code == 204:  # HTTP No Content response
             if retry_count == saved_search.search_max_retry_count:
-                raise CheckException("maximum retries reached for " + self.instance_config.base_url + " with saved search " + saved_search.name)
+                raise CheckException("maximum retries reached for " + self.instance_config.base_url + " with saved search name " + saved_search.name)
             retry_count += 1
             time.sleep(saved_search.search_seconds_between_retries)
             response = self._do_get(search_path, saved_search.request_timeout_seconds, self.instance_config.verify_ssl_certificate)
