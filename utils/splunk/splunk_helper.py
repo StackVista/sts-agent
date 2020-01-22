@@ -146,7 +146,6 @@ class SplunkHelper(object):
             resp.raise_for_status()
         except HTTPError as error:
             if not splunk_ignore_saved_search_errors:
-                self.log.error("Received error response with status {} and body {}".format(resp.status_code, resp.content))
                 raise error
             self.log.warn("Received response with status {} and body {}".format(resp.status_code, resp.content))
         except Timeout as error:
