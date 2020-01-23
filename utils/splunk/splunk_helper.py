@@ -62,6 +62,7 @@ class SplunkHelper(object):
 
         # retry until information is available.
         while response.status_code == 204:  # HTTP No Content response
+            self.log.debug("Splunk has no result available yet for saved search {}. Going to retry".format(saved_search.name))
             if retry_count == saved_search.search_max_retry_count:
                 raise CheckException("maximum retries reached for " + self.instance_config.base_url + " with search id " + search_id)
             retry_count += 1
