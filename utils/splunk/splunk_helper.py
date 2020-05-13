@@ -2,6 +2,8 @@ import time
 import requests
 import logging
 from urllib import urlencode, quote
+import jwt
+import datetime
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.exceptions import HTTPError, ConnectionError, Timeout
@@ -37,6 +39,36 @@ class SplunkHelper(object):
         # Fallback mechanism in case no cookies were passed by splunk.
         session_key = response_json["sessionKey"]
         self.requests_session.headers.update({'Authentication': "Splunk %s" % session_key})
+
+    def create_auth_token(self, token):
+        self.log.debug("Creating a new authentication token")
+        token_path = '/services/authorization/tokens?output_mode=json'
+        name = self.instance_config.username
+        audience = self.instance_config.audience
+        expiry_days = self.instance_config.token_expiration_days
+        payload = {'name': name, 'audience': audience, 'expires_on': "+{}d".format(str(expiry_days))}
+        self.requests_session.headers.update({'Authorization': "Bearer %s" % token})
+        response = self._do_post(token_path, payload, self.instance_config.default_request_timeout_seconds)
+        response.raise_for_status()
+        response_json = response.json()
+
+        new_token = response_json.get("entry")[0].get("content").get("token")
+        self.requests_session.headers.update({'Authorization': "Bearer %s" % new_token})
+        return new_token
+
+    def is_token_valid(self, token):
+        current_time = datetime.datetime.now()
+        decoded_token = jwt.decode(token, verify=False, algorithm='HS512')
+        expiry_time = decoded_token.get("exp")
+        expiry_date = datetime.datetime.fromtimestamp(expiry_time)
+        days = (expiry_date.date() - current_time.date()).days
+        # as soon as we are close to expiration day, we need to create auth token
+        if days <= 1:
+            return False, days
+        else:
+            self.log.debug("Token is valid.")
+            self.requests_session.headers.update({'Authorization': "Bearer %s" % token})
+            return True, 0
 
     def saved_searches(self):
         """

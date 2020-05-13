@@ -23,7 +23,7 @@ defusedxml==0.5.0
 docker-py==1.10.6
 # utils/service_discovery/config_stores.py
 kazoo==2.4.0
-ntplib==0.3.3
+ntplib==0.3.4
 # utils/service_discovery/config_stores.py
 python-consul==0.4.7
 # utils/service_discovery/config_stores.py
@@ -42,6 +42,8 @@ uptime==3.0.1
 # utils/splunk/splunk.py
 pytz==2016.10
 iso8601==0.1.11
+# utils/splunk/splunk_helper.py
+PyJWT==1.7.1
 
 # utils/ucmdb/ucmdb_component_groups.py
 ET==0.0.2

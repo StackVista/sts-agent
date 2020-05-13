@@ -23,6 +23,17 @@ class SplunkTelemetryBase(AgentCheck):
     def check(self, instance):
         if 'url' not in instance:
             raise CheckException('Splunk metric/event instance missing "url" value.')
+        if 'authentication' not in instance:
+            raise CheckException('Splunk metric/event instance missing "authentication" value')
+        authentication = instance["authentication"]
+        if 'basic_auth' not in authentication:
+            raise CheckException('Splunk metric/event instance missing "authentication.basic_auth" value')
+        basic_auth = authentication["basic_auth"]
+        if 'username' not in basic_auth:
+            raise CheckException('Splunk metric/event instance missing "authentication.basic_auth.username" value')
+        if 'token' not in authentication and 'password' not in basic_auth:
+            raise CheckException('Splunk metric/event instance missing both "authentication.basic_auth.password" or '
+                                 'authentication.token value')
 
         current_time = self._current_time_seconds()
         url = instance["url"]
@@ -38,7 +49,31 @@ class SplunkTelemetryBase(AgentCheck):
         instance.update_status(current_time, self.status)
 
         try:
-            self._auth_session(instance)
+            if 'token' not in authentication:
+                self.log.debug("Using basic authentication mechanism")
+                self._auth_session(instance)
+            else:
+                self.log.debug("Using token based authentication mechanism")
+                persist_token_key = instance.instance_config.base_url + "token"
+                if self.status.data.get(persist_token_key) is None:
+                    self.log.debug("Creating a new token from first initial token")
+                    # Since this is first time when check starts with initial token,
+                    # we need to validate and create the new token
+                    if self._is_valid_token(instance, authentication["token"])[0]:
+                        new_token = self._create_auth_token(instance, authentication["token"])
+                        self.update_token_memory(instance.instance_config.base_url, new_token)
+                    else:
+                        msg = "Initial Token is expired, Please renew your token or use the valid token."
+                        raise Exception(msg)
+                token = self.status.data.get(persist_token_key)
+                token_flag, days_expiry = self._is_valid_token(instance, token)
+                if not token_flag:
+                    if days_expiry < 0:
+                        msg = "Token is expired, Please renew your token or use the valid token."
+                        raise Exception(msg)
+                    else:
+                        new_token = self._create_auth_token(instance, token)
+                        self.update_token_memory(instance.instance_config.base_url, new_token)
 
             saved_searches = self._saved_searches(instance)
             instance.saved_searches.update_searches(self.log, saved_searches)
@@ -231,6 +266,14 @@ class SplunkTelemetryBase(AgentCheck):
         """ This method is mocked for testing. Do not change its behavior """
         instance.splunkHelper.auth_session()
 
+    def _is_valid_token(self, instance, token):
+        """ This method is mocked for testing. Do not change its behavior """
+        return instance.splunkHelper.is_token_valid(token)
+
+    def _create_auth_token(self, instance, token):
+        """ This method is mocked for testing. Do not change its behavior """
+        return instance.splunkHelper.create_auth_token(token)
+
     def _dispatch(self, instance, saved_search, splunk_user, splunk_app, ignore_saved_search_errors, parameters):
         """ This method is mocked for testing. Do not change its behavior """
         return instance.splunkHelper.dispatch(saved_search, splunk_user, splunk_app, ignore_saved_search_errors, parameters)
@@ -262,6 +305,12 @@ class SplunkTelemetryBase(AgentCheck):
         self.status = CheckData.load_latest_status(self.persistence_check_name)
         if self.status is None:
             self.status = CheckData()
+
+    def update_token_memory(self, base_url, token):
+        self.log.debug("Updating the token in the memory")
+        key = base_url + "token"
+        self.status.data[key] = token
+        self.status.persist(self.persistence_check_name)
 
     def _include_as_tag(self, key):
         return not key.startswith('_') and key not in self.basic_default_fields.union(self.date_default_fields)
