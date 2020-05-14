@@ -189,7 +189,7 @@ class TestSplunkHelper(unittest.TestCase):
 
     @mock.patch('utils.splunk.splunk_helper.jwt.decode',
                 return_value={"exp": 1591797915, "iat": 1584021915, "aud": "stackstate"})
-    def test_is_valid_token(self, mocked_decode_token):
+    def test_is_invalid_token(self, mocked_decode_token):
         """
         Test token validation method for invalid token
         """
