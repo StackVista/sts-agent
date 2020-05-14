@@ -57,7 +57,7 @@ class SplunkHelper(object):
         return new_token
 
     def is_token_valid(self, token):
-        current_time = datetime.datetime.now()
+        current_time = self._current_time()
         decoded_token = jwt.decode(token, verify=False, algorithm='HS512')
         expiry_time = decoded_token.get("exp")
         expiry_date = datetime.datetime.fromtimestamp(expiry_time)
@@ -69,6 +69,10 @@ class SplunkHelper(object):
             self.log.debug("Token is valid.")
             self.requests_session.headers.update({'Authorization': "Bearer %s" % token})
             return True, 0
+
+    def _current_time(self):
+        """ This method is mocked for testing. Do not change its behavior """
+        return datetime.datetime.now()
 
     def saved_searches(self):
         """
