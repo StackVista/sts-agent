@@ -1,7 +1,7 @@
 import time
 
 from checks.check_status import CheckData
-from checks import AgentCheck, CheckException, FinalizeException
+from checks import AgentCheck, CheckException, FinalizeException, TokenExpiredException
 
 from utils.splunk.splunk import chunks, take_required_field, time_to_seconds, get_utc_time
 
@@ -21,19 +21,32 @@ class SplunkTelemetryBase(AgentCheck):
         self.load_status()
 
     def check(self, instance):
+        authentication = None
         if 'url' not in instance:
-            raise CheckException('Splunk metric/event instance missing "url" value.')
-        if 'authentication' not in instance:
-            raise CheckException('Splunk metric/event instance missing "authentication" value')
-        authentication = instance["authentication"]
-        if 'basic_auth' not in authentication:
-            raise CheckException('Splunk metric/event instance missing "authentication.basic_auth" value')
-        basic_auth = authentication["basic_auth"]
-        if 'username' not in basic_auth:
-            raise CheckException('Splunk metric/event instance missing "authentication.basic_auth.username" value')
-        if 'token' not in authentication and 'password' not in basic_auth:
-            raise CheckException('Splunk metric/event instance missing both "authentication.basic_auth.password" or '
-                                 'authentication.token value')
+            raise CheckException('Splunk topology instance missing "url" value.')
+        if 'username' in instance and 'password' in instance and 'authentication' not in instance:
+            self.log.warning("This username and password configuration will be deprecated soon. Please use the new "
+                             "updated configuration from the conf")
+        if 'authentication' in instance:
+            authentication = instance["authentication"]
+            if 'basic_auth' not in authentication and 'token_auth' not in authentication:
+                raise CheckException('Splunk topology instance missing "authentication.basic_auth" or '
+                                     '"authentication.token_auth" value')
+            if 'basic_auth' in authentication:
+                basic_auth = authentication["basic_auth"]
+                if 'username' not in basic_auth:
+                    raise CheckException('Splunk topology instance missing "authentication.basic_auth.username" value')
+                if 'password' not in basic_auth:
+                    raise CheckException('Splunk topology instance missing "authentication.basic_auth.password" value')
+            if 'token_auth' in authentication:
+                token_auth = authentication["token_auth"]
+                if 'name' not in token_auth:
+                    raise CheckException('Splunk topology instance missing "authentication.token_auth.name" value')
+                if 'initial_token' not in token_auth:
+                    raise CheckException('Splunk topology instance missing "authentication.token_auth.initial_token" '
+                                         'value')
+                if 'audience' not in token_auth:
+                    raise CheckException('Splunk topology instance missing "authentication.token_auth.audience" value')
 
         current_time = self._current_time_seconds()
         url = instance["url"]
@@ -44,36 +57,29 @@ class SplunkTelemetryBase(AgentCheck):
         if not instance.initial_time_done(current_time):
             self.log.debug("Skipping splunk metric/event instance %s, waiting for initial time to expire" % url)
             return
+        initial_token_flag = True
 
         self.load_status()
         instance.update_status(current_time, self.status)
 
         try:
-            if 'token' not in authentication:
-                self.log.debug("Using basic authentication mechanism")
-                self._auth_session(instance)
-            else:
+            if authentication and 'token_auth' in authentication:
                 self.log.debug("Using token based authentication mechanism")
                 persist_token_key = instance.instance_config.base_url + "token"
-                if self.status.data.get(persist_token_key) is None:
-                    self.log.debug("Creating a new token from first initial token")
-                    # Since this is first time when check starts with initial token,
-                    # we need to validate and create the new token
-                    if self._is_valid_token(instance, authentication["token"])[0]:
-                        new_token = self._create_auth_token(instance, authentication["token"])
-                        self.update_token_memory(instance.instance_config.base_url, new_token)
-                    else:
-                        msg = "Initial Token is expired, Please renew your token or use the valid token."
-                        raise Exception(msg)
                 token = self.status.data.get(persist_token_key)
-                token_flag, days_expiry = self._is_valid_token(instance, token)
-                if not token_flag:
-                    if days_expiry < 0:
-                        msg = "Token is expired, Please renew your token or use the valid token."
-                        raise Exception(msg)
-                    else:
-                        new_token = self._create_auth_token(instance, token)
-                        self.update_token_memory(instance.instance_config.base_url, new_token)
+                if token is None:
+                    # Since this is first time run, pick the token from conf.yaml
+                    token = authentication["token_auth"].get('initial_token')
+                if self.is_token_expired(instance, token):
+                    msg = "Current in use authentication token is expired. Please provide a valid token in the " \
+                              "YAML and restart the Agent"
+                    raise TokenExpiredException(msg)
+                if self.need_renewal(instance, token, initial_token_flag):
+                    new_token = self._create_auth_token(instance, token)
+                    self.update_token_memory(instance.instance_config.base_url, new_token)
+            else:
+                self.log.debug("Using basic authentication mechanism")
+                self._auth_session(instance)
 
             saved_searches = self._saved_searches(instance)
             instance.saved_searches.update_searches(self.log, saved_searches)
@@ -88,6 +94,9 @@ class SplunkTelemetryBase(AgentCheck):
             # If no service checks were produced, everything is ok
             if len(self.service_checks) is 0:
                 self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.OK)
+        except TokenExpiredException as e:
+            self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=instance.tags, message=str(e.message))
+            self.log.exception("Splunk topology exception: %s" % str(e.message))
         except Exception as e:
             self.service_check(self.SERVICE_CHECK_NAME, AgentCheck.CRITICAL, tags=instance.tags, message=str(e))
             self.log.exception("Splunk event exception: %s" % str(e))
@@ -266,9 +275,13 @@ class SplunkTelemetryBase(AgentCheck):
         """ This method is mocked for testing. Do not change its behavior """
         instance.splunkHelper.auth_session()
 
-    def _is_valid_token(self, instance, token):
+    def is_token_expired(self, instance, token):
         """ This method is mocked for testing. Do not change its behavior """
-        return instance.splunkHelper.is_token_valid(token)
+        return instance.splunkHelper.is_token_expired(token)
+
+    def need_renewal(self, instance, token, initial_token):
+        """ This method is mocked for testing. Do not change its behavior """
+        return instance.splunkHelper.need_renewal(token, initial_token)
 
     def _create_auth_token(self, instance, token):
         """ This method is mocked for testing. Do not change its behavior """

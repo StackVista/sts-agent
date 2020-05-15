@@ -56,23 +56,45 @@ class SplunkHelper(object):
         self.requests_session.headers.update({'Authorization': "Bearer %s" % new_token})
         return new_token
 
-    def is_token_valid(self, token):
+    def _decode_token_util(self, token):
+        """
+        Method to decode the token and return the number of days token is valid or invalid
+        :param token: the token to decode
+        :return: days: the number of days between token expiration and current date
+        """
         current_time = self._current_time()
         decoded_token = jwt.decode(token, verify=False, algorithm='HS512')
         expiry_time = decoded_token.get("exp")
         expiry_date = datetime.datetime.fromtimestamp(expiry_time)
         days = (expiry_date.date() - current_time.date()).days
-        # as soon as we are close to expiration day, we need to create auth token
-        if days <= 1:
-            return False, days
+        return days
+
+    def is_token_expired(self, token):
+        """
+        Method to check if the token is expired or not
+        :param token: the token used for validation
+        :return: boolean flag if token is valid or not
+        """
+        days = self._decode_token_util(token)
+        return True if days < 0 else False
+
+    def need_renewal(self, token, initial=False):
+        """
+        Method to check if token needs renewal
+        :param token: the previous in memory or initial valid token
+        :param initial: boolean flag to check if the token is first initial token
+        :return: boolean flag if token needs renewal
+        """
+        days = self._decode_token_util(token)
+        renewal_days = self.instance_config.renewal_days
+        if days <= renewal_days or initial:
+            return True
         else:
-            self.log.debug("Token is valid.")
-            self.requests_session.headers.update({'Authorization': "Bearer %s" % token})
-            return True, 0
+            return False
 
     def _current_time(self):
         """ This method is mocked for testing. Do not change its behavior """
-        return datetime.datetime.now()
+        return datetime.datetime.utcnow()
 
     def saved_searches(self):
         """

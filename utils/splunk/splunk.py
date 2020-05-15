@@ -81,10 +81,21 @@ class SplunkInstanceConfig(object):
 
         self.verify_ssl_certificate = bool(instance.get('verify_ssl_certificate', self.default_verify_ssl_certificate))
         self.base_url = instance['url']
-        self.username = instance.get("authentication").get("basic_auth").get("username")
-        self.password = instance.get("authentication").get("basic_auth").get("password")
-        self.audience = instance.get("audience")
-        self.token_expiration_days = instance.get("expiration", 90)
+        # username and password to support backward compatibility
+        self.username = instance.get('username')
+        self.password = instance.get('password')
+        authentication = instance.get("authentication")
+        if authentication is not None:
+            if 'basic_auth' in authentication:
+                # this will override the credentials if someone using latest config section
+                self.username = authentication.get("basic_auth").get("username")
+                self.password = authentication.get("basic_auth").get("password")
+            if 'token_auth' in authentication:
+                self.audience = authentication.get("token_auth").get("audience")
+                self.name = authentication.get("token_auth").get("name")
+                self.token_expiration_days = authentication.get("token_auth").get("token_expiration_days", 90)
+                self.renewal_days = authentication.get("token_auth").get("renewal_days", 10)
+
         self.ignore_saved_search_errors = instance.get('ignore_saved_search_errors', False)
 
     def get_or_default(self, field):

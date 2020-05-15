@@ -176,30 +176,43 @@ class TestSplunkHelper(unittest.TestCase):
 
     @mock.patch('utils.splunk.splunk_helper.jwt.decode',
                 return_value={"exp": 1591797915, "iat": 1584021915, "aud": "stackstate"})
-    def test_is_valid_token(self, mocked_decode_token):
+    def test_decode_token_util(self, mocked_decode_token):
         """
-        Test token validation method for valid token
+        Test token decoding utility
         """
         helper = SplunkHelper(FakeInstanceConfig())
         helper._current_time = mock.MagicMock()
         helper._current_time.return_value = datetime.datetime(2020, 05, 14, 15, 44, 51)
-        valid, days = helper.is_token_valid("test")
-        self.assertTrue(valid)
-        self.assertEqual(days, 0)
+        days = helper._decode_token_util("test")
+        self.assertEqual(days, 27)
 
     @mock.patch('utils.splunk.splunk_helper.jwt.decode',
                 return_value={"exp": 1591797915, "iat": 1584021915, "aud": "stackstate"})
-    def test_is_invalid_token(self, mocked_decode_token):
+    def test_is_token_expired_true(self, mocked_decode_token):
         """
         Test token validation method for invalid token
         """
         helper = SplunkHelper(FakeInstanceConfig())
         helper._current_time = mock.MagicMock()
         helper._current_time.return_value = datetime.datetime(2020, 06, 20, 15, 44, 51)
-        valid, days = helper.is_token_valid("test")
-        # Token is not valid and expiry is 10 days before current date
+        valid = helper.is_token_expired("test")
+        # Token is expired
+        self.assertTrue(valid)
+        self.assertEqual(valid, True)
+
+    @mock.patch('utils.splunk.splunk_helper.jwt.decode',
+                return_value={"exp": 1591797915, "iat": 1584021915, "aud": "stackstate"})
+    def test_is_token_expired_false(self, mocked_decode_token):
+        """
+        Test token validation method for invalid token
+        """
+        helper = SplunkHelper(FakeInstanceConfig())
+        helper._current_time = mock.MagicMock()
+        helper._current_time.return_value = datetime.datetime(2020, 05, 14, 15, 44, 51)
+        valid = helper.is_token_expired("test")
+        # Token is not expired
         self.assertFalse(valid)
-        self.assertEqual(days, -10)
+        self.assertEqual(valid, False)
 
     @mock.patch('utils.splunk.splunk_helper.SplunkHelper._do_post',
                 return_value=FakeResponse(mocked_token_create_response(), headers={}))
