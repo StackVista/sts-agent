@@ -71,8 +71,8 @@ class SplunkTelemetryBase(AgentCheck):
                     # Since this is first time run, pick the token from conf.yaml
                     token = authentication["token_auth"].get('initial_token')
                 if self.is_token_expired(instance, token):
-                    msg = "Current in use authentication token is expired. Please provide a valid token in the " \
-                              "YAML and restart the Agent"
+                    msg = "Current in use authentication token is expired. Please provide a valid token in the YAML " \
+                          "and restart the Agent"
                     raise TokenExpiredException(msg)
                 if self.need_renewal(instance, token, initial_token_flag):
                     new_token = self._create_auth_token(instance, token)
