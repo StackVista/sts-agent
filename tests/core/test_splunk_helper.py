@@ -22,6 +22,7 @@ class FakeInstanceConfig(object):
         self.audience = "test"
         self.username = "admin"
         self.token_expiration_days = 90
+        self.renewal_days = 10
 
     def get_auth_tuple(self):
         return ('username', 'password')
@@ -213,6 +214,32 @@ class TestSplunkHelper(unittest.TestCase):
         # Token is not expired
         self.assertFalse(valid)
         self.assertEqual(valid, False)
+
+    @mock.patch('utils.splunk.splunk_helper.jwt.decode',
+                return_value={"exp": 1591797915, "iat": 1584021915, "aud": "stackstate"})
+    def test_need_renewal_true(self, mocked_decode_token):
+        """
+        Test need renewal method when initial_token_flag is True and should return True
+        """
+        helper = SplunkHelper(FakeInstanceConfig())
+        helper._current_time = mock.MagicMock()
+        helper._current_time.return_value = datetime.datetime(2020, 05, 14, 15, 44, 51)
+        valid = helper.need_renewal("test", True)
+        # Need renewal should return True since flag is true
+        self.assertTrue(valid)
+
+    @mock.patch('utils.splunk.splunk_helper.jwt.decode',
+                return_value={"exp": 1591797915, "iat": 1584021915, "aud": "stackstate"})
+    def test_need_renewal_false(self, mocked_decode_token):
+        """
+        Test need renewal method when initial_token_flag is false and should return False
+        """
+        helper = SplunkHelper(FakeInstanceConfig())
+        helper._current_time = mock.MagicMock()
+        helper._current_time.return_value = datetime.datetime(2020, 05, 14, 15, 44, 51)
+        valid = helper.need_renewal("test")
+        # Need renewal should return True since flag is true
+        self.assertFalse(valid)
 
     @mock.patch('utils.splunk.splunk_helper.SplunkHelper._do_post',
                 return_value=FakeResponse(mocked_token_create_response(), headers={}))
