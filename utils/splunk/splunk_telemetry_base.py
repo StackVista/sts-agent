@@ -68,19 +68,10 @@ class SplunkTelemetryBase(AgentCheck):
         try:
             if authentication and 'token_auth' in authentication:
                 self.log.debug("Using token based authentication mechanism")
-                persist_token_key = instance.instance_config.base_url + "token"
-                token = self.status.data.get(persist_token_key)
-                if token is None:
-                    # Since this is first time run, pick the token from conf.yaml
-                    token = authentication["token_auth"].get('initial_token')
-                if self.is_token_expired(instance, token):
-                    msg = "Current in use authentication token is expired. Please provide a valid token in the YAML " \
-                          "and restart the Agent"
-                    raise TokenExpiredException(msg)
-                if self.need_renewal(instance, token, self.initial_token_flag):
-                    new_token = self._create_auth_token(instance, token)
-                    self.update_token_memory(instance.instance_config.base_url, new_token)
-                    self.initial_token_flag = False
+                base_url = instance.instance_config.base_url
+                token_flag = self._token_auth_session(instance, authentication, base_url, self.status,
+                                                      self.initial_token_flag, self.persistence_check_name)
+                self.initial_token_flag = token_flag
             else:
                 self.log.debug("Using basic authentication mechanism")
                 self._auth_session(instance)
@@ -279,17 +270,9 @@ class SplunkTelemetryBase(AgentCheck):
         """ This method is mocked for testing. Do not change its behavior """
         instance.splunkHelper.auth_session()
 
-    def is_token_expired(self, instance, token):
+    def _token_auth_session(self, instance, authentication, base_url, status, initial_token_flag, persistence_check_name):
         """ This method is mocked for testing. Do not change its behavior """
-        return instance.splunkHelper.is_token_expired(token)
-
-    def need_renewal(self, instance, token, initial_token):
-        """ This method is mocked for testing. Do not change its behavior """
-        return instance.splunkHelper.need_renewal(token, initial_token)
-
-    def _create_auth_token(self, instance, token):
-        """ This method is mocked for testing. Do not change its behavior """
-        return instance.splunkHelper.create_auth_token(token)
+        return instance.splunkHelper.token_auth_session(authentication, base_url, status, initial_token_flag, persistence_check_name)
 
     def _dispatch(self, instance, saved_search, splunk_user, splunk_app, ignore_saved_search_errors, parameters):
         """ This method is mocked for testing. Do not change its behavior """
@@ -322,12 +305,6 @@ class SplunkTelemetryBase(AgentCheck):
         self.status = CheckData.load_latest_status(self.persistence_check_name)
         if self.status is None:
             self.status = CheckData()
-
-    def update_token_memory(self, base_url, token):
-        self.log.debug("Updating the token in the memory")
-        key = base_url + "token"
-        self.status.data[key] = token
-        self.status.persist(self.persistence_check_name)
 
     def _include_as_tag(self, key):
         return not key.startswith('_') and key not in self.basic_default_fields.union(self.date_default_fields)

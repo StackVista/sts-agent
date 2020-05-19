@@ -7,7 +7,7 @@ import datetime
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.exceptions import HTTPError, ConnectionError, Timeout
-from checks import CheckException, FinalizeException
+from checks import CheckException, FinalizeException, TokenExpiredException
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -95,6 +95,28 @@ class SplunkHelper(object):
     def _current_time(self):
         """ This method is mocked for testing. Do not change its behavior """
         return datetime.datetime.utcnow()
+
+    def token_auth_session(self, auth, base_url, status, initial_token_flag, persistence_check_name):
+        persist_token_key = base_url + "token"
+        token = status.data.get(persist_token_key)
+        if token is None:
+            # Since this is first time run, pick the token from conf.yaml
+            token = auth["token_auth"].get('initial_token')
+        if self.is_token_expired(token):
+            msg = "Current in use authentication token is expired. Please provide a valid token in the YAML " \
+                  "and restart the Agent"
+            raise TokenExpiredException(msg)
+        if self.need_renewal(token, initial_token_flag):
+            new_token = self.create_auth_token(token)
+            self.update_token_memory(base_url, new_token, status,
+                                     persistence_check_name)
+            initial_token_flag = False
+        return initial_token_flag
+
+    def update_token_memory(self, base_url, token, status_data, persistent_check_name):
+        key = base_url + "token"
+        status_data.data[key] = token
+        status_data.persist(persistent_check_name)
 
     def saved_searches(self):
         """
