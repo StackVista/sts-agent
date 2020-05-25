@@ -32,7 +32,7 @@ python-etcd==0.4.5
 pyyaml==3.11
 # note: requests is also used in many checks
 # upgrade with caution
-requests==2.11.1
+requests==2.20.0
 # note: simplejson is used in many checks to inteface APIs
 simplejson==3.6.5
 supervisor==3.3.3
