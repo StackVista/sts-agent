@@ -10,7 +10,8 @@ import datetime
 
 # project
 from utils.splunk.splunk_helper import SplunkHelper
-from checks import FinalizeException
+from checks import FinalizeException, TokenExpiredException
+from checks.check_status import CheckData
 
 
 class FakeInstanceConfig(object):
@@ -265,3 +266,147 @@ class TestSplunkHelper(unittest.TestCase):
         # Header should be updated with the new token
         expected_header = helper.requests_session.headers.get("Authorization")
         self.assertEqual(expected_header, "Bearer {}".format(new_token))
+
+    @mock.patch('utils.splunk.splunk_helper.jwt.decode',
+                return_value={"exp": 1591797915, "iat": 1584021915, "aud": "stackstate"})
+    def test_token_auth_session(self, mocked_decode_token):
+        """
+        Test token_auth_session when memory token is valid and doesn't need renewal
+        """
+        auth = {'token_auth': {'initial_token': "asdfg"}}
+        # load a token in memory for validation
+        status = CheckData()
+        status.data['http://testhost:8089token'] = 'memorytokenpresent'
+        # make initial_token_flag false to not create new token
+        initial_token_flag = False
+        persistence_check_name = "splunk_metric"
+        config = FakeInstanceConfig()
+
+        helper = SplunkHelper(config)
+        # update headers with memory token
+        helper.requests_session.headers.update({'Authorization': "Bearer memorytokenpresent"})
+        helper._current_time = mock.MagicMock()
+        helper._current_time.return_value = datetime.datetime(2020, 05, 14, 15, 44, 51)
+        token_flag = helper.token_auth_session(auth, config.base_url, status, initial_token_flag, persistence_check_name)
+
+        self.assertFalse(token_flag)
+        # Header should be still with the memory token
+        expected_header = helper.requests_session.headers.get("Authorization")
+        self.assertEqual(expected_header, "Bearer {}".format("memorytokenpresent"))
+
+    @mock.patch('utils.splunk.splunk_helper.jwt.decode',
+                return_value={"exp": 1591797915, "iat": 1584021915, "aud": "stackstate"})
+    @mock.patch('utils.splunk.splunk_helper.SplunkHelper._do_post',
+                return_value=FakeResponse(mocked_token_create_response(), headers={}))
+    def test_token_auth_session_need_renewal_initial_token(self, mocked_decode_token, moccked_post):
+        """
+        Test token_auth_session when initial token need to be refreshed
+        """
+        new_token = json.loads(mocked_token_create_response()).get('entry')[0].get('content').get('token')
+
+        auth = {'token_auth': {'initial_token': "asdfg"}}
+        status = CheckData()
+        # make initial_token_flag True to ask for renewal of token
+        initial_token_flag = True
+        persistence_check_name = "splunk_metric"
+        config = FakeInstanceConfig()
+
+        helper = SplunkHelper(config)
+        helper.requests_session.headers.update({'Authorization': "Bearer memorytokenpresent"})
+        helper._current_time = mock.MagicMock()
+        helper._current_time.return_value = datetime.datetime(2020, 05, 14, 15, 44, 51)
+        token_flag = helper.token_auth_session(auth, config.base_url, status, initial_token_flag,
+                                               persistence_check_name)
+        self.assertFalse(token_flag)
+        # Header should be updated with the new token
+        expected_header = helper.requests_session.headers.get("Authorization")
+        self.assertEqual(expected_header, "Bearer {}".format(new_token))
+        # persistence data will have new token as well
+        self.assertEqual(status.data.get('http://testhost:8089token'), new_token)
+        status.data.clear()
+
+    @mock.patch('utils.splunk.splunk_helper.jwt.decode',
+                return_value={"exp": 1591797915, "iat": 1584021915, "aud": "stackstate"})
+    @mock.patch('utils.splunk.splunk_helper.SplunkHelper._do_post',
+                return_value=FakeResponse(mocked_token_create_response(), headers={}))
+    def test_token_auth_session_need_renewal_memory_token(self, mocked_decode_token, moccked_post):
+        """
+        Test token_auth_session when memory token about to expire and need to be refreshed
+        """
+        new_token = json.loads(mocked_token_create_response()).get('entry')[0].get('content').get('token')
+
+        auth = {'token_auth': {'initial_token': "asdfg"}}
+        status = CheckData()
+        # load a token in memory for validation
+        status.data['http://testhost:8089token'] = 'memorytokenpresent'
+        # make initial_token_flag True to ask for renewal of token
+        initial_token_flag = False
+        persistence_check_name = "splunk_metric"
+        config = FakeInstanceConfig()
+
+        helper = SplunkHelper(config)
+        helper.requests_session.headers.update({'Authorization': "Bearer memorytokenpresent"})
+        helper._current_time = mock.MagicMock()
+        helper._current_time.return_value = datetime.datetime(2020, 06, 5, 15, 44, 51)
+        token_flag = helper.token_auth_session(auth, config.base_url, status, initial_token_flag,
+                                               persistence_check_name)
+        self.assertFalse(token_flag)
+        # Header should be updated with the new token
+        expected_header = helper.requests_session.headers.get("Authorization")
+        self.assertEqual(expected_header, "Bearer {}".format(new_token))
+        # persistence data will have new token as well
+        self.assertEqual(status.data.get('http://testhost:8089token'), new_token)
+        status.data.clear()
+
+    @mock.patch('utils.splunk.splunk_helper.jwt.decode',
+                return_value={"exp": 1591797915, "iat": 1584021915, "aud": "stackstate"})
+    def test_token_auth_session_invalid_initial_token(self, mocked_decode_token):
+        """
+        Test token_auth_session to throw TokenExpiredException when initial token is expired
+        """
+        auth = {'token_auth': {'initial_token': "asdfg"}}
+        status = CheckData()
+        initial_token_flag = True
+        persistence_check_name = "splunk_metric"
+        config = FakeInstanceConfig()
+
+        helper = SplunkHelper(config)
+        helper.requests_session.headers.update({'Authorization': "Bearer memorytokenpresent"})
+        helper._current_time = mock.MagicMock()
+        helper._current_time.return_value = datetime.datetime(2020, 06, 16, 15, 44, 51)
+        check = False
+        try:
+            helper.token_auth_session(auth, config.base_url, status, initial_token_flag,
+                                               persistence_check_name)
+        except TokenExpiredException:
+            check = True
+        msg = "Current in use authentication token is expired. Please provide a valid token in the YAML " \
+              "and restart the Agent"
+        self.assertTrue(check, msg)
+
+    @mock.patch('utils.splunk.splunk_helper.jwt.decode',
+                return_value={"exp": 1591797915, "iat": 1584021915, "aud": "stackstate"})
+    def test_token_auth_session_invalid_memory_token(self, mocked_decode_token):
+        """
+        Test token_auth_session to throw TokenExpiredException when memory token is expired
+        """
+        auth = {'token_auth': {'initial_token': "asdfg"}}
+        status = CheckData()
+        # load a token in memory for validation
+        status.data['http://testhost:8089token'] = 'memorytokenpresent'
+        initial_token_flag = True
+        persistence_check_name = "splunk_metric"
+        config = FakeInstanceConfig()
+
+        helper = SplunkHelper(config)
+        helper.requests_session.headers.update({'Authorization': "Bearer memorytokenpresent"})
+        helper._current_time = mock.MagicMock()
+        helper._current_time.return_value = datetime.datetime(2020, 06, 16, 15, 44, 51)
+        check = False
+        try:
+            helper.token_auth_session(auth, config.base_url, status, initial_token_flag, persistence_check_name)
+        except TokenExpiredException:
+            check = True
+        msg = "Current in use authentication token is expired. Please provide a valid token in the YAML " \
+              "and restart the Agent"
+        self.assertTrue(check, msg)
