@@ -287,7 +287,8 @@ class TestSplunkHelper(unittest.TestCase):
         helper.requests_session.headers.update({'Authorization': "Bearer memorytokenpresent"})
         helper._current_time = mock.MagicMock()
         helper._current_time.return_value = datetime.datetime(2020, 05, 14, 15, 44, 51)
-        token_flag = helper.token_auth_session(auth, config.base_url, status, initial_token_flag, persistence_check_name)
+        token_flag = helper.token_auth_session(auth, config.base_url, status, initial_token_flag,
+                                               persistence_check_name)
 
         self.assertFalse(token_flag)
         # Header should be still with the memory token
@@ -376,8 +377,7 @@ class TestSplunkHelper(unittest.TestCase):
         helper._current_time.return_value = datetime.datetime(2020, 06, 16, 15, 44, 51)
         check = False
         try:
-            helper.token_auth_session(auth, config.base_url, status, initial_token_flag,
-                                               persistence_check_name)
+            helper.token_auth_session(auth, config.base_url, status, initial_token_flag, persistence_check_name)
         except TokenExpiredException:
             check = True
         msg = "Current in use authentication token is expired. Please provide a valid token in the YAML " \
