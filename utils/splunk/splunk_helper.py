@@ -2,10 +2,12 @@ import time
 import requests
 import logging
 from urllib import urlencode, quote
+import jwt
+import datetime
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.exceptions import HTTPError, ConnectionError, Timeout
-from checks import CheckException, FinalizeException
+from checks import CheckException, FinalizeException, TokenExpiredException
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -37,6 +39,84 @@ class SplunkHelper(object):
         # Fallback mechanism in case no cookies were passed by splunk.
         session_key = response_json["sessionKey"]
         self.requests_session.headers.update({'Authentication': "Splunk %s" % session_key})
+
+    def create_auth_token(self, token):
+        self.log.debug("Creating a new authentication token")
+        token_path = '/services/authorization/tokens?output_mode=json'
+        name = self.instance_config.username
+        audience = self.instance_config.audience
+        expiry_days = self.instance_config.token_expiration_days
+        payload = {'name': name, 'audience': audience, 'expires_on': "+{}d".format(str(expiry_days))}
+        self.requests_session.headers.update({'Authorization': "Bearer %s" % token})
+        response = self._do_post(token_path, payload, self.instance_config.default_request_timeout_seconds)
+        response.raise_for_status()
+        response_json = response.json()
+
+        new_token = response_json.get("entry")[0].get("content").get("token")
+        self.requests_session.headers.update({'Authorization': "Bearer %s" % new_token})
+        return new_token
+
+    def _decode_token_util(self, token):
+        """
+        Method to decode the token and return the number of days token is valid or invalid
+        :param token: the token to decode
+        :return: days: the number of days between token expiration and current date
+        """
+        current_time = self._current_time()
+        decoded_token = jwt.decode(token, verify=False, algorithm='HS512')
+        expiry_time = decoded_token.get("exp")
+        expiry_date = datetime.datetime.fromtimestamp(expiry_time)
+        days = (expiry_date.date() - current_time.date()).days
+        return days
+
+    def is_token_expired(self, token):
+        """
+        Method to check if the token is expired or not
+        :param token: the token used for validation
+        :return: boolean flag if token is valid or not
+        """
+        days = self._decode_token_util(token)
+        return True if days < 0 else False
+
+    def need_renewal(self, token, initial=False):
+        """
+        Method to check if token needs renewal
+        :param token: the previous in memory or initial valid token
+        :param initial: boolean flag to check if the token is first initial token
+        :return: boolean flag if token needs renewal
+        """
+        days = self._decode_token_util(token)
+        renewal_days = self.instance_config.renewal_days
+        if days <= renewal_days or initial:
+            return True
+        else:
+            return False
+
+    def _current_time(self):
+        """ This method is mocked for testing. Do not change its behavior """
+        return datetime.datetime.utcnow()
+
+    def token_auth_session(self, auth, base_url, status, initial_token_flag, persistence_check_name):
+        persist_token_key = base_url + "token"
+        token = status.data.get(persist_token_key)
+        if token is None:
+            # Since this is first time run, pick the token from conf.yaml
+            token = auth["token_auth"].get('initial_token')
+        if self.is_token_expired(token):
+            msg = "Current in use authentication token is expired. Please provide a valid token in the YAML " \
+                  "and restart the Agent"
+            raise TokenExpiredException(msg)
+        if self.need_renewal(token, initial_token_flag):
+            new_token = self.create_auth_token(token)
+            self.update_token_memory(base_url, new_token, status,
+                                     persistence_check_name)
+            initial_token_flag = False
+        return initial_token_flag
+
+    def update_token_memory(self, base_url, token, status_data, persistent_check_name):
+        key = base_url + "token"
+        status_data.data[key] = token
+        status_data.persist(persistent_check_name)
 
     def saved_searches(self):
         """

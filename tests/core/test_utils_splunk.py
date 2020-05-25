@@ -59,7 +59,13 @@ class TestUtilsSplunk(TestCase):
     def test_splunk_helper(self):
 
         instance_config = SplunkInstanceConfig({
-            'url': 'dummy', 'username': 'admin', 'password': 'admin'
+            'url': 'dummy',
+            'authentication': {
+                'basic_auth': {
+                    'username': "admin",
+                    'password': "admin"
+                }
+            }
         }, {}, {
             'default_request_timeout_seconds': 5,
             'default_search_max_retry_count': 3,
@@ -93,7 +99,13 @@ class TestUtilsSplunk(TestCase):
     def test_splunk_saved_searches(self):
 
         instance_config = SplunkInstanceConfig({
-            'url': 'dummy', 'username': 'admin', 'password': 'admin'
+            'url': 'dummy',
+            'authentication': {
+                'basic_auth': {
+                    'username': "admin",
+                    'password': "admin"
+                }
+            }
         }, {}, {
             'default_request_timeout_seconds': 5,
             'default_search_max_retry_count': 3,
@@ -134,7 +146,13 @@ class TestUtilsSplunk(TestCase):
         username = "admin"
         appname = "myapp"
         instance_config = SplunkInstanceConfig({
-            'url': 'dummy', 'username': 'admin', 'password': 'admin'
+            'url': 'dummy',
+            'authentication': {
+                'basic_auth': {
+                    'username': "admin",
+                    'password': "admin"
+                }
+            }
         }, {}, {
             'default_request_timeout_seconds': 5,
             'default_search_max_retry_count': 3,
@@ -177,7 +195,13 @@ class TestSavedSearches(TestCase):
         log = logging.getLogger('%s.%s' % (__name__, "SavedSearches"))
 
         instance_config = SplunkInstanceConfig({
-            'url': 'dummy', 'username': 'admin', 'password': 'admin'
+            'url': 'dummy',
+            'authentication': {
+                'basic_auth': {
+                    'username': "admin",
+                    'password': "admin"
+                }
+            }
         }, {}, {
             'default_request_timeout_seconds': 5,
             'default_search_max_retry_count': 3,

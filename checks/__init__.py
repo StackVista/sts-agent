@@ -67,6 +67,16 @@ class FinalizeException(Exception):
         self.message = message
 
 
+class TokenExpiredException(Exception):
+    """
+    A custom exception for the expired token
+    """
+
+    def __init__(self, message, code=None):
+        self.message = message
+        self.code = code
+
+
 #==============================================================================
 # DEPRECATED
 # ------------------------------
