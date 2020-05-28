@@ -21,6 +21,7 @@ class FakeInstanceConfig(object):
         self.verify_ssl_certificate = False
         self.ignore_saved_search_errors = True
         self.username = "admin"
+        self.audience = "test"
         self.name = "admin"
         self.token_expiration_days = 90
         self.renewal_days = 10
