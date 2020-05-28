@@ -20,8 +20,8 @@ class FakeInstanceConfig(object):
         self.default_request_timeout_seconds = 10
         self.verify_ssl_certificate = False
         self.ignore_saved_search_errors = True
-        self.audience = "test"
         self.username = "admin"
+        self.name = "admin"
         self.token_expiration_days = 90
         self.renewal_days = 10
 

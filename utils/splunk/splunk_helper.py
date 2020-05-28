@@ -43,7 +43,7 @@ class SplunkHelper(object):
     def create_auth_token(self, token):
         self.log.debug("Creating a new authentication token")
         token_path = '/services/authorization/tokens?output_mode=json'
-        name = self.instance_config.username
+        name = self.instance_config.name
         audience = self.instance_config.audience
         expiry_days = self.instance_config.token_expiration_days
         payload = {'name': name, 'audience': audience, 'expires_on': "+{}d".format(str(expiry_days))}
@@ -179,6 +179,9 @@ class SplunkHelper(object):
         :param parameters: Parameters of the saved search
         :return: the sid of the saved search
         """
+        if splunk_user is None:
+            # in case of token based mechanism, username won't exist and need to use `user` from token config
+            splunk_user = self.instance_config.name
         dispatch_path = '/servicesNS/%s/%s/saved/searches/%s/dispatch' % (splunk_user, splunk_app, quote(saved_search.name))
         response_body = self._do_post(dispatch_path, parameters, saved_search.request_timeout_seconds, splunk_ignore_saved_search_errors).json()
         return response_body.get("sid")
