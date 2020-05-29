@@ -186,8 +186,20 @@ class TestSplunkHelper(unittest.TestCase):
         helper = SplunkHelper(FakeInstanceConfig())
         helper._current_time = mock.MagicMock()
         helper._current_time.return_value = datetime.datetime(2020, 05, 14, 15, 44, 51)
-        days = helper._decode_token_util("test")
+        days = helper._decode_token_util("test", False)
         self.assertEqual(days, 27)
+
+    @mock.patch('utils.splunk.splunk_helper.jwt.decode',
+                return_value={"exp": 0, "iat": 1584021915, "aud": "stackstate"})
+    def test_decode_token_util_when_exp_set_never(self, mocked_decode_token):
+        """
+        Should return 999 days if first initial token expiration set to never
+        """
+        helper = SplunkHelper(FakeInstanceConfig())
+        helper._current_time = mock.MagicMock()
+        helper._current_time.return_value = datetime.datetime(2020, 05, 14, 15, 44, 51)
+        days = helper._decode_token_util("test", True)
+        self.assertEqual(days, 999)
 
     @mock.patch('utils.splunk.splunk_helper.jwt.decode',
                 return_value={"exp": 1591797915, "iat": 1584021915, "aud": "stackstate"})
