@@ -101,22 +101,33 @@ class SplunkHelper(object):
         """ This method is mocked for testing. Do not change its behavior """
         return datetime.datetime.utcnow()
 
-    def token_auth_session(self, auth, base_url, status, initial_token_flag, persistence_check_name):
+    def token_auth_session(self, auth, base_url, status, persistence_check_name):
         persist_token_key = base_url + "token"
         token = status.data.get(persist_token_key)
+        # Check if the token flag present and then no need of renewal in case of check restarts
+        initial_token_flag = status.data.get(base_url+"initial_token_flag")
+        if initial_token_flag is None:
+            self.log.debug("This is first time run, Initial token flag will be true.")
+            initial_token_flag = True
+        self.log.debug("Initial token flag is: {}".format(initial_token_flag))
         if token is None:
             # Since this is first time run, pick the token from conf.yaml
             token = auth["token_auth"].get('initial_token')
         if self.is_token_expired(token, initial_token_flag):
+            self.log.debug("Current in use authentication token is expired")
             msg = "Current in use authentication token is expired. Please provide a valid token in the YAML " \
                   "and restart the Agent"
             raise TokenExpiredException(msg)
         if self.need_renewal(token, initial_token_flag):
+            self.log.debug("The token needs renewal as token is about to expire or initial token flag is true")
             new_token = self.create_auth_token(token)
-            self.update_token_memory(base_url, new_token, status,
-                                     persistence_check_name)
-            initial_token_flag = False
-        return initial_token_flag
+            self.update_token_memory(base_url, new_token, status, persistence_check_name)
+            status.data[base_url+"initial_token_flag"] = False
+            status.persist(persistence_check_name)
+            self.log.debug("Token flag {} is persisted in the memory".format(status.data[base_url+"initial_token_flag"]))
+        if self.requests_session.headers.get("Authorization") is None:
+            self.log.debug("Authorization is none since Splunk check restarted. The session will be updated")
+            self.requests_session.headers.update({'Authorization': "Bearer %s" % token})
 
     def update_token_memory(self, base_url, token, status_data, persistent_check_name):
         key = base_url + "token"

@@ -18,7 +18,6 @@ class SplunkTelemetryBase(AgentCheck):
         self.persistence_check_name = persistence_check_name
         self.instance_data = dict()
         self.status = None
-        self.initial_token_flag = True
         self.load_status()
 
     def check(self, instance):
@@ -69,9 +68,7 @@ class SplunkTelemetryBase(AgentCheck):
             if authentication and 'token_auth' in authentication:
                 self.log.debug("Using token based authentication mechanism")
                 base_url = instance.instance_config.base_url
-                token_flag = self._token_auth_session(instance, authentication, base_url, self.status,
-                                                      self.initial_token_flag, self.persistence_check_name)
-                self.initial_token_flag = token_flag
+                self._token_auth_session(instance, authentication, base_url, self.status, self.persistence_check_name)
             else:
                 self.log.debug("Using basic authentication mechanism")
                 self._auth_session(instance)
@@ -270,9 +267,9 @@ class SplunkTelemetryBase(AgentCheck):
         """ This method is mocked for testing. Do not change its behavior """
         instance.splunkHelper.auth_session()
 
-    def _token_auth_session(self, instance, authentication, base_url, status, initial_token_flag, persistence_check_name):
+    def _token_auth_session(self, instance, authentication, base_url, status, persistence_check_name):
         """ This method is mocked for testing. Do not change its behavior """
-        return instance.splunkHelper.token_auth_session(authentication, base_url, status, initial_token_flag, persistence_check_name)
+        return instance.splunkHelper.token_auth_session(authentication, base_url, status, persistence_check_name)
 
     def _dispatch(self, instance, saved_search, splunk_user, splunk_app, ignore_saved_search_errors, parameters):
         """ This method is mocked for testing. Do not change its behavior """
