@@ -288,7 +288,6 @@ class TestSplunkHelper(unittest.TestCase):
         status = CheckData()
         status.data['http://testhost:8089token'] = 'memorytokenpresent'
         persistence_check_name = "splunk_metric"
-        status.persist()
         config = FakeInstanceConfig()
 
         helper = SplunkHelper(config)
@@ -326,7 +325,7 @@ class TestSplunkHelper(unittest.TestCase):
         # Header should be updated with the new token
         expected_header = helper.requests_session.headers.get("Authorization")
         self.assertEqual(expected_header, "Bearer {}".format(new_token))
-        # persistence data will have new token updated and token flag as False
+        # persistence data will have new updated token
         self.assertEqual(status.data.get('http://testhost:8089token'), new_token)
         status.data.clear()
 
