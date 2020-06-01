@@ -233,7 +233,7 @@ class TestSplunkHelper(unittest.TestCase):
                 return_value={"exp": 1591797915, "iat": 1584021915, "aud": "stackstate"})
     def test_need_renewal_true(self, mocked_decode_token):
         """
-        Test need renewal method when initial_token_flag is True and should return True
+        Test need renewal method when is_initial_token flag is True and should return True
         """
         helper = SplunkHelper(FakeInstanceConfig())
         helper._current_time = mock.MagicMock()
@@ -246,7 +246,7 @@ class TestSplunkHelper(unittest.TestCase):
                 return_value={"exp": 1591797915, "iat": 1584021915, "aud": "stackstate"})
     def test_need_renewal_false(self, mocked_decode_token):
         """
-        Test need renewal method when initial_token_flag is false and should return False
+        Test need renewal method when is_initial_token is false and should return False
         """
         helper = SplunkHelper(FakeInstanceConfig())
         helper._current_time = mock.MagicMock()
@@ -276,9 +276,6 @@ class TestSplunkHelper(unittest.TestCase):
         self.assertEqual(generated_token, new_token)
         # Initial token and new token should differ
         self.assertNotEqual("test", new_token)
-        # Header should be updated with the new token
-        expected_header = helper.requests_session.headers.get("Authorization")
-        self.assertEqual(expected_header, "Bearer {}".format(new_token))
 
     @mock.patch('utils.splunk.splunk_helper.jwt.decode',
                 return_value={"exp": 1591797915, "iat": 1584021915, "aud": "stackstate"})
@@ -290,8 +287,6 @@ class TestSplunkHelper(unittest.TestCase):
         # load a token in memory for validation
         status = CheckData()
         status.data['http://testhost:8089token'] = 'memorytokenpresent'
-        # make initial_token_flag false to not create new token
-        status.data['http://testhost:8089initial_token_flag'] = False
         persistence_check_name = "splunk_metric"
         status.persist()
         config = FakeInstanceConfig()
@@ -333,7 +328,6 @@ class TestSplunkHelper(unittest.TestCase):
         self.assertEqual(expected_header, "Bearer {}".format(new_token))
         # persistence data will have new token updated and token flag as False
         self.assertEqual(status.data.get('http://testhost:8089token'), new_token)
-        self.assertFalse(status.data.get('http://testhost:8089initial_token_flag'))
         status.data.clear()
 
     @mock.patch('utils.splunk.splunk_helper.jwt.decode',
@@ -350,7 +344,6 @@ class TestSplunkHelper(unittest.TestCase):
         status = CheckData()
         # load a token in memory for validation
         status.data['http://testhost:8089token'] = 'memorytokenpresent'
-        status.data['http://testhost:8089initial_token_flag'] = False
         persistence_check_name = "splunk_metric"
         config = FakeInstanceConfig()
 
@@ -365,7 +358,6 @@ class TestSplunkHelper(unittest.TestCase):
         self.assertEqual(expected_header, "Bearer {}".format(new_token))
         # persistence data will have new token as well
         self.assertEqual(status.data.get('http://testhost:8089token'), new_token)
-        self.assertFalse(status.data['http://testhost:8089initial_token_flag'])
         status.data.clear()
 
     @mock.patch('utils.splunk.splunk_helper.jwt.decode',
