@@ -117,7 +117,6 @@ class SplunkHelper(object):
             self.log.debug("The token needs renewal as token is about to expire or this is initial token")
             token = self.create_auth_token(token)
             self.update_token_memory(base_url, token, status, persistence_check_name)
-        self.log.debug("Authorization is none since Splunk check restarted. The session will be updated")
         self.requests_session.headers.update({'Authorization': "Bearer %s" % token})
 
     def update_token_memory(self, base_url, token, status_data, persistent_check_name):
