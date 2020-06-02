@@ -53,46 +53,45 @@ class SplunkHelper(object):
         response_json = response.json()
 
         new_token = response_json.get("entry")[0].get("content").get("token")
-        self.requests_session.headers.update({'Authorization': "Bearer %s" % new_token})
         return new_token
 
-    def _decode_token_util(self, token, initial):
+    def _decode_token_util(self, token, is_initial_token):
         """
         Method to decode the token and return the number of days token is valid or invalid
         :param token: the token to decode
-        :param initial: boolean flag for first initial token or not, default is False
+        :param is_initial_token: boolean flag if it is first initial token, default is False
         :return: days: the number of days between token expiration and current date
         """
         current_time = self._current_time()
         decoded_token = jwt.decode(token, verify=False, algorithm='HS512')
         expiry_time = decoded_token.get("exp")
-        if expiry_time == 0 and initial:
+        if expiry_time == 0 and is_initial_token:
             self.log.warning("Initial token provided in the configuration doesn't have an expiration value.")
             return 999
         expiry_date = datetime.datetime.fromtimestamp(expiry_time)
         days = (expiry_date.date() - current_time.date()).days
         return days
 
-    def is_token_expired(self, token, initial=False):
+    def is_token_expired(self, token, is_initial_token=False):
         """
         Method to check if the token is expired or not
         :param token: the token used for validation
-        :param initial: boolean flag for first initial token or not, default is False
+        :param is_initial_token: boolean flag if it is first initial token, default is False
         :return: boolean flag if token is valid or not
         """
-        days = self._decode_token_util(token, initial)
+        days = self._decode_token_util(token, is_initial_token)
         return True if days < 0 else False
 
-    def need_renewal(self, token, initial=False):
+    def need_renewal(self, token, is_initial_token=False):
         """
         Method to check if token needs renewal
         :param token: the previous in memory or initial valid token
-        :param initial: boolean flag to check if the token is first initial token
+        :param is_initial_token: boolean flag if it is first initial token, default is False
         :return: boolean flag if token needs renewal
         """
-        days = self._decode_token_util(token, initial)
+        days = self._decode_token_util(token, is_initial_token)
         renewal_days = self.instance_config.renewal_days
-        if days <= renewal_days or initial:
+        if days <= renewal_days or is_initial_token:
             return True
         else:
             return False
@@ -101,22 +100,24 @@ class SplunkHelper(object):
         """ This method is mocked for testing. Do not change its behavior """
         return datetime.datetime.utcnow()
 
-    def token_auth_session(self, auth, base_url, status, initial_token_flag, persistence_check_name):
+    def token_auth_session(self, auth, base_url, status, persistence_check_name):
         persist_token_key = base_url + "token"
+        is_initial_token = False
         token = status.data.get(persist_token_key)
         if token is None:
             # Since this is first time run, pick the token from conf.yaml
             token = auth["token_auth"].get('initial_token')
-        if self.is_token_expired(token, initial_token_flag):
+            is_initial_token = True
+        if self.is_token_expired(token, is_initial_token):
+            self.log.debug("Current in use authentication token is expired")
             msg = "Current in use authentication token is expired. Please provide a valid token in the YAML " \
                   "and restart the Agent"
             raise TokenExpiredException(msg)
-        if self.need_renewal(token, initial_token_flag):
-            new_token = self.create_auth_token(token)
-            self.update_token_memory(base_url, new_token, status,
-                                     persistence_check_name)
-            initial_token_flag = False
-        return initial_token_flag
+        if self.need_renewal(token, is_initial_token):
+            self.log.debug("The token needs renewal as token is about to expire or this is initial token")
+            token = self.create_auth_token(token)
+            self.update_token_memory(base_url, token, status, persistence_check_name)
+        self.requests_session.headers.update({'Authorization': "Bearer %s" % token})
 
     def update_token_memory(self, base_url, token, status_data, persistent_check_name):
         key = base_url + "token"
