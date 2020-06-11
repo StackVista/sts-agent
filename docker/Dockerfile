@@ -18,4 +18,6 @@ RUN mkdir /var/log/stackstate && \
   chown sts-agent:sts-agent /var/log/stackstate && \
   cp /etc/sts-agent/stackstate.conf.example /etc/sts-agent/stackstate.conf
 
+USER sts-agent
+
 ENTRYPOINT [ "/usr/local/bin/entrypoint" ]
