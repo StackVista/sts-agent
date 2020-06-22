@@ -1,0 +1,7 @@
+#!/bin/sh
+
+PATH=/opt/stackstate-agent/embedded/bin:/opt/stackstate-agent/bin:$PATH
+
+exec /opt/stackstate-agent/bin/supervisord -n -c /etc/supervisor.conf
+
+#tail -f /var/log/stackstate/collector.log /var/log/stackstate/collector.log /var/log/stackstate/supervisord.log

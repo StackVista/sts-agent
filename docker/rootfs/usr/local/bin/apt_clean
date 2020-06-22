@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -e
+
+# Apt cleaner for Docker images
+apt-get -qy autoremove
+apt-get -qy clean autoclean
+rm -rf /var/cache/apt/*
+rm -rf /var/lib/apt/lists/*
+rm -rf /var/log/*
