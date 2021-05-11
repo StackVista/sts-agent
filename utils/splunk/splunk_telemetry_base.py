@@ -61,9 +61,6 @@ class SplunkTelemetryBase(AgentCheck):
             self.log.debug("Skipping splunk metric/event instance %s, waiting for initial time to expire" % url)
             return
 
-        self.load_status()
-        instance.update_status(current_time, self.status)
-
         try:
             if authentication and 'token_auth' in authentication:
                 self.log.debug("Using token based authentication mechanism")
@@ -75,6 +72,10 @@ class SplunkTelemetryBase(AgentCheck):
 
             saved_searches = self._saved_searches(instance)
             instance.saved_searches.update_searches(self.log, saved_searches)
+
+            # after updating the regex searches in the saved search list, load the state and check
+            self.load_status()
+            instance.update_status(current_time, self.status)
 
             executed_searches = False
             for saved_searches in chunks(instance.saved_searches.searches, instance.saved_searches_parallel):
