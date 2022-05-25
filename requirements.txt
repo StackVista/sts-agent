@@ -43,7 +43,7 @@ uptime==3.0.1
 pytz==2016.10
 iso8601==0.1.11
 # utils/splunk/splunk_helper.py
-PyJWT==1.7.1
+PyJWT==2.4.0
 
 # utils/ucmdb/ucmdb_component_groups.py
 ET==0.0.2
